@@ -75,10 +75,11 @@ fun AdminScreen(
                 )
                 state.isLoading -> CircularProgressIndicator(Modifier.align(Alignment.Center))
                 else -> Column(Modifier.fillMaxSize()) {
-                    TabRow(selectedTabIndex = tab) {
+                    androidx.compose.material3.ScrollableTabRow(selectedTabIndex = tab, edgePadding = 0.dp) {
                         Tab(selected = tab == 0, onClick = { tab = 0 }, text = { Text("Tipi spesa") })
                         Tab(selected = tab == 1, onClick = { tab = 1 }, text = { Text("Unità") })
                         Tab(selected = tab == 2, onClick = { tab = 2 }, text = { Text("Ruoli") })
+                        Tab(selected = tab == 3, onClick = { tab = 3 }, text = { Text("Utenti") })
                     }
                     when (tab) {
                         0 -> NameSection(
@@ -96,6 +97,7 @@ fun AdminScreen(
                             onUpdate = viewModel::updateRole,
                             onDelete = viewModel::deleteRole,
                         )
+                        3 -> UsersSection(viewModel, state)
                     }
                 }
             }
@@ -273,4 +275,71 @@ private fun UnitDialog(
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Annulla") } },
     )
+}
+
+/** Sezione gestione utenti: lista con cambio ruolo. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun UsersSection(viewModel: AdminViewModel, state: AdminUiState) {
+    LazyColumn(
+        Modifier.fillMaxSize(),
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        if (state.users.isEmpty()) {
+            item { Text("Nessun utente.", style = MaterialTheme.typography.bodyMedium) }
+        }
+        items(state.users, key = { it.id }) { user ->
+            Card(Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(16.dp)) {
+                    Text(user.displayName, style = MaterialTheme.typography.titleMedium)
+                    Text(user.email, style = MaterialTheme.typography.bodySmall)
+                    RolePicker(
+                        roles = state.roles,
+                        currentRoleName = user.role,
+                        onSelect = { roleId -> viewModel.changeUserRole(user.id, roleId) },
+                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                    )
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun RolePicker(
+    roles: List<com.dcapps.spese.core.model.UserRole>,
+    currentRoleName: String?,
+    onSelect: (Long) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val currentLabel = currentRoleName ?: "(nessun ruolo)"
+
+    androidx.compose.material3.ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = it },
+        modifier = modifier,
+    ) {
+        OutlinedTextField(
+            value = currentLabel,
+            onValueChange = {},
+            readOnly = true,
+            label = { Text("Ruolo") },
+            trailingIcon = {
+                androidx.compose.material3.ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
+            },
+            modifier = Modifier.fillMaxWidth()
+                .menuAnchor(androidx.compose.material3.MenuAnchorType.PrimaryNotEditable),
+        )
+        androidx.compose.material3.DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            roles.forEach { role ->
+                androidx.compose.material3.DropdownMenuItem(
+                    text = { Text(role.name) },
+                    onClick = { onSelect(role.id); expanded = false },
+                )
+            }
+        }
+    }
 }

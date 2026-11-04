@@ -14,6 +14,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
@@ -160,6 +162,7 @@ fun ChecklistDetailScreen(
                             is ChecklistRow.CategoryHeader -> CategoryHeaderRow(
                                 row = row,
                                 onClick = { editingCategory = row.category },
+                                onToggleCollapse = { viewModel.toggleCategoryCollapsed(row.category.id) },
                             )
                             is ChecklistRow.Item -> ItemRow(
                                 row = row,
@@ -215,8 +218,9 @@ fun ChecklistDetailScreen(
 
     if (showNewCategory) {
         NewCategoryDialog(
+            categories = state.categories,
             onDismiss = { showNewCategory = false },
-            onCreate = { name -> viewModel.addCategory(name, null); showNewCategory = false },
+            onCreate = { name, parentId -> viewModel.addCategory(name, parentId); showNewCategory = false },
         )
     }
 
@@ -237,14 +241,15 @@ private fun ImportDialog(onDismiss: () -> Unit, onImport: (String) -> Unit) {
         text = {
             androidx.compose.foundation.layout.Column {
                 Text(
-                    "Un articolo per riga. Una riga che termina con \":\" diventa una categoria.",
+                    "Un articolo per riga. Una riga che termina con \":\" diventa una categoria. " +
+                        "Supporta le caselle di Samsung Notes ([v]/[ ]) e quantità (es. \"Mele x3\").",
                     style = MaterialTheme.typography.bodySmall,
                 )
                 OutlinedTextField(
                     value = text,
                     onValueChange = { text = it },
                     modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                    placeholder = { Text("Frutta:\n- Mele\n- Banane\nLatte") },
+                    placeholder = { Text("Frutta:\n[ ] Mele x3\n[v] Banane\nLatte") },
                     minLines = 4,
                 )
             }
@@ -295,8 +300,16 @@ private fun OverflowMenu(
             onClick = { expanded = false; viewModel.checkAll(true) },
         )
         DropdownMenuItem(
-            text = { Text("Despunta tutto") },
+            text = { Text("Ricomincia (despunta tutto)") },
             onClick = { expanded = false; viewModel.checkAll(false) },
+        )
+        DropdownMenuItem(
+            text = { Text("Comprimi tutto") },
+            onClick = { expanded = false; viewModel.setAllCollapsed(true) },
+        )
+        DropdownMenuItem(
+            text = { Text("Espandi tutto") },
+            onClick = { expanded = false; viewModel.setAllCollapsed(false) },
         )
         DropdownMenuItem(
             text = { Text("Condividi") },
@@ -319,16 +332,34 @@ private fun rowKey(row: ChecklistRow): String = when (row) {
 }
 
 @Composable
-private fun CategoryHeaderRow(row: ChecklistRow.CategoryHeader, onClick: () -> Unit) {
-    Text(
-        text = row.category.name,
-        style = MaterialTheme.typography.titleSmall,
-        fontWeight = FontWeight.SemiBold,
+private fun CategoryHeaderRow(
+    row: ChecklistRow.CategoryHeader,
+    onClick: () -> Unit,
+    onToggleCollapse: () -> Unit,
+) {
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onClick() }
-            .padding(start = (16 + row.depth * 16).dp, end = 16.dp, top = 12.dp, bottom = 4.dp),
-    )
+            .padding(start = (8 + row.depth * 16).dp, end = 8.dp, top = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        IconButton(onClick = onToggleCollapse) {
+            Icon(
+                imageVector = if (row.collapsed) {
+                    Icons.AutoMirrored.Filled.KeyboardArrowRight
+                } else {
+                    Icons.Default.KeyboardArrowDown
+                },
+                contentDescription = if (row.collapsed) "Espandi" else "Comprimi",
+            )
+        }
+        Text(
+            text = row.category.name,
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.weight(1f).clickable { onClick() }.padding(vertical = 8.dp),
+        )
+    }
     HorizontalDivider(Modifier.padding(horizontal = 16.dp))
 }
 
@@ -364,25 +395,76 @@ private fun ItemRow(
 }
 
 @Composable
-private fun NewCategoryDialog(onDismiss: () -> Unit, onCreate: (String) -> Unit) {
+private fun NewCategoryDialog(
+    categories: List<com.dcapps.spese.core.model.ShoppingCategory>,
+    onDismiss: () -> Unit,
+    onCreate: (name: String, parentId: Long?) -> Unit,
+) {
     var name by remember { mutableStateOf("") }
+    var parentId by remember { mutableStateOf<Long?>(null) }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Nuova categoria") },
         text = {
-            OutlinedTextField(
-                value = name,
-                onValueChange = { name = it },
-                label = { Text("Nome") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-            )
+            androidx.compose.foundation.layout.Column {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("Nome") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                // Scelta categoria padre (opzionale) → crea una sottocategoria.
+                if (categories.isNotEmpty()) {
+                    ParentCategoryPicker(
+                        categories = categories,
+                        selectedId = parentId,
+                        onSelect = { parentId = it },
+                    )
+                }
+            }
         },
         confirmButton = {
-            TextButton(enabled = name.isNotBlank(), onClick = { onCreate(name) }) { Text("Crea") }
+            TextButton(enabled = name.isNotBlank(), onClick = { onCreate(name, parentId) }) { Text("Crea") }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Annulla") } },
     )
+}
+
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@Composable
+private fun ParentCategoryPicker(
+    categories: List<com.dcapps.spese.core.model.ShoppingCategory>,
+    selectedId: Long?,
+    onSelect: (Long?) -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val options = listOf<Pair<Long?, String>>(null to "(Nessuna — categoria principale)") +
+        categories.map { it.id to it.name }
+    val label = options.firstOrNull { it.first == selectedId }?.second ?: "(Nessuna — categoria principale)"
+
+    androidx.compose.material3.ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = it },
+        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+    ) {
+        OutlinedTextField(
+            value = label,
+            onValueChange = {},
+            readOnly = true,
+            label = { Text("Categoria padre") },
+            trailingIcon = {
+                androidx.compose.material3.ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
+            },
+            modifier = Modifier.fillMaxWidth()
+                .menuAnchor(androidx.compose.material3.MenuAnchorType.PrimaryNotEditable),
+        )
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            options.forEach { (id, text) ->
+                DropdownMenuItem(text = { Text(text) }, onClick = { onSelect(id); expanded = false })
+            }
+        }
+    }
 }
 
 @Composable

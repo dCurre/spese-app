@@ -1,7 +1,19 @@
 # Spese — App Android
 
-App Android nativa (Kotlin + Jetpack Compose) per la gestione di spese condivise e liste
-della spesa.
+App Android nativa (Kotlin + Jetpack Compose) per la gestione di spese condivise, liste
+della spesa e storico prezzi.
+
+## Funzionalità
+
+- **Spese condivise**: liste condivise/personali, registrazione spese, calcolo saldi
+  ("chi deve a chi") con grafico per persona o tipologia, partecipanti e ospiti,
+  condivisione via link, trasferimento proprietà.
+- **Checklist**: liste della spesa collaborative con categorie e sottocategorie, spunta,
+  quantità, modifica in blocco, import/export (incl. formato Samsung Notes), condivisione.
+- **Storico prezzi**: prodotti, registro acquisti, grafico andamento prezzo e statistiche.
+- **Profilo**: avatar, tema chiaro/scuro/auto/legacy, statistiche, modifica dati.
+- **Amministrazione** (ruoli admin): tipi spesa, unità di misura, ruoli, utenti.
+- **Realtime** (Supabase), **aggiornamento in-app** via GitHub Releases, **segnalazione bug**.
 
 ## Stack
 
@@ -15,92 +27,54 @@ della spesa.
 | Realtime | Supabase Realtime (client Kotlin) |
 | Immagini | Coil |
 
-## Come funziona l'autenticazione
+Package applicazione: `com.dcapps.spese`.
 
-Il backend **non verifica alcun token**: tutti gli endpoint sono pubblici. Il "login" consiste in:
+## Autenticazione
 
-1. Login Google tramite Firebase Auth (serve solo a ottenere l'email dell'utente).
-2. `POST /api/users/upsert-by-email` con i dati dell'account → ritorna il record utente.
-3. Si usa lo `User.id` restituito in tutte le chiamate successive.
+Il backend non verifica token: gli endpoint sono pubblici. Il login consiste nel login
+Google (Firebase, per ottenere l'email) seguito da `POST /api/users/upsert-by-email`; lo
+`User.id` restituito viene usato nelle chiamate successive.
 
 ## Requisiti di sviluppo
 
-- **JDK 17+** (presente: Temurin 21).
-- **Android SDK** installato in `%LOCALAPPDATA%\Android\Sdk` (platform-tools, platform
-  android-35, build-tools 35.0.0). Il percorso è in `local.properties` (non versionato).
-- Build via Gradle wrapper: `./gradlew` (scarica Gradle 8.11.1 al primo avvio).
+- **JDK 17+**
+- **Android SDK** in `%LOCALAPPDATA%\Android\Sdk` (platform-tools, platform android-35,
+  build-tools 35.0.0). Il percorso va in `local.properties` (non versionato).
+- Build via Gradle wrapper: `./gradlew` (scarica Gradle al primo avvio).
 
-### Prerequisito Firebase (necessario per il login)
+### File non versionati da predisporre
 
-L'app usa il progetto Firebase **`spese-dc`**; serve registrare l'**app Android**:
+Questi file/valori sono in `.gitignore` e vanno creati in locale:
 
-1. Firebase Console → progetto `spese-dc` → *Aggiungi app* → **Android**.
-2. Package name: **`app.spese`**.
-3. Aggiungi l'impronta **SHA-1** della keystore di debug:
-   ```bash
-   keytool -list -v -alias androiddebugkey \
-     -keystore "$HOME/.android/debug.keystore" \
-     -storepass android -keypass android
+1. **`app/google-services.json`** — dal progetto Firebase `spese-dc`, app Android
+   `com.dcapps.spese`. Registra anche l'impronta **SHA-1** della keystore con cui firmi
+   (debug e/o release) e abilita **Google** come metodo di accesso. Senza questo file
+   l'app va in crash all'avvio.
+2. **`local.properties`** — oltre a `sdk.dir`, può contenere il token per le
+   segnalazioni bug:
    ```
-4. Scarica **`google-services.json`** e mettilo in **`app/google-services.json`**.
-5. Nel file [`app/build.gradle.kts`](app/build.gradle.kts), **de-commenta** la riga del plugin
-   `alias(libs.plugins.google.services)`.
-6. In *Authentication → Sign-in method*, abilita **Google**.
-7. Copia il **Web client ID** OAuth (Firebase Console → impostazioni progetto, oppure GCP →
-   Credenziali → *OAuth 2.0 Client IDs → Web client*) e sostituiscilo al placeholder
-   `GOOGLE_WEB_CLIENT_ID` in [`app/build.gradle.kts`](app/build.gradle.kts).
+   github.bugreport.token=<token GitHub fine-grained con permesso Issues: write>
+   ```
 
-> Nota: il `google-services.json` è in `.gitignore` e non va committato.
+I valori di rete (`API_BASE_URL`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`,
+`GOOGLE_WEB_CLIENT_ID`) sono già impostati come `BuildConfig` in
+[`app/build.gradle.kts`](app/build.gradle.kts). La anon key Supabase è pubblica per natura.
 
-> ⚠️ **L'app si avvia correttamente solo dopo** aver aggiunto `google-services.json` e
-> de-commentato il plugin: senza, Firebase non viene inizializzato e l'app va in crash
-> all'avvio. Il codice compila comunque anche senza configurazione.
-
-### Configurazione Supabase (per il realtime)
-
-`SUPABASE_URL` e `SUPABASE_ANON_KEY` sono in `app/build.gradle.kts` come `BuildConfig`.
-La URL è già impostata; **sostituisci il placeholder di `SUPABASE_ANON_KEY`** con la chiave
-anon pubblica reale. La chiave *anon* è pubblica per definizione, non è un segreto.
-
-## Build & run
+## Build
 
 ```bash
-# APK di debug
-./gradlew :app:assembleDebug
-
-# Installa su un dispositivo/emulatore collegato
-./gradlew :app:installDebug
+./gradlew :app:assembleDebug     # APK di debug in app/build/outputs/apk/debug/
+./gradlew :app:installDebug      # installa su device/emulatore collegato
+./gradlew :app:assembleRelease   # APK release (firma da secret/keystore, vedi CI)
 ```
-
-L'APK viene prodotto in `app/build/outputs/apk/debug/`.
-
-## Configurazione di rete
-
-Definita in `app/build.gradle.kts` (`BuildConfig`):
-
-- `API_BASE_URL` = `https://spese-ms.onrender.com/` (backend di produzione)
-- `SUPABASE_URL` / `SUPABASE_ANON_KEY`
-- `GOOGLE_WEB_CLIENT_ID`
 
 > Il backend è su Render: il primo accesso dopo inattività può essere lento (cold start).
 
-## Stato
+## Release automatiche (CI)
 
-In sviluppo incrementale, feature per feature:
-
-- [x] **Step 1** — Setup progetto (Gradle, Compose, Hilt, dipendenze)
-- [x] **Step 2** — Layer di rete (Retrofit, modelli, API)
-- [x] **Step 3** — Auth (Google Sign-In → upsert-by-email)
-- [x] **Step 4** — Liste spese + saldi (elenco, dettaglio, CRUD spese, saldo con grafico)
-- [x] **Step 5** — Realtime (Supabase) su liste, spese, partecipanti
-- [x] **Step 6** — Checklist (elenco, dettaglio ad albero, spunta, aggiunta/eliminazione articoli, realtime)
-- [x] **Step 7** — Profilo + tema (avatar, tema chiaro/scuro/auto, statistiche, logout)
-- [x] **Step 8** — Statistiche (spese per persona/tipologia nel saldo)
-- [x] **Navigazione a tab** (Spese / Spesa / Profilo)
-- [x] **Aggiornamento in-app** via GitHub Releases
-- [x] **CI/CD**: versioning automatico + release APK firmato su GitHub
-
-### Da completare / migliorare
-- Editing avanzato checklist (gestione categorie/sottocategorie da UI, riordino, batch-save)
-- Funzioni avanzate liste spese (ospiti, trasferimento proprietà)
-- Storico prezzi, pannello admin (presenti nella webapp, non ancora portati)
+Ad ogni push su `main`, GitHub Actions ([.github/workflows/release.yml](.github/workflows/release.yml))
+determina la versione dal file `VERSION` (incrementa la patch se la versione corrente è già
+taggata, altrimenti pubblica quella indicata), compila l'APK release firmato e crea una
+GitHub Release `vX.Y.Z` con l'APK allegato. Secret richiesti sul repo:
+`RELEASE_KEYSTORE_BASE64`, `RELEASE_STORE_PASSWORD`, `RELEASE_KEY_PASSWORD`,
+`RELEASE_KEY_ALIAS`, `GOOGLE_SERVICES_JSON_BASE64`, `BUGREPORT_TOKEN`.

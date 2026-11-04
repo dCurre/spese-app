@@ -50,11 +50,17 @@ fun ExpenseDialog(
     // In una lista personale non si chiede "chi ha pagato": è sempre il proprietario.
     isPersonal: Boolean = false,
     personalOwnerId: Long? = null,
+    // Nomi di spese già presenti, per l'autocomplete del campo nome.
+    nameSuggestions: List<String> = emptyList(),
+    // Se true, il dialog è in modalità "crea" anche se [expense] è valorizzato (usato da "Ripeti").
+    forceCreate: Boolean = false,
     onDismiss: () -> Unit,
     onDelete: (() -> Unit)? = null,
     onConfirm: (name: String, amount: BigDecimal, ownerId: Long, date: Instant, typeId: Long?) -> Unit,
 ) {
+    val isEdit = expense != null && !forceCreate
     var name by remember { mutableStateOf(expense?.name ?: "") }
+    var nameMenuExpanded by remember { mutableStateOf(false) }
     var amountText by remember {
         mutableStateOf(expense?.amount?.takeIf { it.signum() != 0 }?.toPlainString() ?: "")
     }
@@ -80,16 +86,39 @@ fun ExpenseDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(if (expense == null) "Nuova spesa" else "Modifica spesa") },
+        title = { Text(if (isEdit) "Modifica spesa" else "Nuova spesa") },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState())) {
-                OutlinedTextField(
-                    value = name,
-                    onValueChange = { name = it },
-                    label = { Text("Nome") },
-                    singleLine = true,
+                // Nome con autocomplete dai nomi di spese già presenti.
+                val nameMatches = nameSuggestions.filter {
+                    name.isNotBlank() && it.contains(name, ignoreCase = true) &&
+                        !it.equals(name, ignoreCase = true)
+                }.distinct().take(5)
+                ExposedDropdownMenuBox(
+                    expanded = nameMenuExpanded && nameMatches.isNotEmpty(),
+                    onExpandedChange = { nameMenuExpanded = it },
                     modifier = Modifier.fillMaxWidth(),
-                )
+                ) {
+                    OutlinedTextField(
+                        value = name,
+                        onValueChange = { name = it; nameMenuExpanded = true },
+                        label = { Text("Nome") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                            .menuAnchor(MenuAnchorType.PrimaryEditable),
+                    )
+                    DropdownMenu(
+                        expanded = nameMenuExpanded && nameMatches.isNotEmpty(),
+                        onDismissRequest = { nameMenuExpanded = false },
+                    ) {
+                        nameMatches.forEach { s ->
+                            DropdownMenuItem(
+                                text = { Text(s) },
+                                onClick = { name = s; nameMenuExpanded = false },
+                            )
+                        }
+                    }
+                }
                 OutlinedTextField(
                     value = amountText,
                     onValueChange = { amountText = it },
@@ -150,7 +179,7 @@ fun ExpenseDialog(
             ) { Text("Salva") }
         },
         dismissButton = {
-            if (expense != null && onDelete != null) {
+            if (isEdit && onDelete != null) {
                 TextButton(onClick = onDelete) { Text("Elimina") }
             } else {
                 TextButton(onClick = onDismiss) { Text("Annulla") }

@@ -105,6 +105,9 @@ fun PriceDetailScreen(
                     contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
+                    // Statistiche prodotto (calcolate dagli acquisti: prezzo unitario).
+                    item { ProductStatsCard(state.purchases) }
+
                     // Grafico prezzi.
                     item {
                         Card(Modifier.fillMaxWidth()) {
@@ -181,13 +184,16 @@ fun PriceDetailScreen(
         }
     }
 
+    val storeSuggestions = state.purchases.mapNotNull { it.store?.takeIf { s -> s.isNotBlank() } }.distinct()
+
     if (showAddPurchase) {
         NewPurchaseDialog(
             productUnitId = state.product?.defaultUnitId,
             productUnitSymbol = state.product?.defaultUnitSymbol,
+            storeSuggestions = storeSuggestions,
             onDismiss = { showAddPurchase = false },
-            onConfirm = { price, qty, unitId, date, store ->
-                viewModel.addPurchase(price, qty, unitId, date, store)
+            onConfirm = { price, qty, unitId, date, store, notes ->
+                viewModel.addPurchase(price, qty, unitId, date, store, notes)
                 showAddPurchase = false
             },
         )
@@ -198,9 +204,10 @@ fun PriceDetailScreen(
             productUnitId = state.product?.defaultUnitId,
             productUnitSymbol = state.product?.defaultUnitSymbol,
             purchase = p,
+            storeSuggestions = storeSuggestions,
             onDismiss = { editingPurchase = null },
-            onConfirm = { price, qty, unitId, date, store ->
-                viewModel.updatePurchase(p.id, price, qty, unitId, date, store)
+            onConfirm = { price, qty, unitId, date, store, notes ->
+                viewModel.updatePurchase(p.id, price, qty, unitId, date, store, notes)
                 editingPurchase = null
             },
         )
@@ -235,6 +242,48 @@ fun PriceDetailScreen(
             message = "Vuoi eliminare \"${state.product?.name ?: ""}\" e tutti i suoi acquisti?",
             onConfirm = { viewModel.deleteProduct() },
             onDismiss = { showDeleteProduct = false },
+        )
+    }
+}
+
+@androidx.compose.runtime.Composable
+private fun ProductStatsCard(purchases: List<com.dcapps.spese.core.model.Purchase>) {
+    if (purchases.isEmpty()) return
+    // Prezzo unitario per confronti (prezzo/quantità, già calcolato dal backend come unit_price).
+    val byDate = purchases.sortedBy { it.purchasedAt }
+    val minP = purchases.minByOrNull { it.unitPrice }
+    val last = byDate.lastOrNull()
+    val lastPrice = last?.unitPrice ?: 0.0
+    val minPrice = minP?.unitPrice ?: 0.0
+    val variationPct = if (minPrice > 0) ((lastPrice - minPrice) / minPrice * 100) else 0.0
+
+    androidx.compose.material3.Card(androidx.compose.ui.Modifier.fillMaxWidth()) {
+        androidx.compose.foundation.layout.Column(androidx.compose.ui.Modifier.padding(16.dp)) {
+            androidx.compose.material3.Text(
+                "Statistiche",
+                style = androidx.compose.material3.MaterialTheme.typography.titleMedium,
+            )
+            StatLine("Prezzo minimo", "%.2f €/u".format(minPrice) + (minP?.store?.let { " · $it" } ?: ""))
+            StatLine("Ultimo prezzo", "%.2f €/u".format(lastPrice))
+            StatLine(
+                "Variazione sul minimo",
+                if (variationPct <= 0.0) "al minimo storico" else "+%.0f%%".format(variationPct),
+            )
+        }
+    }
+}
+
+@androidx.compose.runtime.Composable
+private fun StatLine(label: String, value: String) {
+    androidx.compose.foundation.layout.Row(
+        androidx.compose.ui.Modifier.fillMaxWidth().padding(top = 6.dp),
+        horizontalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceBetween,
+    ) {
+        androidx.compose.material3.Text(label, style = androidx.compose.material3.MaterialTheme.typography.bodyMedium)
+        androidx.compose.material3.Text(
+            value,
+            style = androidx.compose.material3.MaterialTheme.typography.bodyMedium,
+            fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
         )
     }
 }

@@ -92,6 +92,7 @@ class PriceDetailViewModel @Inject constructor(
         unitId: Long,
         purchasedAt: String,
         store: String?,
+        notes: String?,
     ) {
         val userId = session.currentUser.value?.id ?: return
         viewModelScope.launch {
@@ -104,6 +105,7 @@ class PriceDetailViewModel @Inject constructor(
                     quantity = quantity,
                     unitId = unitId,
                     store = store?.takeIf { it.isNotBlank() },
+                    notes = notes?.takeIf { it.isNotBlank() },
                 )
             )
             when (result) {
@@ -120,6 +122,7 @@ class PriceDetailViewModel @Inject constructor(
         unitId: Long,
         purchasedAt: String,
         store: String?,
+        notes: String?,
     ) {
         viewModelScope.launch {
             val result = priceRepository.updatePurchase(
@@ -130,6 +133,7 @@ class PriceDetailViewModel @Inject constructor(
                     quantity = quantity,
                     unitId = unitId,
                     store = store?.takeIf { it.isNotBlank() },
+                    notes = notes?.takeIf { it.isNotBlank() },
                 ),
             )
             when (result) {

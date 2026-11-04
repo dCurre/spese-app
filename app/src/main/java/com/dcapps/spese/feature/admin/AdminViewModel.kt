@@ -4,8 +4,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dcapps.spese.core.auth.SessionManager
 import com.dcapps.spese.core.data.CatalogRepository
+import com.dcapps.spese.core.data.UserRepository
 import com.dcapps.spese.core.model.ExpenseType
 import com.dcapps.spese.core.model.MeasurementUnit
+import com.dcapps.spese.core.model.User
 import com.dcapps.spese.core.model.UserRole
 import com.dcapps.spese.core.network.ApiResult
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -22,13 +24,15 @@ data class AdminUiState(
     val expenseTypes: List<ExpenseType> = emptyList(),
     val units: List<MeasurementUnit> = emptyList(),
     val roles: List<UserRole> = emptyList(),
+    val users: List<User> = emptyList(),
     val message: String? = null,
 )
 
 @HiltViewModel
 class AdminViewModel @Inject constructor(
     private val catalogRepository: CatalogRepository,
-    session: SessionManager,
+    private val userRepository: UserRepository,
+    private val session: SessionManager,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AdminUiState())
@@ -48,15 +52,23 @@ class AdminViewModel @Inject constructor(
             val types = catalogRepository.getExpenseTypes(forceRefresh = true)
             val units = catalogRepository.getMeasurementUnits(forceRefresh = true)
             val roles = catalogRepository.getUserRoles(forceRefresh = true)
+            val users = userRepository.getAll()
             _uiState.update {
                 it.copy(
                     isLoading = false,
                     expenseTypes = (types as? ApiResult.Success)?.data ?: emptyList(),
                     units = (units as? ApiResult.Success)?.data ?: emptyList(),
                     roles = (roles as? ApiResult.Success)?.data ?: emptyList(),
+                    users = (users as? ApiResult.Success)?.data?.filter { u -> !u.isGuest } ?: emptyList(),
                 )
             }
         }
+    }
+
+    /** Cambia il ruolo di un utente (usa l'email dell'admin corrente come caller). */
+    fun changeUserRole(userId: Long, roleId: Long) {
+        val caller = session.currentUser.value?.email ?: return
+        mutate { userRepository.changeRole(userId, roleId, caller) }
     }
 
     // --- Tipi spesa ---

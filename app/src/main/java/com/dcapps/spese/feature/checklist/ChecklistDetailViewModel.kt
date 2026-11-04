@@ -26,7 +26,11 @@ import javax.inject.Inject
 
 /** Riga appiattita dell'albero checklist, per il rendering in una lista lineare. */
 sealed interface ChecklistRow {
-    data class CategoryHeader(val category: ShoppingCategory, val depth: Int) : ChecklistRow
+    data class CategoryHeader(
+        val category: ShoppingCategory,
+        val depth: Int,
+        val collapsed: Boolean = false,
+    ) : ChecklistRow
     data class Item(val item: ShoppingItem, val depth: Int) : ChecklistRow
 }
 
@@ -58,6 +62,9 @@ class ChecklistDetailViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(ChecklistDetailUiState())
     val uiState: StateFlow<ChecklistDetailUiState> = _uiState.asStateFlow()
+
+    /** Id delle categorie collassate (contenuti nascosti). */
+    private val collapsed = mutableSetOf<Long>()
 
     init {
         load()
@@ -228,9 +235,12 @@ class ChecklistDetailViewModel @Inject constructor(
     }
 
     /**
-     * Importa articoli da testo: ogni riga "- nome" (o "nome") diventa un articolo; una riga
-     * che termina con ":" diventa una categoria a cui vengono assegnati gli articoli seguenti.
-     * Tutto viene salvato in un'unica chiamata batch-save.
+     * Importa articoli da testo. Riconosce:
+     *  - riga che termina con ":" → categoria (gli articoli seguenti le vengono assegnati);
+     *  - marcatori di spunta: Samsung Notes `[v]`/`[x]`/`[X]` (spuntato), `[ ]` (non spuntato);
+     *    export app `✓` (spuntato), `○` (non spuntato); trattino `-` o testo semplice;
+     *  - quantità opzionale in coda come " x3" o " ×3".
+     * Salva tutto in un'unica chiamata batch-save.
      */
     fun importFromText(text: String) {
         val lines = text.lines().map { it.trim() }.filter { it.isNotBlank() }
@@ -239,6 +249,10 @@ class ChecklistDetailViewModel @Inject constructor(
         val catsCreate = mutableListOf<com.dcapps.spese.core.model.BatchCategoryCreate>()
         val itemsCreate = mutableListOf<com.dcapps.spese.core.model.BatchItemCreate>()
         var currentCatTemp: String? = null
+        // Marcatori di spunta a inizio riga.
+        val checkedPrefixes = listOf("[v]", "[x]", "[X]", "✓", "☑", "[✓]")
+        val uncheckedPrefixes = listOf("[ ]", "○", "☐", "-", "[]")
+
         lines.forEach { raw ->
             if (raw.endsWith(":")) {
                 val name = raw.dropLast(1).trim()
@@ -248,10 +262,28 @@ class ChecklistDetailViewModel @Inject constructor(
                     currentCatTemp = t
                 }
             } else {
-                val name = raw.removePrefix("-").trim()
+                var checked = false
+                var body = raw
+                checkedPrefixes.firstOrNull { body.startsWith(it) }?.let {
+                    checked = true; body = body.removePrefix(it).trim()
+                }
+                if (!checked) {
+                    uncheckedPrefixes.firstOrNull { body.startsWith(it) }?.let {
+                        body = body.removePrefix(it).trim()
+                    }
+                }
+                // Quantità opzionale in coda: "Mele x3" / "Mele ×3".
+                var quantity = 1
+                Regex("\\s[x×](\\d+)$").find(body)?.let { m ->
+                    quantity = m.groupValues[1].toIntOrNull()?.coerceAtLeast(1) ?: 1
+                    body = body.removeRange(m.range).trim()
+                }
+                val name = body.trim()
                 if (name.isNotEmpty()) {
                     itemsCreate += com.dcapps.spese.core.model.BatchItemCreate(
                         name = name,
+                        quantity = quantity,
+                        checked = checked,
                         categoryTempId = currentCatTemp,
                     )
                 }
@@ -329,8 +361,28 @@ class ChecklistDetailViewModel @Inject constructor(
     }
 
     private fun appendCategory(cat: ShoppingCategory, depth: Int, out: MutableList<ChecklistRow>) {
-        out += ChecklistRow.CategoryHeader(cat, depth)
+        val isCollapsed = cat.id in collapsed
+        out += ChecklistRow.CategoryHeader(cat, depth, collapsed = isCollapsed)
+        if (isCollapsed) return // non mostrare contenuti delle categorie chiuse
         cat.items.sortedBy { it.sortOrder }.forEach { out += ChecklistRow.Item(it, depth + 1) }
         cat.children.sortedBy { it.sortOrder }.forEach { child -> appendCategory(child, depth + 1, out) }
     }
+
+    /** Collassa/espande una categoria (solo stato locale, ricalcola le righe). */
+    fun toggleCategoryCollapsed(categoryId: Long) {
+        if (categoryId in collapsed) collapsed.remove(categoryId) else collapsed.add(categoryId)
+        val list = _uiState.value.list ?: return
+        _uiState.update { it.copy(rows = flatten(list)) }
+    }
+
+    /** Collassa o espande tutte le categorie. */
+    fun setAllCollapsed(collapseAll: Boolean) {
+        val list = _uiState.value.list ?: return
+        collapsed.clear()
+        if (collapseAll) collapsed.addAll(allCategoryIds(list.categories))
+        _uiState.update { it.copy(rows = flatten(list)) }
+    }
+
+    private fun allCategoryIds(cats: List<ShoppingCategory>): List<Long> =
+        cats.flatMap { listOf(it.id) + allCategoryIds(it.children) }
 }

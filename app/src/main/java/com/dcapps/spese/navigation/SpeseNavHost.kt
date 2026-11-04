@@ -27,6 +27,7 @@ import com.dcapps.spese.feature.checklist.ChecklistDetailScreen
 import com.dcapps.spese.feature.checklist.ChecklistScreen
 import com.dcapps.spese.feature.expenses.ExpensesDetailScreen
 import com.dcapps.spese.feature.expenses.ExpensesListScreen
+import com.dcapps.spese.feature.about.AboutScreen
 import com.dcapps.spese.feature.admin.AdminScreen
 import com.dcapps.spese.feature.prices.PriceDetailScreen
 import com.dcapps.spese.feature.prices.PriceListScreen
@@ -41,6 +42,7 @@ object Routes {
     const val PRICE_DETAIL = "prices/{productId}"
     const val PROFILE = "profile"
     const val ADMIN = "admin"
+    const val ABOUT = "about"
     fun expensesDetail(listId: Long) = "expenses/$listId"
     fun checklistDetail(listId: Long) = "checklist/$listId"
     fun priceDetail(productId: Long) = "prices/$productId"
@@ -140,10 +142,16 @@ fun SpeseNavHost() {
                 PriceDetailScreen(onBack = { navController.popBackStack() })
             }
             composable(Routes.PROFILE) {
-                ProfileScreen(onOpenAdmin = { navController.navigate(Routes.ADMIN) })
+                ProfileScreen(
+                    onOpenAdmin = { navController.navigate(Routes.ADMIN) },
+                    onOpenAbout = { navController.navigate(Routes.ABOUT) },
+                )
             }
             composable(Routes.ADMIN) {
                 AdminScreen(onBack = { navController.popBackStack() })
+            }
+            composable(Routes.ABOUT) {
+                AboutScreen(onBack = { navController.popBackStack() })
             }
         }
     }

@@ -20,6 +20,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Button
@@ -28,6 +29,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
@@ -35,7 +37,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -51,12 +55,14 @@ import coil.compose.AsyncImage
 @Composable
 fun ProfileScreen(
     onOpenAdmin: () -> Unit = {},
+    onOpenAbout: () -> Unit = {},
     viewModel: ProfileViewModel = hiltViewModel(),
     updateViewModel: com.dcapps.spese.feature.update.UpdateViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val user by viewModel.currentUser.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    var showEditName by remember { mutableStateOf(false) }
 
     val photoPicker = rememberLauncherForActivityResult(
         ActivityResultContracts.PickVisualMedia()
@@ -119,13 +125,37 @@ fun ProfileScreen(
                 }
             }
 
-            Text(
-                user?.displayName ?: "",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.SemiBold,
+            // Nome con azione di modifica.
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.padding(top = 12.dp),
-            )
-            Text(user?.email ?: "", style = MaterialTheme.typography.bodyMedium)
+            ) {
+                Text(
+                    user?.displayName ?: "",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                IconButton(onClick = { showEditName = true }) {
+                    Icon(Icons.Default.Edit, contentDescription = "Modifica nome", modifier = Modifier.size(18.dp))
+                }
+            }
+            // Email con azione di copia.
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(user?.email ?: "", style = MaterialTheme.typography.bodyMedium)
+                IconButton(onClick = {
+                    val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE)
+                        as android.content.ClipboardManager
+                    clipboard.setPrimaryClip(
+                        android.content.ClipData.newPlainText("email", user?.email ?: ""),
+                    )
+                }) {
+                    Icon(
+                        Icons.Default.ContentCopy,
+                        contentDescription = "Copia email",
+                        modifier = Modifier.size(16.dp),
+                    )
+                }
+            }
 
             // Storico avatar
             val history = user?.profileImagesHistory ?: emptyList()
@@ -205,6 +235,13 @@ fun ProfileScreen(
             }
 
             OutlinedButton(
+                onClick = onOpenAbout,
+                modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+            ) {
+                Text("Informazioni")
+            }
+
+            OutlinedButton(
                 onClick = { viewModel.signOut(context) },
                 modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
             ) {
@@ -225,6 +262,57 @@ fun ProfileScreen(
             }
         }
     }
+
+    if (showEditName) {
+        EditNameDialog(
+            initialName = user?.name ?: "",
+            initialSurname = user?.surname ?: "",
+            onDismiss = { showEditName = false },
+            onConfirm = { n, s -> viewModel.updateNameSurname(n, s); showEditName = false },
+        )
+    }
+}
+
+@Composable
+private fun EditNameDialog(
+    initialName: String,
+    initialSurname: String,
+    onDismiss: () -> Unit,
+    onConfirm: (name: String, surname: String) -> Unit,
+) {
+    var name by remember { mutableStateOf(initialName) }
+    var surname by remember { mutableStateOf(initialSurname) }
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Modifica nome") },
+        text = {
+            Column {
+                androidx.compose.material3.OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("Nome") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                androidx.compose.material3.OutlinedTextField(
+                    value = surname,
+                    onValueChange = { surname = it },
+                    label = { Text("Cognome") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                )
+            }
+        },
+        confirmButton = {
+            androidx.compose.material3.TextButton(
+                enabled = name.isNotBlank(),
+                onClick = { onConfirm(name, surname) },
+            ) { Text("Salva") }
+        },
+        dismissButton = {
+            androidx.compose.material3.TextButton(onClick = onDismiss) { Text("Annulla") }
+        },
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

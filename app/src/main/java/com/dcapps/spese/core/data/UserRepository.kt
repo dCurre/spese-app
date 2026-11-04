@@ -34,6 +34,19 @@ class UserRepository @Inject constructor(
     suspend fun update(id: Long, body: UpdateUserRequest): ApiResult<Unit> =
         apiCall(json) { api.updateUser(id, body); Unit }
 
+    /** Tutti gli utenti (per la gestione admin). */
+    suspend fun getAll(): ApiResult<List<User>> =
+        apiCall(json) { api.getUsers().users }
+
+    /**
+     * Cambia il ruolo di [userId]. Richiede [callerEmail] (l'admin che esegue l'azione):
+     * il backend verifica i permessi in base a quella email.
+     */
+    suspend fun changeRole(userId: Long, roleId: Long, callerEmail: String): ApiResult<Unit> =
+        apiCall(json) {
+            api.updateUser(userId, UpdateUserRequest(roleId = roleId, callerEmail = callerEmail)); Unit
+        }
+
     /** Utente + sue liste spese (usato per le statistiche del profilo). */
     suspend fun getWithLists(email: String): ApiResult<UserWithExpensesListsResponse> =
         apiCall(json) { api.getUserExpensesLists(email) }

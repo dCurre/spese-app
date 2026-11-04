@@ -80,6 +80,27 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
+    /** Modifica nome e cognome dell'utente. */
+    fun updateNameSurname(name: String, surname: String) {
+        val user = session.currentUser.value ?: return
+        viewModelScope.launch {
+            val result = userRepository.update(
+                user.id,
+                com.dcapps.spese.core.model.UpdateUserRequest(
+                    name = name.trim(),
+                    surname = surname.trim(),
+                ),
+            )
+            when (result) {
+                is ApiResult.Success -> {
+                    session.setUser(user.copy(name = name.trim(), surname = surname.trim()))
+                    _uiState.update { it.copy(user = session.currentUser.value) }
+                }
+                is ApiResult.Error -> _uiState.update { it.copy(message = result.message) }
+            }
+        }
+    }
+
     fun setTheme(theme: String) {
         val user = session.currentUser.value ?: return
         // Aggiorna subito la sessione (il tema si applica live), poi persisti.

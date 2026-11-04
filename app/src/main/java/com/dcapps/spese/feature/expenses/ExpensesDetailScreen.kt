@@ -13,6 +13,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -51,6 +52,7 @@ fun ExpensesDetailScreen(
     var showParticipants by remember { mutableStateOf(false) }
     var showTransfer by remember { mutableStateOf(false) }
     var showRename by remember { mutableStateOf(false) }
+    var repeating by remember { mutableStateOf(false) }
     var expenseToDelete by remember { mutableStateOf<Expense?>(null) }
 
     val isShared = state.list?.type == com.dcapps.spese.core.model.ListType.SHARED
@@ -108,7 +110,8 @@ fun ExpensesDetailScreen(
                 else -> DetailContent(
                     state = state,
                     onQueryChange = viewModel::onQueryChange,
-                    onEdit = { editing = it; showDialog = true },
+                    onEdit = { editing = it; repeating = false; showDialog = true },
+                    onRepeat = { editing = it; repeating = true; showDialog = true },
                 )
             }
         }
@@ -116,19 +119,22 @@ fun ExpensesDetailScreen(
 
     if (showDialog) {
         val isPersonal = state.list?.type == com.dcapps.spese.core.model.ListType.PERSONAL
+        val nameSuggestions = state.expenses.map { it.name }.filter { it.isNotBlank() }
         ExpenseDialog(
             expense = editing,
             participants = state.participants,
             expenseTypes = state.expenseTypes,
             isPersonal = isPersonal,
             personalOwnerId = state.list?.userId,
+            nameSuggestions = nameSuggestions,
+            forceCreate = repeating,
             onDismiss = { showDialog = false },
-            onDelete = editing?.let { current ->
-                { showDialog = false; expenseToDelete = current }
-            },
+            onDelete = if (!repeating) {
+                editing?.let { current -> { showDialog = false; expenseToDelete = current } }
+            } else null,
             onConfirm = { name, amount, ownerId, date, typeId ->
                 val current = editing
-                if (current == null) {
+                if (current == null || repeating) {
                     viewModel.addExpense(name, amount, ownerId, date, typeId)
                 } else {
                     viewModel.updateExpense(current.id, name, amount, ownerId, date, typeId, ownerId)
@@ -263,6 +269,7 @@ private fun DetailContent(
     state: ExpensesDetailUiState,
     onQueryChange: (String) -> Unit,
     onEdit: (Expense) -> Unit,
+    onRepeat: (Expense) -> Unit,
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -312,7 +319,7 @@ private fun DetailContent(
         }
 
         items(state.visibleExpenses, key = { it.id }) { expense ->
-            ExpenseCard(expense, onEdit)
+            ExpenseCard(expense, onEdit, onRepeat)
         }
     }
 }
@@ -321,10 +328,11 @@ private fun DetailContent(
 private fun ExpenseCard(
     expense: Expense,
     onEdit: (Expense) -> Unit,
+    onRepeat: (Expense) -> Unit,
 ) {
     Card(onClick = { onEdit(expense) }, modifier = Modifier.fillMaxWidth()) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            modifier = Modifier.fillMaxWidth().padding(start = 16.dp, top = 8.dp, bottom = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
@@ -345,6 +353,9 @@ private fun ExpenseCard(
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
             )
+            IconButton(onClick = { onRepeat(expense) }) {
+                Icon(Icons.Default.Refresh, contentDescription = "Ripeti spesa")
+            }
         }
     }
 }
