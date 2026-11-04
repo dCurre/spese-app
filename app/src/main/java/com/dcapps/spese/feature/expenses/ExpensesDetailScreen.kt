@@ -131,6 +131,7 @@ private fun DetailContent(
                 BalanceSection(
                     totals = state.balanceTotals,
                     balance = state.balanceEntries,
+                    expenses = state.expenses,
                 )
             }
         }

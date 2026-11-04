@@ -14,10 +14,18 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.background
 import androidx.compose.material3.Card
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -29,6 +37,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.dcapps.spese.core.model.BalanceEntry
 import com.dcapps.spese.core.model.BalanceTotal
+import com.dcapps.spese.core.model.Expense
 import com.dcapps.spese.core.util.toEuro
 import com.dcapps.spese.ui.theme.categoricalColor
 import java.math.BigDecimal
@@ -42,12 +51,22 @@ import kotlin.math.abs
  * L'identità nel grafico è rafforzata da etichette dirette (nome + importo in legenda),
  * mai affidata al solo colore.
  */
+/** Raggruppamento del grafico: per persona (chi ha pagato) o per tipologia di spesa. */
+private enum class GroupBy { PERSON, TYPE }
+
+/** Voce del grafico: etichetta + importo. */
+private data class Slice(val label: String, val amount: Double)
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BalanceSection(
     totals: List<BalanceTotal>,
     balance: List<BalanceEntry>,
+    expenses: List<Expense>,
     modifier: Modifier = Modifier,
 ) {
+    var groupBy by remember { mutableStateOf(GroupBy.PERSON) }
+
     Card(modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp)) {
             Text("Saldo", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
@@ -61,14 +80,38 @@ fun BalanceSection(
                 return@Column
             }
 
+            // Toggle Persona / Tipo (come nel frontend).
+            Spacer(Modifier.height(8.dp))
+            SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+                SegmentedButton(
+                    selected = groupBy == GroupBy.PERSON,
+                    onClick = { groupBy = GroupBy.PERSON },
+                    shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
+                ) { Text("Persona") }
+                SegmentedButton(
+                    selected = groupBy == GroupBy.TYPE,
+                    onClick = { groupBy = GroupBy.TYPE },
+                    shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
+                ) { Text("Tipo") }
+            }
+
+            // Dati del grafico in base al raggruppamento scelto.
+            val slices: List<Slice> = when (groupBy) {
+                GroupBy.PERSON -> totals.map { Slice(it.name, it.amount) }
+                GroupBy.TYPE -> expenses
+                    .groupBy { it.expenseType ?: "Altro" }
+                    .map { (type, list) -> Slice(type, list.sumOf { e -> e.amount.toDouble() }) }
+                    .sortedBy { it.label.lowercase() }
+            }
+
             Spacer(Modifier.height(12.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 DoughnutChart(
-                    values = totals.map { it.amount },
+                    values = slices.map { it.amount },
                     modifier = Modifier.size(120.dp),
                 )
                 Spacer(Modifier.width(16.dp))
-                Legend(totals)
+                Legend(slices)
             }
 
             // "Chi deve a chi": solo le direzioni con debito reale (toPay > 0).
@@ -127,9 +170,9 @@ private fun DoughnutChart(values: List<Double>, modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun Legend(totals: List<BalanceTotal>) {
+private fun Legend(slices: List<Slice>) {
     Column {
-        totals.forEachIndexed { index, t ->
+        slices.forEachIndexed { index, s ->
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.padding(vertical = 2.dp),
@@ -142,7 +185,7 @@ private fun Legend(totals: List<BalanceTotal>) {
                 )
                 Spacer(Modifier.width(8.dp))
                 Text(
-                    "${t.name} · ${BigDecimal(t.amount).setScale(2, RoundingMode.HALF_UP).toEuro()}",
+                    "${s.label} · ${BigDecimal(s.amount).setScale(2, RoundingMode.HALF_UP).toEuro()}",
                     style = MaterialTheme.typography.bodySmall,
                 )
             }
