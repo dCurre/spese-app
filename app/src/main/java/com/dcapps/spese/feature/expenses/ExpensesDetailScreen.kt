@@ -12,6 +12,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -47,6 +48,15 @@ fun ExpensesDetailScreen(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     var editing by remember { mutableStateOf<Expense?>(null) }
     var showDialog by remember { mutableStateOf(false) }
+    var showParticipants by remember { mutableStateOf(false) }
+    var showTransfer by remember { mutableStateOf(false) }
+
+    val isShared = state.list?.type == com.dcapps.spese.core.model.ListType.SHARED
+
+    // Condivisione: apre il chooser di sistema quando è disponibile un link.
+    state.shareLink?.let { link ->
+        ShareLinkEffect(link = link, onShared = viewModel::clearShareLink)
+    }
 
     Scaffold(
         topBar = {
@@ -55,6 +65,21 @@ fun ExpensesDetailScreen(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Indietro")
+                    }
+                },
+                actions = {
+                    if (isShared) {
+                        ExpensesListMenu(
+                            onShare = viewModel::share,
+                            onParticipants = {
+                                viewModel.loadAvailableUsers()
+                                showParticipants = true
+                            },
+                            onTransfer = {
+                                viewModel.loadAvailableUsers()
+                                showTransfer = true
+                            },
+                        )
                     }
                 },
             )
@@ -82,10 +107,13 @@ fun ExpensesDetailScreen(
     }
 
     if (showDialog) {
+        val isPersonal = state.list?.type == com.dcapps.spese.core.model.ListType.PERSONAL
         ExpenseDialog(
             expense = editing,
             participants = state.participants,
             expenseTypes = state.expenseTypes,
+            isPersonal = isPersonal,
+            personalOwnerId = state.list?.userId,
             onDismiss = { showDialog = false },
             onDelete = editing?.let { current ->
                 { viewModel.deleteExpense(current); showDialog = false }
@@ -99,6 +127,69 @@ fun ExpensesDetailScreen(
                 }
                 showDialog = false
             },
+        )
+    }
+
+    if (showParticipants) {
+        ParticipantsDialog(
+            participants = state.participants,
+            availableUsers = state.availableUsers,
+            ownerId = state.list?.userId,
+            onAddUser = { viewModel.addParticipant(it) },
+            onAddGuest = { viewModel.addGuest(it) },
+            onRemove = { viewModel.removeParticipant(it) },
+            onDismiss = { showParticipants = false },
+        )
+    }
+
+    if (showTransfer) {
+        TransferOwnerDialog(
+            participants = state.participants,
+            ownerId = state.list?.userId,
+            onConfirm = { viewModel.transferOwner(it); showTransfer = false },
+            onDismiss = { showTransfer = false },
+        )
+    }
+}
+
+@Composable
+private fun ShareLinkEffect(link: String, onShared: () -> Unit) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    androidx.compose.runtime.LaunchedEffect(link) {
+        val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(android.content.Intent.EXTRA_TEXT, "Unisciti alla mia lista spese: $link")
+        }
+        context.startActivity(android.content.Intent.createChooser(intent, "Condividi lista"))
+        onShared()
+    }
+}
+
+@Composable
+private fun ExpensesListMenu(
+    onShare: () -> Unit,
+    onParticipants: () -> Unit,
+    onTransfer: () -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    IconButton(onClick = { expanded = true }) {
+        Icon(Icons.Default.MoreVert, contentDescription = "Altre azioni")
+    }
+    androidx.compose.material3.DropdownMenu(
+        expanded = expanded,
+        onDismissRequest = { expanded = false },
+    ) {
+        androidx.compose.material3.DropdownMenuItem(
+            text = { Text("Condividi") },
+            onClick = { expanded = false; onShare() },
+        )
+        androidx.compose.material3.DropdownMenuItem(
+            text = { Text("Partecipanti") },
+            onClick = { expanded = false; onParticipants() },
+        )
+        androidx.compose.material3.DropdownMenuItem(
+            text = { Text("Trasferisci proprietà") },
+            onClick = { expanded = false; onTransfer() },
         )
     }
 }

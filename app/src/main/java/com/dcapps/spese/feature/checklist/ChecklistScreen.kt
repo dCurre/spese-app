@@ -50,7 +50,7 @@ fun ChecklistScreen(
     var showCreate by remember { mutableStateOf(false) }
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text("Liste della spesa") }) },
+        topBar = { TopAppBar(title = { Text("Le mie checklist") }) },
         floatingActionButton = {
             FloatingActionButton(onClick = { showCreate = true }) {
                 Icon(Icons.Default.Add, contentDescription = "Nuova checklist")

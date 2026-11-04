@@ -85,6 +85,9 @@ interface SpeseApi {
     @POST("api/users/upsert-by-email")
     suspend fun upsertUserByEmail(@Body body: UpsertUserRequest): User
 
+    @POST("api/users")
+    suspend fun createUser(@Body body: com.dcapps.spese.core.model.CreateUserRequest): CreatedResponse
+
     @GET("api/users/by-email/{email}/expenses-lists")
     suspend fun getUserExpensesLists(@Path("email") email: String): UserWithExpensesListsResponse
 
@@ -279,6 +282,15 @@ interface SpeseApi {
     @GET("api/user-roles")
     suspend fun getUserRoles(): UserRolesResponse
 
+    @POST("api/user-roles")
+    suspend fun createUserRole(@Body body: NameRequest): CreatedResponse
+
+    @PUT("api/user-roles/{id}")
+    suspend fun updateUserRole(@Path("id") id: Long, @Body body: NameRequest): MessageResponse
+
+    @DELETE("api/user-roles/{id}")
+    suspend fun deleteUserRole(@Path("id") id: Long): MessageResponse
+
     @GET("api/expense-types")
     suspend fun getExpenseTypes(): ExpenseTypesResponse
 
@@ -293,6 +305,20 @@ interface SpeseApi {
 
     @GET("api/measurement-units")
     suspend fun getMeasurementUnits(): MeasurementUnitsResponse
+
+    @POST("api/measurement-units")
+    suspend fun createMeasurementUnit(
+        @Body body: com.dcapps.spese.core.model.MeasurementUnitRequest,
+    ): CreatedResponse
+
+    @PUT("api/measurement-units/{id}")
+    suspend fun updateMeasurementUnit(
+        @Path("id") id: Long,
+        @Body body: com.dcapps.spese.core.model.MeasurementUnitRequest,
+    ): MessageResponse
+
+    @DELETE("api/measurement-units/{id}")
+    suspend fun deleteMeasurementUnit(@Path("id") id: Long): MessageResponse
 
     // ---------- Price history ----------
     @GET("api/products")

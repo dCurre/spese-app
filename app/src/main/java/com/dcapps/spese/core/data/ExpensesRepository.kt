@@ -6,8 +6,11 @@ import com.dcapps.spese.core.model.CreateExpensesListRequest
 import com.dcapps.spese.core.model.Expense
 import com.dcapps.spese.core.model.ExpensesList
 import com.dcapps.spese.core.model.AddParticipantRequest
+import com.dcapps.spese.core.model.CreateUserRequest
+import com.dcapps.spese.core.model.TransferOwnerRequest
 import com.dcapps.spese.core.model.UpdateExpenseRequest
 import com.dcapps.spese.core.model.UpdateExpensesListRequest
+import com.dcapps.spese.core.model.User
 import com.dcapps.spese.core.model.UserWithExpensesListsResponse
 import com.dcapps.spese.core.network.ApiResult
 import com.dcapps.spese.core.network.SpeseApi
@@ -49,6 +52,29 @@ class ExpensesRepository @Inject constructor(
 
     suspend fun removeParticipant(listId: Long, userId: Long): ApiResult<Unit> =
         apiCall(json) { api.removeParticipant(listId, userId); Unit }
+
+    suspend fun removeGuest(listId: Long, userId: Long): ApiResult<Unit> =
+        apiCall(json) { api.removeGuestParticipant(listId, userId); Unit }
+
+    /** Crea un ospite (utente senza account) e lo aggiunge come partecipante alla lista. */
+    suspend fun addGuest(listId: Long, name: String): ApiResult<Unit> = apiCall(json) {
+        val created = api.createUser(CreateUserRequest(name = name.trim(), isGuest = true))
+        val guestId = created.id ?: error("ID ospite mancante")
+        api.addParticipant(listId, AddParticipantRequest(guestId))
+        Unit
+    }
+
+    suspend fun transferOwner(listId: Long, newOwnerId: Long, currentOwnerId: Long): ApiResult<Unit> =
+        apiCall(json) {
+            api.transferExpensesListOwner(
+                listId,
+                TransferOwnerRequest(newOwnerId = newOwnerId, currentOwnerId = currentOwnerId),
+            ); Unit
+        }
+
+    /** Tutti gli utenti registrati (per aggiungere un partecipante esistente). */
+    suspend fun getAllUsers(): ApiResult<List<User>> =
+        apiCall(json) { api.getUsers().users.filter { !it.isGuest } }
 
     suspend fun getExpenses(listId: Long): ApiResult<List<Expense>> =
         apiCall(json) { api.getExpensesByList(listId).expenses }

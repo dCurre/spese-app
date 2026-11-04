@@ -45,3 +45,11 @@ data class MeasurementUnitsResponse(
 /** Body creazione per catalog item con solo nome. */
 @Serializable
 data class NameRequest(val name: String)
+
+/** Body per creare/modificare un'unità di misura. */
+@Serializable
+data class MeasurementUnitRequest(
+    val name: String,
+    val symbol: String,
+    val category: String,
+)

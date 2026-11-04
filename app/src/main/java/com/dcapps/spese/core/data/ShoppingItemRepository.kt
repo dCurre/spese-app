@@ -5,6 +5,7 @@ import com.dcapps.spese.core.model.CheckRequest
 import com.dcapps.spese.core.model.CreateShoppingCategoryRequest
 import com.dcapps.spese.core.model.CreateShoppingItemRequest
 import com.dcapps.spese.core.model.ReorderRequest
+import com.dcapps.spese.core.model.UpdateShoppingCategoryRequest
 import com.dcapps.spese.core.model.UpdateShoppingItemRequest
 import com.dcapps.spese.core.network.ApiResult
 import com.dcapps.spese.core.network.SpeseApi
@@ -39,6 +40,9 @@ class ShoppingItemRepository @Inject constructor(
 
     suspend fun createCategory(body: CreateShoppingCategoryRequest): ApiResult<Long?> =
         apiCall(json) { api.createShoppingCategory(body).id }
+
+    suspend fun updateCategory(id: Long, body: UpdateShoppingCategoryRequest): ApiResult<Unit> =
+        apiCall(json) { api.updateShoppingCategory(id, body); Unit }
 
     suspend fun deleteCategory(id: Long): ApiResult<Unit> =
         apiCall(json) { api.deleteShoppingCategory(id); Unit }

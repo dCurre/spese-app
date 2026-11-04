@@ -26,6 +26,15 @@ data class User(
             .ifBlank { email }
 }
 
+/** Body di POST /api/users (usato per creare un ospite: {name, is_guest:true}). */
+@Serializable
+data class CreateUserRequest(
+    val name: String,
+    val surname: String? = null,
+    val email: String? = null,
+    @SerialName("is_guest") val isGuest: Boolean = false,
+)
+
 /** Body di POST /api/users/upsert-by-email */
 @Serializable
 data class UpsertUserRequest(

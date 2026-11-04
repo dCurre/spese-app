@@ -1,20 +1,28 @@
 package com.dcapps.spese.feature.expenses
 
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -25,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import com.dcapps.spese.core.model.Expense
 import com.dcapps.spese.core.model.ExpenseType
 import com.dcapps.spese.core.model.ExpensesListParticipant
+import com.dcapps.spese.core.util.toShortDate
 import java.math.BigDecimal
 import java.time.Instant
 
@@ -38,6 +47,9 @@ fun ExpenseDialog(
     expense: Expense?,
     participants: List<ExpensesListParticipant>,
     expenseTypes: List<ExpenseType>,
+    // In una lista personale non si chiede "chi ha pagato": è sempre il proprietario.
+    isPersonal: Boolean = false,
+    personalOwnerId: Long? = null,
     onDismiss: () -> Unit,
     onDelete: (() -> Unit)? = null,
     onConfirm: (name: String, amount: BigDecimal, ownerId: Long, date: Instant, typeId: Long?) -> Unit,
@@ -47,11 +59,19 @@ fun ExpenseDialog(
         mutableStateOf(expense?.amount?.takeIf { it.signum() != 0 }?.toPlainString() ?: "")
     }
     var selectedOwnerId by remember {
-        mutableStateOf(expense?.owner?.id ?: participants.firstOrNull()?.userId)
+        mutableStateOf(
+            expense?.owner?.id
+                ?: personalOwnerId.takeIf { isPersonal }
+                ?: participants.firstOrNull()?.userId,
+        )
     }
     var selectedTypeId by remember {
         mutableStateOf(expense?.expenseTypeId ?: expenseTypes.firstOrNull()?.id)
     }
+    var selectedDate by remember {
+        mutableStateOf(expense?.expenseDate ?: Instant.now())
+    }
+    var showDatePicker by remember { mutableStateOf(false) }
 
     val amount = amountText.replace(",", ".").toBigDecimalOrNull()
     val valid = name.isNotBlank() &&
@@ -79,12 +99,16 @@ fun ExpenseDialog(
                     modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                 )
 
-                PickerField(
-                    label = "Chi ha pagato",
-                    options = participants.map { it.userId to participantLabel(it) },
-                    selectedId = selectedOwnerId,
-                    onSelect = { selectedOwnerId = it },
-                )
+                // "Chi ha pagato" solo per le liste condivise: in quelle personali è sempre
+                // il proprietario, quindi il campo sarebbe superfluo.
+                if (!isPersonal) {
+                    PickerField(
+                        label = "Chi ha pagato",
+                        options = participants.map { it.userId to participantLabel(it) },
+                        selectedId = selectedOwnerId,
+                        onSelect = { selectedOwnerId = it },
+                    )
+                }
 
                 if (expenseTypes.isNotEmpty()) {
                     PickerField(
@@ -94,19 +118,34 @@ fun ExpenseDialog(
                         onSelect = { selectedTypeId = it },
                     )
                 }
+
+                // Campo data: in sola lettura, apre il date picker al tocco.
+                // Il click arriva da un Box trasparente sovrapposto (un TextField readOnly
+                // non emette eventi di click sul corpo).
+                Box(Modifier.fillMaxWidth().padding(top = 8.dp)) {
+                    OutlinedTextField(
+                        value = selectedDate.toShortDate(),
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Data") },
+                        trailingIcon = {
+                            Icon(Icons.Default.DateRange, contentDescription = null)
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    Box(
+                        Modifier
+                            .matchParentSize()
+                            .clickable { showDatePicker = true },
+                    )
+                }
             }
         },
         confirmButton = {
             TextButton(
                 enabled = valid,
                 onClick = {
-                    onConfirm(
-                        name,
-                        amount!!,
-                        selectedOwnerId!!,
-                        expense?.expenseDate ?: Instant.now(),
-                        selectedTypeId,
-                    )
+                    onConfirm(name, amount!!, selectedOwnerId!!, selectedDate, selectedTypeId)
                 },
             ) { Text("Salva") }
         },
@@ -118,6 +157,26 @@ fun ExpenseDialog(
             }
         },
     )
+
+    if (showDatePicker) {
+        val pickerState = rememberDatePickerState(
+            initialSelectedDateMillis = selectedDate.toEpochMilli(),
+        )
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    pickerState.selectedDateMillis?.let { selectedDate = Instant.ofEpochMilli(it) }
+                    showDatePicker = false
+                }) { Text("OK") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) { Text("Annulla") }
+            },
+        ) {
+            DatePicker(state = pickerState)
+        }
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -158,5 +217,5 @@ private fun PickerField(
     }
 }
 
-private fun participantLabel(p: ExpensesListParticipant): String =
+internal fun participantLabel(p: ExpensesListParticipant): String =
     listOfNotNull(p.name, p.surname).joinToString(" ").ifBlank { p.email ?: "Utente ${p.userId}" }

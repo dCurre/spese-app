@@ -43,6 +43,8 @@ data class ExpensesDetailUiState(
     val query: String = "",
     val sort: ExpenseSort = ExpenseSort.DATE,
     val sortAsc: Boolean = false,
+    val availableUsers: List<com.dcapps.spese.core.model.User> = emptyList(),
+    val shareLink: String? = null,
     val message: String? = null,
 ) {
     val total: BigDecimal
@@ -212,6 +214,66 @@ class ExpensesDetailViewModel @Inject constructor(
     }
 
     fun clearMessage() = _uiState.update { it.copy(message = null) }
+
+    // --- Gestione lista (condivisione, partecipanti, ospiti, proprietà) ---
+
+    fun share() {
+        _uiState.update { it.copy(shareLink = "https://spese-dc.web.app/join?list=$listId") }
+    }
+
+    fun clearShareLink() = _uiState.update { it.copy(shareLink = null) }
+
+    fun loadAvailableUsers() {
+        viewModelScope.launch {
+            val already = _uiState.value.participants.map { it.userId }.toSet()
+            (expensesRepository.getAllUsers() as? ApiResult.Success)?.let { res ->
+                _uiState.update { s -> s.copy(availableUsers = res.data.filter { it.id !in already }) }
+            }
+        }
+    }
+
+    fun addParticipant(userId: Long) {
+        viewModelScope.launch {
+            when (val r = expensesRepository.addParticipant(listId, userId)) {
+                is ApiResult.Success -> load()
+                is ApiResult.Error -> _uiState.update { it.copy(message = r.message) }
+            }
+        }
+    }
+
+    fun addGuest(name: String) {
+        if (name.isBlank()) return
+        viewModelScope.launch {
+            when (val r = expensesRepository.addGuest(listId, name)) {
+                is ApiResult.Success -> load()
+                is ApiResult.Error -> _uiState.update { it.copy(message = r.message) }
+            }
+        }
+    }
+
+    fun removeParticipant(p: ExpensesListParticipant) {
+        viewModelScope.launch {
+            val r = if (p.isGuest) {
+                expensesRepository.removeGuest(listId, p.userId)
+            } else {
+                expensesRepository.removeParticipant(listId, p.userId)
+            }
+            when (r) {
+                is ApiResult.Success -> load()
+                is ApiResult.Error -> _uiState.update { it.copy(message = r.message) }
+            }
+        }
+    }
+
+    fun transferOwner(newOwnerId: Long) {
+        val currentOwner = _uiState.value.list?.userId ?: return
+        viewModelScope.launch {
+            when (val r = expensesRepository.transferOwner(listId, newOwnerId, currentOwner)) {
+                is ApiResult.Success -> load()
+                is ApiResult.Error -> _uiState.update { it.copy(message = r.message) }
+            }
+        }
+    }
 
     private fun Instant.toApiDate(): String =
         DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.systemDefault()).format(this)

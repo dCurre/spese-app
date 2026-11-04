@@ -2,6 +2,8 @@ package com.dcapps.spese.core.data
 
 import com.dcapps.spese.core.model.ExpenseType
 import com.dcapps.spese.core.model.MeasurementUnit
+import com.dcapps.spese.core.model.MeasurementUnitRequest
+import com.dcapps.spese.core.model.NameRequest
 import com.dcapps.spese.core.model.UserRole
 import com.dcapps.spese.core.network.ApiResult
 import com.dcapps.spese.core.network.SpeseApi
@@ -40,4 +42,35 @@ class CatalogRepository @Inject constructor(
         return apiCall(json) { api.getUserRoles().userRoles }
             .also { if (it is ApiResult.Success) rolesCache = it.data }
     }
+
+    // --- CRUD (admin). Invalidano la cache corrispondente. ---
+
+    suspend fun createExpenseType(name: String): ApiResult<Unit> =
+        apiCall(json) { api.createExpenseType(NameRequest(name)); Unit }.also { expenseTypesCache = null }
+
+    suspend fun updateExpenseType(id: Long, name: String): ApiResult<Unit> =
+        apiCall(json) { api.updateExpenseType(id, NameRequest(name)); Unit }.also { expenseTypesCache = null }
+
+    suspend fun deleteExpenseType(id: Long): ApiResult<Unit> =
+        apiCall(json) { api.deleteExpenseType(id); Unit }.also { expenseTypesCache = null }
+
+    suspend fun createUnit(name: String, symbol: String, category: String): ApiResult<Unit> =
+        apiCall(json) { api.createMeasurementUnit(MeasurementUnitRequest(name, symbol, category)); Unit }
+            .also { unitsCache = null }
+
+    suspend fun updateUnit(id: Long, name: String, symbol: String, category: String): ApiResult<Unit> =
+        apiCall(json) { api.updateMeasurementUnit(id, MeasurementUnitRequest(name, symbol, category)); Unit }
+            .also { unitsCache = null }
+
+    suspend fun deleteUnit(id: Long): ApiResult<Unit> =
+        apiCall(json) { api.deleteMeasurementUnit(id); Unit }.also { unitsCache = null }
+
+    suspend fun createRole(name: String): ApiResult<Unit> =
+        apiCall(json) { api.createUserRole(NameRequest(name)); Unit }.also { rolesCache = null }
+
+    suspend fun updateRole(id: Long, name: String): ApiResult<Unit> =
+        apiCall(json) { api.updateUserRole(id, NameRequest(name)); Unit }.also { rolesCache = null }
+
+    suspend fun deleteRole(id: Long): ApiResult<Unit> =
+        apiCall(json) { api.deleteUserRole(id); Unit }.also { rolesCache = null }
 }

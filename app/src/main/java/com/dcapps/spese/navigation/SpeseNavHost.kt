@@ -3,6 +3,7 @@ package com.dcapps.spese.navigation
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ListAlt
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Icon
@@ -26,6 +27,9 @@ import com.dcapps.spese.feature.checklist.ChecklistDetailScreen
 import com.dcapps.spese.feature.checklist.ChecklistScreen
 import com.dcapps.spese.feature.expenses.ExpensesDetailScreen
 import com.dcapps.spese.feature.expenses.ExpensesListScreen
+import com.dcapps.spese.feature.admin.AdminScreen
+import com.dcapps.spese.feature.prices.PriceDetailScreen
+import com.dcapps.spese.feature.prices.PriceListScreen
 import com.dcapps.spese.feature.profile.ProfileScreen
 
 object Routes {
@@ -33,16 +37,21 @@ object Routes {
     const val EXPENSES_DETAIL = "expenses/{listId}"
     const val CHECKLIST = "checklist"
     const val CHECKLIST_DETAIL = "checklist/{listId}"
+    const val PRICES = "prices"
+    const val PRICE_DETAIL = "prices/{productId}"
     const val PROFILE = "profile"
+    const val ADMIN = "admin"
     fun expensesDetail(listId: Long) = "expenses/$listId"
     fun checklistDetail(listId: Long) = "checklist/$listId"
+    fun priceDetail(productId: Long) = "prices/$productId"
 }
 
 private data class TopLevel(val route: String, val label: String, val icon: ImageVector)
 
 private val topLevelDestinations = listOf(
     TopLevel(Routes.EXPENSES_LIST, "Spese", Icons.AutoMirrored.Filled.ListAlt),
-    TopLevel(Routes.CHECKLIST, "Spesa", Icons.Default.ShoppingCart),
+    TopLevel(Routes.CHECKLIST, "Checklist", Icons.Default.ShoppingCart),
+    TopLevel(Routes.PRICES, "Prezzi", Icons.AutoMirrored.Filled.TrendingUp),
     TopLevel(Routes.PROFILE, "Profilo", Icons.Default.Person),
 )
 
@@ -109,8 +118,22 @@ fun SpeseNavHost() {
             ) {
                 ChecklistDetailScreen(onBack = { navController.popBackStack() })
             }
+            composable(Routes.PRICES) {
+                PriceListScreen(
+                    onOpenProduct = { product -> navController.navigate(Routes.priceDetail(product.id)) },
+                )
+            }
+            composable(
+                route = Routes.PRICE_DETAIL,
+                arguments = listOf(navArgument("productId") { type = NavType.LongType }),
+            ) {
+                PriceDetailScreen(onBack = { navController.popBackStack() })
+            }
             composable(Routes.PROFILE) {
-                ProfileScreen()
+                ProfileScreen(onOpenAdmin = { navController.navigate(Routes.ADMIN) })
+            }
+            composable(Routes.ADMIN) {
+                AdminScreen(onBack = { navController.popBackStack() })
             }
         }
     }

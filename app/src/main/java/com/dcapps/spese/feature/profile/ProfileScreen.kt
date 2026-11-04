@@ -45,7 +45,10 @@ import coil.compose.AsyncImage
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProfileScreen(viewModel: ProfileViewModel = hiltViewModel()) {
+fun ProfileScreen(
+    onOpenAdmin: () -> Unit = {},
+    viewModel: ProfileViewModel = hiltViewModel(),
+) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val user by viewModel.currentUser.collectAsStateWithLifecycle()
     val context = LocalContext.current
@@ -158,9 +161,19 @@ fun ProfileScreen(viewModel: ProfileViewModel = hiltViewModel()) {
                 }
             }
 
+            val role = user?.role
+            if (role == "admin" || role == "superadmin") {
+                OutlinedButton(
+                    onClick = onOpenAdmin,
+                    modifier = Modifier.fillMaxWidth().padding(top = 20.dp),
+                ) {
+                    Text("Amministrazione")
+                }
+            }
+
             OutlinedButton(
                 onClick = { viewModel.signOut(context) },
-                modifier = Modifier.fillMaxWidth().padding(top = 20.dp),
+                modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
             ) {
                 Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = null, modifier = Modifier.size(18.dp))
                 Text("Esci", modifier = Modifier.padding(start = 8.dp))
