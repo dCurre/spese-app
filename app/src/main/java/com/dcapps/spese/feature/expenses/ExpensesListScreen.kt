@@ -22,6 +22,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -39,6 +41,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dcapps.spese.BuildConfig
 import com.dcapps.spese.core.model.ExpensesList
+import com.dcapps.spese.ui.components.ConfirmDialog
+import com.dcapps.spese.ui.components.MessageSnackbarEffect
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -48,9 +52,14 @@ fun ExpensesListScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     var showCreateDialog by remember { mutableStateOf(false) }
+    var listToDelete by remember { mutableStateOf<ExpensesList?>(null) }
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    MessageSnackbarEffect(state.message, snackbarHostState, viewModel::clearMessage)
 
     Scaffold(
         topBar = { TopAppBar(title = { Text("Le mie liste") }) },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         floatingActionButton = {
             FloatingActionButton(onClick = { showCreateDialog = true }) {
                 Icon(Icons.Default.Add, contentDescription = "Nuova lista")
@@ -66,10 +75,19 @@ fun ExpensesListScreen(
                     onQueryChange = viewModel::onQueryChange,
                     onTogglePaid = viewModel::togglePaidListsShown,
                     onOpenList = onOpenList,
-                    onDeleteList = viewModel::deleteList,
+                    onDeleteList = { listToDelete = it },
                 )
             }
         }
+    }
+
+    listToDelete?.let { list ->
+        ConfirmDialog(
+            title = "Elimina lista",
+            message = "Vuoi eliminare \"${list.name}\" e tutte le sue spese?",
+            onConfirm = { viewModel.deleteList(list) },
+            onDismiss = { listToDelete = null },
+        )
     }
 
     if (showCreateDialog) {

@@ -43,8 +43,13 @@ fun PriceDetailScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     var showAddPurchase by remember { mutableStateOf(false) }
+    val snackbarHostState = remember { androidx.compose.material3.SnackbarHostState() }
+    com.dcapps.spese.ui.components.MessageSnackbarEffect(
+        state.message, snackbarHostState, viewModel::clearMessage,
+    )
 
     Scaffold(
+        snackbarHost = { androidx.compose.material3.SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text(state.product?.name ?: "Prodotto") },

@@ -41,9 +41,14 @@ fun PriceListScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     var showCreate by remember { mutableStateOf(false) }
+    val snackbarHostState = remember { androidx.compose.material3.SnackbarHostState() }
+    com.dcapps.spese.ui.components.MessageSnackbarEffect(
+        state.message, snackbarHostState, viewModel::clearMessage,
+    )
 
     Scaffold(
         topBar = { TopAppBar(title = { Text("Storico prezzi") }) },
+        snackbarHost = { androidx.compose.material3.SnackbarHost(snackbarHostState) },
         floatingActionButton = {
             FloatingActionButton(onClick = { showCreate = true }) {
                 Icon(Icons.Default.Add, contentDescription = "Nuovo prodotto")

@@ -50,8 +50,14 @@ fun ExpensesDetailScreen(
     var showDialog by remember { mutableStateOf(false) }
     var showParticipants by remember { mutableStateOf(false) }
     var showTransfer by remember { mutableStateOf(false) }
+    var expenseToDelete by remember { mutableStateOf<Expense?>(null) }
 
     val isShared = state.list?.type == com.dcapps.spese.core.model.ListType.SHARED
+    val snackbarHostState = remember { androidx.compose.material3.SnackbarHostState() }
+
+    com.dcapps.spese.ui.components.MessageSnackbarEffect(
+        state.message, snackbarHostState, viewModel::clearMessage,
+    )
 
     // Condivisione: apre il chooser di sistema quando è disponibile un link.
     state.shareLink?.let { link ->
@@ -59,6 +65,7 @@ fun ExpensesDetailScreen(
     }
 
     Scaffold(
+        snackbarHost = { androidx.compose.material3.SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text(state.list?.name ?: "Lista") },
@@ -116,7 +123,7 @@ fun ExpensesDetailScreen(
             personalOwnerId = state.list?.userId,
             onDismiss = { showDialog = false },
             onDelete = editing?.let { current ->
-                { viewModel.deleteExpense(current); showDialog = false }
+                { showDialog = false; expenseToDelete = current }
             },
             onConfirm = { name, amount, ownerId, date, typeId ->
                 val current = editing
@@ -127,6 +134,15 @@ fun ExpensesDetailScreen(
                 }
                 showDialog = false
             },
+        )
+    }
+
+    expenseToDelete?.let { exp ->
+        com.dcapps.spese.ui.components.ConfirmDialog(
+            title = "Elimina spesa",
+            message = "Vuoi eliminare \"${exp.name}\"?",
+            onConfirm = { viewModel.deleteExpense(exp) },
+            onDismiss = { expenseToDelete = null },
         )
     }
 

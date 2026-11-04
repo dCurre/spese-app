@@ -39,6 +39,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.dcapps.spese.ui.components.ConfirmDialog
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -48,8 +49,13 @@ fun AdminScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     var tab by remember { mutableIntStateOf(0) }
+    val snackbarHostState = remember { androidx.compose.material3.SnackbarHostState() }
+    com.dcapps.spese.ui.components.MessageSnackbarEffect(
+        state.message, snackbarHostState, viewModel::clearMessage,
+    )
 
     Scaffold(
+        snackbarHost = { androidx.compose.material3.SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text("Amministrazione") },
@@ -108,6 +114,7 @@ private fun NameSection(
 ) {
     var editing by remember { mutableStateOf<Pair<Long, String>?>(null) }
     var showAdd by remember { mutableStateOf(false) }
+    var toDelete by remember { mutableStateOf<Pair<Long, String>?>(null) }
 
     LazyColumn(
         Modifier.fillMaxSize(),
@@ -133,7 +140,7 @@ private fun NameSection(
                         IconButton(onClick = { editing = id to name }) {
                             Icon(Icons.Default.Edit, contentDescription = "Modifica")
                         }
-                        IconButton(onClick = { onDelete(id) }) {
+                        IconButton(onClick = { toDelete = id to name }) {
                             Icon(Icons.Default.Delete, contentDescription = "Elimina")
                         }
                     } else {
@@ -153,6 +160,14 @@ private fun NameSection(
         NameDialog(title = "Modifica", initial = name, onDismiss = { editing = null }, onConfirm = {
             onUpdate(id, it); editing = null
         })
+    }
+    toDelete?.let { (id, name) ->
+        ConfirmDialog(
+            title = "Elimina",
+            message = "Vuoi eliminare \"$name\"?",
+            onConfirm = { onDelete(id) },
+            onDismiss = { toDelete = null },
+        )
     }
 }
 

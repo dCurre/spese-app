@@ -59,6 +59,11 @@ fun ChecklistDetailScreen(
     var editingCategory by remember { mutableStateOf<ShoppingCategory?>(null) }
     var showNewCategory by remember { mutableStateOf(false) }
 
+    val snackbarHostState = remember { androidx.compose.material3.SnackbarHostState() }
+    com.dcapps.spese.ui.components.MessageSnackbarEffect(
+        state.message, snackbarHostState, viewModel::clearMessage,
+    )
+
     // Condivisione: quando arriva un token, apre il selettore di condivisione di sistema.
     val token = state.inviteToken
     if (token != null) {
@@ -68,6 +73,7 @@ fun ChecklistDetailScreen(
     val editState = state.editState
 
     Scaffold(
+        snackbarHost = { androidx.compose.material3.SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text(if (editState != null) "Modifica lista" else state.list?.name ?: "Lista") },
