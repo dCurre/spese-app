@@ -63,7 +63,7 @@ fun ChecklistDetailScreen(
     var showImport by remember { mutableStateOf(false) }
 
     val snackbarHostState = remember { androidx.compose.material3.SnackbarHostState() }
-    com.dcapps.spese.ui.components.MessageSnackbarEffect(
+    com.dcapps.spese.ui.components.ErrorSnackbarEffect(
         state.message, snackbarHostState, viewModel::clearMessage,
     )
 

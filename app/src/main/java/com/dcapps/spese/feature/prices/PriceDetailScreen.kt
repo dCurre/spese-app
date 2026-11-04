@@ -47,7 +47,7 @@ fun PriceDetailScreen(
     var editingPurchase by remember { mutableStateOf<com.dcapps.spese.core.model.Purchase?>(null) }
     var purchaseToDelete by remember { mutableStateOf<com.dcapps.spese.core.model.Purchase?>(null) }
     val snackbarHostState = remember { androidx.compose.material3.SnackbarHostState() }
-    com.dcapps.spese.ui.components.MessageSnackbarEffect(
+    com.dcapps.spese.ui.components.ErrorSnackbarEffect(
         state.message, snackbarHostState, viewModel::clearMessage,
     )
 

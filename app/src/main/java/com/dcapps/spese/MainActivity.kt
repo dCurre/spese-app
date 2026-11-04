@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dcapps.spese.feature.auth.AuthViewModel
+import com.dcapps.spese.feature.bugreport.BugReportGateViewModel
 import com.dcapps.spese.feature.auth.SignInScreen
 import com.dcapps.spese.feature.update.UpdateDialog
 import com.dcapps.spese.feature.update.UpdateViewModel
@@ -64,27 +65,37 @@ private fun SpeseApp(viewModel: AuthViewModel = hiltViewModel()) {
         // Controllo aggiornamenti: mostra il popup se su GitHub c'è una versione maggiore.
         UpdateGate()
 
-        // Proposta di segnalazione dopo un crash.
-        CrashReportGate()
+        // Segnalazione bug: dopo un crash (all'avvio) o su richiesta (azione "Segnala"
+        // delle snackbar di errore).
+        BugReportGate()
     }
 }
 
 @Composable
-private fun CrashReportGate(
+private fun BugReportGate(
     bugReportViewModel: com.dcapps.spese.feature.bugreport.BugReportViewModel = hiltViewModel(),
+    controllerVm: BugReportGateViewModel = hiltViewModel(),
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
-    var show by androidx.compose.runtime.remember {
+    val requested by controllerVm.visible.collectAsStateWithLifecycle()
+
+    // All'avvio: se c'è un crash salvato, apri subito la segnalazione.
+    var crashPending by androidx.compose.runtime.remember {
         androidx.compose.runtime.mutableStateOf(
             com.dcapps.spese.core.bugreport.CrashStore.read(context) != null,
         )
     }
+
+    val show = crashPending || requested
     androidx.compose.runtime.LaunchedEffect(show) {
         if (show) bugReportViewModel.prefillFromLastError()
     }
     if (show) {
         com.dcapps.spese.feature.bugreport.BugReportDialog(
-            onDismiss = { show = false },
+            onDismiss = {
+                crashPending = false
+                controllerVm.dismiss()
+            },
             viewModel = bugReportViewModel,
         )
     }

@@ -42,7 +42,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dcapps.spese.BuildConfig
 import com.dcapps.spese.core.model.ExpensesList
 import com.dcapps.spese.ui.components.ConfirmDialog
-import com.dcapps.spese.ui.components.MessageSnackbarEffect
+import com.dcapps.spese.ui.components.ErrorSnackbarEffect
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -55,7 +55,7 @@ fun ExpensesListScreen(
     var listToDelete by remember { mutableStateOf<ExpensesList?>(null) }
     val snackbarHostState = remember { SnackbarHostState() }
 
-    MessageSnackbarEffect(state.message, snackbarHostState, viewModel::clearMessage)
+    ErrorSnackbarEffect(state.message, snackbarHostState, viewModel::clearMessage)
 
     Scaffold(
         topBar = { TopAppBar(title = { Text("Le mie liste") }) },
