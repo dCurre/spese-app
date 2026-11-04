@@ -62,9 +62,12 @@ fun ChecklistScreen(
             }
         },
     ) { innerPadding ->
-        Box(Modifier.fillMaxSize().padding(innerPadding)) {
+        androidx.compose.material3.pulltorefresh.PullToRefreshBox(
+            isRefreshing = state.isLoading,
+            onRefresh = viewModel::load,
+            modifier = Modifier.fillMaxSize().padding(innerPadding),
+        ) {
             when {
-                state.isLoading -> CircularProgressIndicator(Modifier.align(Alignment.Center))
                 state.error != null -> Column(
                     Modifier.align(Alignment.Center),
                     horizontalAlignment = Alignment.CenterHorizontally,

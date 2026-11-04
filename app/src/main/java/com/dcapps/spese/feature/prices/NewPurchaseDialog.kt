@@ -23,6 +23,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.dcapps.spese.core.model.MeasurementUnit
+import com.dcapps.spese.core.model.Purchase
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
@@ -31,13 +32,16 @@ import java.time.format.DateTimeFormatter
 fun NewPurchaseDialog(
     defaultUnitId: Long?,
     units: List<MeasurementUnit>,
+    purchase: Purchase? = null,
     onDismiss: () -> Unit,
-    onCreate: (price: Double, quantity: Double, unitId: Long, purchasedAt: String, store: String?) -> Unit,
+    onConfirm: (price: Double, quantity: Double, unitId: Long, purchasedAt: String, store: String?) -> Unit,
 ) {
-    var priceText by remember { mutableStateOf("") }
-    var qtyText by remember { mutableStateOf("1") }
-    var store by remember { mutableStateOf("") }
-    var unitId by remember { mutableStateOf(defaultUnitId ?: units.firstOrNull()?.id) }
+    var priceText by remember { mutableStateOf(purchase?.price?.toString() ?: "") }
+    var qtyText by remember { mutableStateOf(purchase?.quantity?.toString() ?: "1") }
+    var store by remember { mutableStateOf(purchase?.store ?: "") }
+    var unitId by remember {
+        mutableStateOf(purchase?.unitId ?: defaultUnitId ?: units.firstOrNull()?.id)
+    }
     var expanded by remember { mutableStateOf(false) }
 
     val price = priceText.replace(",", ".").toDoubleOrNull()
@@ -46,7 +50,7 @@ fun NewPurchaseDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Nuovo acquisto") },
+        title = { Text(if (purchase == null) "Nuovo acquisto" else "Modifica acquisto") },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState())) {
                 OutlinedTextField(
@@ -103,8 +107,9 @@ fun NewPurchaseDialog(
             TextButton(
                 enabled = valid,
                 onClick = {
-                    val today = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
-                    onCreate(price!!, qty!!, unitId!!, today, store)
+                    val date = purchase?.purchasedAt
+                        ?: LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+                    onConfirm(price!!, qty!!, unitId!!, date, store)
                 },
             ) { Text("Salva") }
         },

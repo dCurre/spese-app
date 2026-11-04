@@ -12,6 +12,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -43,6 +44,8 @@ fun PriceDetailScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     var showAddPurchase by remember { mutableStateOf(false) }
+    var editingPurchase by remember { mutableStateOf<com.dcapps.spese.core.model.Purchase?>(null) }
+    var purchaseToDelete by remember { mutableStateOf<com.dcapps.spese.core.model.Purchase?>(null) }
     val snackbarHostState = remember { androidx.compose.material3.SnackbarHostState() }
     com.dcapps.spese.ui.components.MessageSnackbarEffect(
         state.message, snackbarHostState, viewModel::clearMessage,
@@ -119,12 +122,16 @@ fun PriceDetailScreen(
                     }
 
                     items(state.purchases, key = { it.id }) { p ->
-                        Card(Modifier.fillMaxWidth()) {
+                        Card(
+                            onClick = { editingPurchase = p },
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
                             Row(
-                                Modifier.fillMaxWidth().padding(16.dp),
+                                Modifier.fillMaxWidth().padding(start = 16.dp),
+                                verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.SpaceBetween,
                             ) {
-                                Column(Modifier.weight(1f)) {
+                                Column(Modifier.weight(1f).padding(vertical = 16.dp)) {
                                     Text(
                                         "%.2f € · %.3g %s".format(p.price, p.quantity, p.unitSymbol ?: ""),
                                         style = MaterialTheme.typography.titleMedium,
@@ -136,6 +143,9 @@ fun PriceDetailScreen(
                                     "%.2f €/u".format(p.unitPrice),
                                     style = MaterialTheme.typography.bodyMedium,
                                 )
+                                IconButton(onClick = { purchaseToDelete = p }) {
+                                    Icon(Icons.Default.Delete, contentDescription = "Elimina acquisto")
+                                }
                             }
                         }
                     }
@@ -149,10 +159,32 @@ fun PriceDetailScreen(
             defaultUnitId = state.product?.defaultUnitId,
             units = state.units,
             onDismiss = { showAddPurchase = false },
-            onCreate = { price, qty, unitId, date, store ->
+            onConfirm = { price, qty, unitId, date, store ->
                 viewModel.addPurchase(price, qty, unitId, date, store)
                 showAddPurchase = false
             },
+        )
+    }
+
+    editingPurchase?.let { p ->
+        NewPurchaseDialog(
+            defaultUnitId = state.product?.defaultUnitId,
+            units = state.units,
+            purchase = p,
+            onDismiss = { editingPurchase = null },
+            onConfirm = { price, qty, unitId, date, store ->
+                viewModel.updatePurchase(p.id, price, qty, unitId, date, store)
+                editingPurchase = null
+            },
+        )
+    }
+
+    purchaseToDelete?.let { p ->
+        com.dcapps.spese.ui.components.ConfirmDialog(
+            title = "Elimina acquisto",
+            message = "Vuoi eliminare questo acquisto?",
+            onConfirm = { viewModel.deletePurchase(p) },
+            onDismiss = { purchaseToDelete = null },
         )
     }
 }

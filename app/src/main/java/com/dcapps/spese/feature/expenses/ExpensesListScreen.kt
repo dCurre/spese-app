@@ -66,9 +66,16 @@ fun ExpensesListScreen(
             }
         },
     ) { innerPadding ->
-        Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
+        androidx.compose.material3.pulltorefresh.PullToRefreshBox(
+            isRefreshing = state.isLoading,
+            onRefresh = viewModel::load,
+            modifier = Modifier.fillMaxSize().padding(innerPadding),
+        ) {
             when {
-                state.isLoading -> CircularProgressIndicator(Modifier.align(Alignment.Center))
+                state.isLoading && state.activeLists.isEmpty() && state.paidLists.isEmpty() ->
+                    Box(Modifier.fillMaxSize()) {
+                        CircularProgressIndicator(Modifier.align(Alignment.Center))
+                    }
                 state.error != null -> ErrorState(state.error!!, onRetry = viewModel::load)
                 else -> ListContent(
                     state = state,

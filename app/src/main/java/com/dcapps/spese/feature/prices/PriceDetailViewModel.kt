@@ -7,6 +7,7 @@ import com.dcapps.spese.core.auth.SessionManager
 import com.dcapps.spese.core.data.CatalogRepository
 import com.dcapps.spese.core.data.PriceRepository
 import com.dcapps.spese.core.model.CreatePurchaseRequest
+import com.dcapps.spese.core.model.UpdatePurchaseRequest
 import com.dcapps.spese.core.model.MeasurementUnit
 import com.dcapps.spese.core.model.PriceHistoryPoint
 import com.dcapps.spese.core.model.Product
@@ -103,6 +104,32 @@ class PriceDetailViewModel @Inject constructor(
                     unitId = unitId,
                     store = store?.takeIf { it.isNotBlank() },
                 )
+            )
+            when (result) {
+                is ApiResult.Success -> load()
+                is ApiResult.Error -> _uiState.update { it.copy(message = result.message) }
+            }
+        }
+    }
+
+    fun updatePurchase(
+        id: Long,
+        price: Double,
+        quantity: Double,
+        unitId: Long,
+        purchasedAt: String,
+        store: String?,
+    ) {
+        viewModelScope.launch {
+            val result = priceRepository.updatePurchase(
+                id,
+                UpdatePurchaseRequest(
+                    purchasedAt = purchasedAt,
+                    price = price,
+                    quantity = quantity,
+                    unitId = unitId,
+                    store = store?.takeIf { it.isNotBlank() },
+                ),
             )
             when (result) {
                 is ApiResult.Success -> load()

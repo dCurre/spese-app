@@ -57,6 +57,8 @@ fun ChecklistDetailScreen(
     var newItem by remember { mutableStateOf("") }
     var editingItem by remember { mutableStateOf<ShoppingItem?>(null) }
     var editingCategory by remember { mutableStateOf<ShoppingCategory?>(null) }
+    var itemToDelete by remember { mutableStateOf<ShoppingItem?>(null) }
+    var categoryToDelete by remember { mutableStateOf<ShoppingCategory?>(null) }
     var showNewCategory by remember { mutableStateOf(false) }
 
     val snackbarHostState = remember { androidx.compose.material3.SnackbarHostState() }
@@ -161,7 +163,7 @@ fun ChecklistDetailScreen(
             item = item,
             categories = state.categories,
             onDismiss = { editingItem = null },
-            onDelete = { viewModel.deleteItem(item); editingItem = null },
+            onDelete = { itemToDelete = item; editingItem = null },
             onConfirm = { name, qty, catId ->
                 viewModel.updateItem(item, name, qty, catId)
                 editingItem = null
@@ -169,12 +171,30 @@ fun ChecklistDetailScreen(
         )
     }
 
+    itemToDelete?.let { item ->
+        com.dcapps.spese.ui.components.ConfirmDialog(
+            title = "Elimina articolo",
+            message = "Vuoi eliminare \"${item.name}\"?",
+            onConfirm = { viewModel.deleteItem(item) },
+            onDismiss = { itemToDelete = null },
+        )
+    }
+
     editingCategory?.let { cat ->
         CategoryEditDialog(
             category = cat,
             onDismiss = { editingCategory = null },
-            onDelete = { viewModel.deleteCategory(cat); editingCategory = null },
+            onDelete = { categoryToDelete = cat; editingCategory = null },
             onRename = { name -> viewModel.renameCategory(cat, name); editingCategory = null },
+        )
+    }
+
+    categoryToDelete?.let { cat ->
+        com.dcapps.spese.ui.components.ConfirmDialog(
+            title = "Elimina categoria",
+            message = "Vuoi eliminare la categoria \"${cat.name}\"? Gli articoli resteranno senza categoria.",
+            onConfirm = { viewModel.deleteCategory(cat) },
+            onDismiss = { categoryToDelete = null },
         )
     }
 
