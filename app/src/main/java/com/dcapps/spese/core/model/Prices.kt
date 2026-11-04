@@ -42,6 +42,14 @@ data class CreateProductRequest(
     @SerialName("default_unit_id") val defaultUnitId: Long? = null,
 )
 
+/** Body modifica prodotto (parziale). */
+@Serializable
+data class UpdateProductRequest(
+    val name: String? = null,
+    val brand: String? = null,
+    @SerialName("default_unit_id") val defaultUnitId: Long? = null,
+)
+
 @Serializable
 data class CreatePurchaseRequest(
     @SerialName("product_id") val productId: Long,

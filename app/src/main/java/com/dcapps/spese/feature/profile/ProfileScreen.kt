@@ -3,6 +3,7 @@ package com.dcapps.spese.feature.profile
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -86,7 +87,10 @@ fun ProfileScreen(
                         model = img,
                         contentDescription = "Avatar",
                         contentScale = ContentScale.Crop,
-                        modifier = Modifier.size(96.dp).clip(CircleShape),
+                        modifier = Modifier
+                            .size(96.dp)
+                            .clip(CircleShape)
+                            .border(1.dp, MaterialTheme.colorScheme.outline, CircleShape),
                     )
                 } else {
                     Box(
@@ -138,6 +142,8 @@ fun ProfileScreen(
                             modifier = Modifier
                                 .size(48.dp)
                                 .clip(CircleShape)
+                                // Bordo in contrasto col tema: rende visibili i PNG trasparenti.
+                                .border(1.dp, MaterialTheme.colorScheme.outline, CircleShape)
                                 .clickable { viewModel.selectAvatar(url) },
                         )
                     }

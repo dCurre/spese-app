@@ -13,6 +13,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -46,10 +47,18 @@ fun PriceDetailScreen(
     var showAddPurchase by remember { mutableStateOf(false) }
     var editingPurchase by remember { mutableStateOf<com.dcapps.spese.core.model.Purchase?>(null) }
     var purchaseToDelete by remember { mutableStateOf<com.dcapps.spese.core.model.Purchase?>(null) }
+    var showEditProduct by remember { mutableStateOf(false) }
+    var showDeleteProduct by remember { mutableStateOf(false) }
+    var menuExpanded by remember { mutableStateOf(false) }
     val snackbarHostState = remember { androidx.compose.material3.SnackbarHostState() }
     com.dcapps.spese.ui.components.ErrorSnackbarEffect(
         state.message, snackbarHostState, viewModel::clearMessage,
     )
+
+    // Torna indietro quando il prodotto viene eliminato.
+    androidx.compose.runtime.LaunchedEffect(state.deleted) {
+        if (state.deleted) onBack()
+    }
 
     Scaffold(
         snackbarHost = { androidx.compose.material3.SnackbarHost(snackbarHostState) },
@@ -59,6 +68,24 @@ fun PriceDetailScreen(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Indietro")
+                    }
+                },
+                actions = {
+                    IconButton(onClick = { menuExpanded = true }) {
+                        Icon(Icons.Default.MoreVert, contentDescription = "Altre azioni")
+                    }
+                    androidx.compose.material3.DropdownMenu(
+                        expanded = menuExpanded,
+                        onDismissRequest = { menuExpanded = false },
+                    ) {
+                        androidx.compose.material3.DropdownMenuItem(
+                            text = { Text("Modifica prodotto") },
+                            onClick = { menuExpanded = false; showEditProduct = true },
+                        )
+                        androidx.compose.material3.DropdownMenuItem(
+                            text = { Text("Elimina prodotto") },
+                            onClick = { menuExpanded = false; showDeleteProduct = true },
+                        )
                     }
                 },
             )
@@ -185,6 +212,29 @@ fun PriceDetailScreen(
             message = "Vuoi eliminare questo acquisto?",
             onConfirm = { viewModel.deletePurchase(p) },
             onDismiss = { purchaseToDelete = null },
+        )
+    }
+
+    if (showEditProduct) {
+        state.product?.let { p ->
+            NewProductDialog(
+                units = state.units,
+                product = p,
+                onDismiss = { showEditProduct = false },
+                onConfirm = { name, brand, unitId ->
+                    viewModel.updateProduct(name, brand, unitId)
+                    showEditProduct = false
+                },
+            )
+        }
+    }
+
+    if (showDeleteProduct) {
+        com.dcapps.spese.ui.components.ConfirmDialog(
+            title = "Elimina prodotto",
+            message = "Vuoi eliminare \"${state.product?.name ?: ""}\" e tutti i suoi acquisti?",
+            onConfirm = { viewModel.deleteProduct() },
+            onDismiss = { showDeleteProduct = false },
         )
     }
 }

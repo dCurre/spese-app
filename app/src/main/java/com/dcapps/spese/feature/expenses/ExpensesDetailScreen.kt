@@ -50,6 +50,7 @@ fun ExpensesDetailScreen(
     var showDialog by remember { mutableStateOf(false) }
     var showParticipants by remember { mutableStateOf(false) }
     var showTransfer by remember { mutableStateOf(false) }
+    var showRename by remember { mutableStateOf(false) }
     var expenseToDelete by remember { mutableStateOf<Expense?>(null) }
 
     val isShared = state.list?.type == com.dcapps.spese.core.model.ListType.SHARED
@@ -75,19 +76,19 @@ fun ExpensesDetailScreen(
                     }
                 },
                 actions = {
-                    if (isShared) {
-                        ExpensesListMenu(
-                            onShare = viewModel::share,
-                            onParticipants = {
-                                viewModel.loadAvailableUsers()
-                                showParticipants = true
-                            },
-                            onTransfer = {
-                                viewModel.loadAvailableUsers()
-                                showTransfer = true
-                            },
-                        )
-                    }
+                    ExpensesListMenu(
+                        isShared = isShared,
+                        onRename = { showRename = true },
+                        onShare = viewModel::share,
+                        onParticipants = {
+                            viewModel.loadAvailableUsers()
+                            showParticipants = true
+                        },
+                        onTransfer = {
+                            viewModel.loadAvailableUsers()
+                            showTransfer = true
+                        },
+                    )
                 },
             )
         },
@@ -166,6 +167,45 @@ fun ExpensesDetailScreen(
             onDismiss = { showTransfer = false },
         )
     }
+
+    if (showRename) {
+        RenameListDialog(
+            currentName = state.list?.name ?: "",
+            onDismiss = { showRename = false },
+            onConfirm = { viewModel.renameList(it); showRename = false },
+        )
+    }
+}
+
+@Composable
+private fun RenameListDialog(
+    currentName: String,
+    onDismiss: () -> Unit,
+    onConfirm: (String) -> Unit,
+) {
+    var name by remember { mutableStateOf(currentName) }
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Rinomina lista") },
+        text = {
+            androidx.compose.material3.OutlinedTextField(
+                value = name,
+                onValueChange = { name = it },
+                label = { Text("Nome") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        },
+        confirmButton = {
+            androidx.compose.material3.TextButton(
+                enabled = name.isNotBlank(),
+                onClick = { onConfirm(name) },
+            ) { Text("Salva") }
+        },
+        dismissButton = {
+            androidx.compose.material3.TextButton(onClick = onDismiss) { Text("Annulla") }
+        },
+    )
 }
 
 @Composable
@@ -183,6 +223,8 @@ private fun ShareLinkEffect(link: String, onShared: () -> Unit) {
 
 @Composable
 private fun ExpensesListMenu(
+    isShared: Boolean,
+    onRename: () -> Unit,
     onShare: () -> Unit,
     onParticipants: () -> Unit,
     onTransfer: () -> Unit,
@@ -196,17 +238,23 @@ private fun ExpensesListMenu(
         onDismissRequest = { expanded = false },
     ) {
         androidx.compose.material3.DropdownMenuItem(
-            text = { Text("Condividi") },
-            onClick = { expanded = false; onShare() },
+            text = { Text("Rinomina lista") },
+            onClick = { expanded = false; onRename() },
         )
-        androidx.compose.material3.DropdownMenuItem(
-            text = { Text("Partecipanti") },
-            onClick = { expanded = false; onParticipants() },
-        )
-        androidx.compose.material3.DropdownMenuItem(
-            text = { Text("Trasferisci proprietà") },
-            onClick = { expanded = false; onTransfer() },
-        )
+        if (isShared) {
+            androidx.compose.material3.DropdownMenuItem(
+                text = { Text("Condividi") },
+                onClick = { expanded = false; onShare() },
+            )
+            androidx.compose.material3.DropdownMenuItem(
+                text = { Text("Partecipanti") },
+                onClick = { expanded = false; onParticipants() },
+            )
+            androidx.compose.material3.DropdownMenuItem(
+                text = { Text("Trasferisci proprietà") },
+                onClick = { expanded = false; onTransfer() },
+            )
+        }
     }
 }
 

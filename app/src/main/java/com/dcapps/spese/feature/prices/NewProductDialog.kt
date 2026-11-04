@@ -26,17 +26,18 @@ import com.dcapps.spese.core.model.MeasurementUnit
 @Composable
 fun NewProductDialog(
     units: List<MeasurementUnit>,
+    product: com.dcapps.spese.core.model.Product? = null,
     onDismiss: () -> Unit,
-    onCreate: (name: String, brand: String?, unitId: Long?) -> Unit,
+    onConfirm: (name: String, brand: String?, unitId: Long?) -> Unit,
 ) {
-    var name by remember { mutableStateOf("") }
-    var brand by remember { mutableStateOf("") }
-    var unitId by remember { mutableStateOf(units.firstOrNull()?.id) }
+    var name by remember { mutableStateOf(product?.name ?: "") }
+    var brand by remember { mutableStateOf(product?.brand ?: "") }
+    var unitId by remember { mutableStateOf(product?.defaultUnitId ?: units.firstOrNull()?.id) }
     var expanded by remember { mutableStateOf(false) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Nuovo prodotto") },
+        title = { Text(if (product == null) "Nuovo prodotto" else "Modifica prodotto") },
         text = {
             Column {
                 OutlinedTextField(
@@ -81,8 +82,8 @@ fun NewProductDialog(
             }
         },
         confirmButton = {
-            TextButton(enabled = name.isNotBlank(), onClick = { onCreate(name, brand, unitId) }) {
-                Text("Crea")
+            TextButton(enabled = name.isNotBlank(), onClick = { onConfirm(name, brand, unitId) }) {
+                Text(if (product == null) "Crea" else "Salva")
             }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Annulla") } },

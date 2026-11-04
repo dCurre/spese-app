@@ -270,6 +270,21 @@ class ExpensesDetailViewModel @Inject constructor(
         }
     }
 
+    /** Rinomina la lista (unica proprietà modificabile lato backend oltre a `paid`). */
+    fun renameList(newName: String) {
+        if (newName.isBlank()) return
+        viewModelScope.launch {
+            val r = expensesRepository.updateList(
+                listId,
+                com.dcapps.spese.core.model.UpdateExpensesListRequest(name = newName.trim()),
+            )
+            when (r) {
+                is ApiResult.Success -> load()
+                is ApiResult.Error -> _uiState.update { it.copy(message = r.message) }
+            }
+        }
+    }
+
     fun transferOwner(newOwnerId: Long) {
         val currentOwner = _uiState.value.list?.userId ?: return
         viewModelScope.launch {

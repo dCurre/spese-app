@@ -112,7 +112,7 @@ fun PriceListScreen(
         NewProductDialog(
             units = state.units,
             onDismiss = { showCreate = false },
-            onCreate = { name, brand, unitId ->
+            onConfirm = { name, brand, unitId ->
                 viewModel.createProduct(name, brand, unitId)
                 showCreate = false
             },

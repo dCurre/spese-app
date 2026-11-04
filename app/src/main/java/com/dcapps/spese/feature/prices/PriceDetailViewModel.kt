@@ -35,6 +35,7 @@ data class PriceDetailUiState(
     val units: List<MeasurementUnit> = emptyList(),
     val granularity: Granularity = Granularity.MONTH,
     val message: String? = null,
+    val deleted: Boolean = false,
 )
 
 @HiltViewModel
@@ -133,6 +134,35 @@ class PriceDetailViewModel @Inject constructor(
             )
             when (result) {
                 is ApiResult.Success -> load()
+                is ApiResult.Error -> _uiState.update { it.copy(message = result.message) }
+            }
+        }
+    }
+
+    /** Modifica le proprietà del prodotto (nome, marca, unità predefinita). */
+    fun updateProduct(name: String, brand: String?, defaultUnitId: Long?) {
+        if (name.isBlank()) return
+        viewModelScope.launch {
+            val result = priceRepository.updateProduct(
+                productId,
+                com.dcapps.spese.core.model.UpdateProductRequest(
+                    name = name.trim(),
+                    brand = brand?.takeIf { it.isNotBlank() },
+                    defaultUnitId = defaultUnitId,
+                ),
+            )
+            when (result) {
+                is ApiResult.Success -> load()
+                is ApiResult.Error -> _uiState.update { it.copy(message = result.message) }
+            }
+        }
+    }
+
+    /** Elimina il prodotto e tutti i suoi acquisti. */
+    fun deleteProduct() {
+        viewModelScope.launch {
+            when (val result = priceRepository.deleteProduct(productId)) {
+                is ApiResult.Success -> _uiState.update { it.copy(deleted = true) }
                 is ApiResult.Error -> _uiState.update { it.copy(message = result.message) }
             }
         }

@@ -29,6 +29,14 @@ class PriceRepository @Inject constructor(
     suspend fun createProduct(body: CreateProductRequest): ApiResult<Long?> =
         apiCall(json) { api.createProduct(body).id }
 
+    suspend fun updateProduct(
+        id: Long,
+        body: com.dcapps.spese.core.model.UpdateProductRequest,
+    ): ApiResult<Unit> = apiCall(json) { api.updateProduct(id, body); Unit }
+
+    suspend fun deleteProduct(id: Long): ApiResult<Unit> =
+        apiCall(json) { api.deleteProduct(id); Unit }
+
     suspend fun getPurchases(productId: Long): ApiResult<List<Purchase>> =
         apiCall(json) { api.getPurchases(productId).purchases }
 

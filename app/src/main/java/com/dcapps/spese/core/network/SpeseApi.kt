@@ -330,6 +330,15 @@ interface SpeseApi {
     @POST("api/products")
     suspend fun createProduct(@Body body: CreateProductRequest): CreatedResponse
 
+    @PUT("api/products/{id}")
+    suspend fun updateProduct(
+        @Path("id") id: Long,
+        @Body body: com.dcapps.spese.core.model.UpdateProductRequest,
+    ): MessageResponse
+
+    @DELETE("api/products/{id}")
+    suspend fun deleteProduct(@Path("id") id: Long): MessageResponse
+
     @GET("api/products/{productId}/purchases")
     suspend fun getPurchases(@Path("productId") productId: Long): PurchasesResponse
 
