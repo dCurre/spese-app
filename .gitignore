@@ -1,0 +1,35 @@
+# Gradle
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+# Artefatti di build Android (APK/AAB/mapping) ovunque si trovino
+*.apk
+*.aab
+*.ap_
+*.dex
+output.json
+
+# Android Studio / IntelliJ
+*.iml
+.idea/
+captures/
+.externalNativeBuild/
+.cxx/
+
+# SDK location (specifico della macchina)
+local.properties
+
+# Firebase (contiene identificativi del progetto: non committare)
+app/google-services.json
+
+# Keystore e materiale di firma: MAI nel repo
+keystore-tmp/
+*.keystore
+*.jks
+*.keystore.b64
+
+# File di sistema
+.DS_Store
