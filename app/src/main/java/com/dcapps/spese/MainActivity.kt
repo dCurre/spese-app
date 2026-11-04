@@ -4,15 +4,11 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -42,6 +38,7 @@ private fun SpeseApp(viewModel: AuthViewModel = hiltViewModel()) {
     val preference = when (user?.themePreference) {
         "light" -> ThemePreference.LIGHT
         "dark" -> ThemePreference.DARK
+        "legacy" -> ThemePreference.LEGACY
         else -> ThemePreference.AUTO
     }
 
@@ -71,6 +68,19 @@ private fun SpeseApp(viewModel: AuthViewModel = hiltViewModel()) {
 @Composable
 private fun UpdateGate(updateViewModel: UpdateViewModel = hiltViewModel()) {
     val updateState by updateViewModel.uiState.collectAsStateWithLifecycle()
+
+    // Ricontrolla gli aggiornamenti ogni volta che l'app torna in primo piano.
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    androidx.compose.runtime.DisposableEffect(lifecycleOwner) {
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
+                updateViewModel.checkForUpdate()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
     val info = updateState.info
     if (updateState.showDialog && info != null) {
         UpdateDialog(
@@ -85,11 +95,5 @@ private fun UpdateGate(updateViewModel: UpdateViewModel = hiltViewModel()) {
 
 @Composable
 private fun LoadingScreen(modifier: Modifier = Modifier) {
-    Column(
-        modifier = modifier.fillMaxSize(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-    ) {
-        CircularProgressIndicator()
-    }
+    com.dcapps.spese.ui.components.LoadingIndicator(modifier)
 }

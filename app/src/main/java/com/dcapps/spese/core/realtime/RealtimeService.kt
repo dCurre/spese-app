@@ -1,6 +1,8 @@
 package com.dcapps.spese.core.realtime
 
 import io.github.jan.supabase.SupabaseClient
+import io.github.jan.supabase.realtime.HasOldRecord
+import io.github.jan.supabase.realtime.HasRecord
 import io.github.jan.supabase.realtime.PostgresAction
 import io.github.jan.supabase.realtime.channel
 import io.github.jan.supabase.realtime.postgresChangeFlow
@@ -92,4 +94,20 @@ class RealtimeService @Inject constructor(
             entries.remove(table)
         }
     }
+}
+
+/**
+ * Estrae il valore Long del campo [field] dalla riga interessata dall'evento (record per
+ * insert/update, oldRecord per delete). Ritorna null se assente o non interpretabile.
+ * Permette ai ViewModel di ricaricare solo quando l'evento riguarda la lista aperta.
+ */
+fun PostgresAction.longField(field: String): Long? {
+    val record = when (this) {
+        is HasRecord -> record
+        is HasOldRecord -> oldRecord
+        else -> return null
+    }
+    val element = record[field] ?: return null
+    val content = (element as? kotlinx.serialization.json.JsonPrimitive)?.content ?: return null
+    return content.toLongOrNull()
 }

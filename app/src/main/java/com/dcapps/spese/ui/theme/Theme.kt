@@ -8,13 +8,14 @@ import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 
 /**
  * Preferenza di tema dell'utente, allineata al campo `theme_preference` del backend
- * ("light" | "dark" | "auto").
+ * ("light" | "dark" | "auto" | "legacy"). "legacy" riproduce i colori della webapp.
  */
-enum class ThemePreference { LIGHT, DARK, AUTO }
+enum class ThemePreference { LIGHT, DARK, AUTO, LEGACY }
 
 private val DarkColorScheme = darkColorScheme(
     primary = Purple80,
@@ -28,6 +29,21 @@ private val LightColorScheme = lightColorScheme(
     tertiary = Pink40,
 )
 
+/** Tema "legacy": palette scura blu-navy con accent verde, come la webapp. */
+private val LegacyColorScheme = darkColorScheme(
+    primary = LegacyAccent,
+    onPrimary = Color.White,
+    primaryContainer = LegacyAccentDark,
+    secondary = LegacyAccent,
+    background = LegacyBgPage,
+    onBackground = LegacyTextPrimary,
+    surface = LegacyBgCard,
+    onSurface = LegacyTextPrimary,
+    surfaceVariant = LegacyBgInput,
+    onSurfaceVariant = LegacyTextSecondary,
+    outline = LegacyBorder,
+)
+
 @Composable
 fun SpeseTheme(
     preference: ThemePreference = ThemePreference.AUTO,
@@ -35,10 +51,15 @@ fun SpeseTheme(
     dynamicColor: Boolean = false,
     content: @Composable () -> Unit,
 ) {
+    if (preference == ThemePreference.LEGACY) {
+        MaterialTheme(colorScheme = LegacyColorScheme, typography = Typography, content = content)
+        return
+    }
+
     val darkTheme = when (preference) {
         ThemePreference.LIGHT -> false
         ThemePreference.DARK -> true
-        ThemePreference.AUTO -> isSystemInDarkTheme()
+        else -> isSystemInDarkTheme()
     }
 
     val colorScheme = when {

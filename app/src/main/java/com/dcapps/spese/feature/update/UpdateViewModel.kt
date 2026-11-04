@@ -20,6 +20,9 @@ data class UpdateUiState(
     val downloading: Boolean = false,
     val progress: Int = 0,
     val error: String? = null,
+    val checking: Boolean = false,
+    // Messaggio per il controllo manuale (es. "Nessun aggiornamento disponibile").
+    val checkMessage: String? = null,
 ) {
     val showDialog: Boolean get() = info != null && !dismissed
 }
@@ -37,12 +40,27 @@ class UpdateViewModel @Inject constructor(
         checkForUpdate()
     }
 
-    private fun checkForUpdate() {
+    /** Controllo silenzioso (all'avvio e al ritorno in foreground). */
+    fun checkForUpdate() {
         viewModelScope.launch {
             val info = updateRepository.checkForUpdate()
-            if (info != null) _uiState.update { it.copy(info = info) }
+            if (info != null) _uiState.update { it.copy(info = info, dismissed = false) }
         }
     }
+
+    /** Controllo manuale (dal profilo): dà sempre un feedback all'utente. */
+    fun checkForUpdateManual() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(checking = true, checkMessage = null) }
+            val info = updateRepository.checkForUpdate()
+            _uiState.update {
+                if (info != null) it.copy(checking = false, info = info, dismissed = false)
+                else it.copy(checking = false, checkMessage = "Nessun aggiornamento disponibile")
+            }
+        }
+    }
+
+    fun clearCheckMessage() = _uiState.update { it.copy(checkMessage = null) }
 
     fun onUpdateClick() {
         val info = _uiState.value.info ?: return

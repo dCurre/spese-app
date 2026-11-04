@@ -60,6 +60,7 @@ fun ChecklistDetailScreen(
     var itemToDelete by remember { mutableStateOf<ShoppingItem?>(null) }
     var categoryToDelete by remember { mutableStateOf<ShoppingCategory?>(null) }
     var showNewCategory by remember { mutableStateOf(false) }
+    var showImport by remember { mutableStateOf(false) }
 
     val snackbarHostState = remember { androidx.compose.material3.SnackbarHostState() }
     com.dcapps.spese.ui.components.MessageSnackbarEffect(
@@ -86,7 +87,21 @@ fun ChecklistDetailScreen(
                 },
                 actions = {
                     if (editState == null) {
-                        OverflowMenu(viewModel, onNewCategory = { showNewCategory = true })
+                        OverflowMenu(
+                            viewModel,
+                            onNewCategory = { showNewCategory = true },
+                            onExport = {
+                                val text = viewModel.buildExportText()
+                                val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                                    type = "text/plain"
+                                    putExtra(android.content.Intent.EXTRA_TEXT, text)
+                                }
+                                context.startActivity(
+                                    android.content.Intent.createChooser(intent, "Esporta checklist"),
+                                )
+                            },
+                            onImport = { showImport = true },
+                        )
                     }
                 },
             )
@@ -204,6 +219,41 @@ fun ChecklistDetailScreen(
             onCreate = { name -> viewModel.addCategory(name, null); showNewCategory = false },
         )
     }
+
+    if (showImport) {
+        ImportDialog(
+            onDismiss = { showImport = false },
+            onImport = { text -> viewModel.importFromText(text); showImport = false },
+        )
+    }
+}
+
+@Composable
+private fun ImportDialog(onDismiss: () -> Unit, onImport: (String) -> Unit) {
+    var text by remember { mutableStateOf("") }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Importa articoli") },
+        text = {
+            androidx.compose.foundation.layout.Column {
+                Text(
+                    "Un articolo per riga. Una riga che termina con \":\" diventa una categoria.",
+                    style = MaterialTheme.typography.bodySmall,
+                )
+                OutlinedTextField(
+                    value = text,
+                    onValueChange = { text = it },
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                    placeholder = { Text("Frutta:\n- Mele\n- Banane\nLatte") },
+                    minLines = 4,
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(enabled = text.isNotBlank(), onClick = { onImport(text) }) { Text("Importa") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Annulla") } },
+    )
 }
 
 @Composable
@@ -221,7 +271,12 @@ private fun LaunchedShare(token: String, onShared: () -> Unit) {
 }
 
 @Composable
-private fun OverflowMenu(viewModel: ChecklistDetailViewModel, onNewCategory: () -> Unit) {
+private fun OverflowMenu(
+    viewModel: ChecklistDetailViewModel,
+    onNewCategory: () -> Unit,
+    onExport: () -> Unit,
+    onImport: () -> Unit,
+) {
     var expanded by remember { mutableStateOf(false) }
     IconButton(onClick = { expanded = true }) {
         Icon(Icons.Default.MoreVert, contentDescription = "Altre azioni")
@@ -246,6 +301,14 @@ private fun OverflowMenu(viewModel: ChecklistDetailViewModel, onNewCategory: () 
         DropdownMenuItem(
             text = { Text("Condividi") },
             onClick = { expanded = false; viewModel.generateInviteToken() },
+        )
+        DropdownMenuItem(
+            text = { Text("Esporta") },
+            onClick = { expanded = false; onExport() },
+        )
+        DropdownMenuItem(
+            text = { Text("Importa") },
+            onClick = { expanded = false; onImport() },
         )
     }
 }

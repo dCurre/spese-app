@@ -7,6 +7,7 @@ import com.dcapps.spese.core.data.CatalogRepository
 import com.dcapps.spese.core.data.ExpensesRepository
 import com.dcapps.spese.core.realtime.RealtimeService
 import com.dcapps.spese.core.realtime.RealtimeTable
+import com.dcapps.spese.core.realtime.longField
 import com.dcapps.spese.core.model.BalanceEntry
 import com.dcapps.spese.core.model.BalanceTotal
 import com.dcapps.spese.core.model.CreateExpenseRequest
@@ -83,13 +84,17 @@ class ExpensesDetailViewModel @Inject constructor(
     }
 
     private fun observeRealtime() {
-        // Spese della lista: ricarica spese + saldo ad ogni cambiamento.
+        // Spese della lista: ricarica solo se l'evento riguarda questa lista.
         viewModelScope.launch {
-            realtimeService.watch(RealtimeTable.EXPENSES).collect { reloadExpenses() }
+            realtimeService.watch(RealtimeTable.EXPENSES).collect { action ->
+                if (action.longField("expense_list_id") == listId) reloadExpenses()
+            }
         }
-        // Partecipanti: ricarica l'intero dettaglio (cambia la composizione della lista).
+        // Partecipanti: ricarica il dettaglio solo per questa lista.
         viewModelScope.launch {
-            realtimeService.watch(RealtimeTable.EXPENSES_LIST_PARTICIPANTS).collect { load() }
+            realtimeService.watch(RealtimeTable.EXPENSES_LIST_PARTICIPANTS).collect { action ->
+                if (action.longField("expenses_list_id") == listId) load()
+            }
         }
     }
 

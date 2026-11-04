@@ -73,9 +73,7 @@ fun ExpensesListScreen(
         ) {
             when {
                 state.isLoading && state.activeLists.isEmpty() && state.paidLists.isEmpty() ->
-                    Box(Modifier.fillMaxSize()) {
-                        CircularProgressIndicator(Modifier.align(Alignment.Center))
-                    }
+                    com.dcapps.spese.ui.components.LoadingIndicator()
                 state.error != null -> ErrorState(state.error!!, onRetry = viewModel::load)
                 else -> ListContent(
                     state = state,

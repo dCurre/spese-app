@@ -15,6 +15,7 @@ import com.dcapps.spese.core.model.UpdateShoppingItemRequest
 import com.dcapps.spese.core.network.ApiResult
 import com.dcapps.spese.core.realtime.RealtimeService
 import com.dcapps.spese.core.realtime.RealtimeTable
+import com.dcapps.spese.core.realtime.longField
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -61,10 +62,14 @@ class ChecklistDetailViewModel @Inject constructor(
     init {
         load()
         viewModelScope.launch {
-            realtimeService.watch(RealtimeTable.SHOPPING_ITEMS).collect { load() }
+            realtimeService.watch(RealtimeTable.SHOPPING_ITEMS).collect { action ->
+                if (action.longField("shopping_list_id") == listId) load()
+            }
         }
         viewModelScope.launch {
-            realtimeService.watch(RealtimeTable.SHOPPING_CATEGORIES).collect { load() }
+            realtimeService.watch(RealtimeTable.SHOPPING_CATEGORIES).collect { action ->
+                if (action.longField("shopping_list_id") == listId) load()
+            }
         }
     }
 
@@ -200,6 +205,70 @@ class ChecklistDetailViewModel @Inject constructor(
     }
 
     fun clearInviteToken() = _uiState.update { it.copy(inviteToken = null) }
+
+    /** Testo esportabile della checklist: categorie come intestazioni, item come righe "- ...". */
+    fun buildExportText(): String {
+        val list = _uiState.value.list ?: return ""
+        val sb = StringBuilder()
+        sb.appendLine(list.name)
+        list.items.sortedBy { it.sortOrder }.forEach { i ->
+            sb.appendLine("- ${i.name}${if ((i.quantity ?: 1) > 1) " x${i.quantity}" else ""}")
+        }
+        fun walk(cats: List<ShoppingCategory>, depth: Int) {
+            cats.sortedBy { it.sortOrder }.forEach { c ->
+                sb.appendLine("${"  ".repeat(depth)}${c.name}:")
+                c.items.sortedBy { it.sortOrder }.forEach { i ->
+                    sb.appendLine("${"  ".repeat(depth + 1)}- ${i.name}${if ((i.quantity ?: 1) > 1) " x${i.quantity}" else ""}")
+                }
+                walk(c.children, depth + 1)
+            }
+        }
+        walk(list.categories, 0)
+        return sb.toString().trimEnd()
+    }
+
+    /**
+     * Importa articoli da testo: ogni riga "- nome" (o "nome") diventa un articolo; una riga
+     * che termina con ":" diventa una categoria a cui vengono assegnati gli articoli seguenti.
+     * Tutto viene salvato in un'unica chiamata batch-save.
+     */
+    fun importFromText(text: String) {
+        val lines = text.lines().map { it.trim() }.filter { it.isNotBlank() }
+        if (lines.isEmpty()) return
+        var tempId = 1L
+        val catsCreate = mutableListOf<com.dcapps.spese.core.model.BatchCategoryCreate>()
+        val itemsCreate = mutableListOf<com.dcapps.spese.core.model.BatchItemCreate>()
+        var currentCatTemp: String? = null
+        lines.forEach { raw ->
+            if (raw.endsWith(":")) {
+                val name = raw.dropLast(1).trim()
+                if (name.isNotEmpty()) {
+                    val t = "t${tempId++}"
+                    catsCreate += com.dcapps.spese.core.model.BatchCategoryCreate(tempId = t, name = name)
+                    currentCatTemp = t
+                }
+            } else {
+                val name = raw.removePrefix("-").trim()
+                if (name.isNotEmpty()) {
+                    itemsCreate += com.dcapps.spese.core.model.BatchItemCreate(
+                        name = name,
+                        categoryTempId = currentCatTemp,
+                    )
+                }
+            }
+        }
+        if (catsCreate.isEmpty() && itemsCreate.isEmpty()) return
+        viewModelScope.launch {
+            val req = com.dcapps.spese.core.model.BatchSaveRequest(
+                categoriesCreate = catsCreate,
+                itemsCreate = itemsCreate,
+            )
+            when (val r = shoppingRepository.batchSave(listId, req)) {
+                is ApiResult.Success -> load()
+                is ApiResult.Error -> _uiState.update { it.copy(message = r.message) }
+            }
+        }
+    }
 
     // --- Modalità modifica con salvataggio in batch ---
 

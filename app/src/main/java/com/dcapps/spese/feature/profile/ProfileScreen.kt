@@ -44,11 +44,12 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 fun ProfileScreen(
     onOpenAdmin: () -> Unit = {},
     viewModel: ProfileViewModel = hiltViewModel(),
+    updateViewModel: com.dcapps.spese.feature.update.UpdateViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val user by viewModel.currentUser.collectAsStateWithLifecycle()
@@ -144,7 +145,7 @@ fun ProfileScreen(
             Card(Modifier.fillMaxWidth().padding(top = 20.dp)) {
                 Column(Modifier.padding(16.dp)) {
                     Text("Tema", style = MaterialTheme.typography.titleMedium)
-                    Row(
+                    androidx.compose.foundation.layout.FlowRow(
                         Modifier.fillMaxWidth().padding(top = 8.dp),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
@@ -152,6 +153,7 @@ fun ProfileScreen(
                         ThemeChip("Chiaro", "light", current, viewModel::setTheme)
                         ThemeChip("Scuro", "dark", current, viewModel::setTheme)
                         ThemeChip("Auto", "auto", current, viewModel::setTheme)
+                        ThemeChip("Legacy", "legacy", current, viewModel::setTheme)
                     }
                 }
             }
@@ -170,11 +172,24 @@ fun ProfileScreen(
                 }
             }
 
+            // Controllo aggiornamenti manuale.
+            val updateState by updateViewModel.uiState.collectAsStateWithLifecycle()
+            com.dcapps.spese.ui.components.MessageSnackbarEffect(
+                updateState.checkMessage, snackbarHostState, updateViewModel::clearCheckMessage,
+            )
+            OutlinedButton(
+                onClick = { updateViewModel.checkForUpdateManual() },
+                enabled = !updateState.checking,
+                modifier = Modifier.fillMaxWidth().padding(top = 20.dp),
+            ) {
+                Text(if (updateState.checking) "Controllo…" else "Controlla aggiornamenti")
+            }
+
             val role = user?.role
             if (role == "admin" || role == "superadmin") {
                 OutlinedButton(
                     onClick = onOpenAdmin,
-                    modifier = Modifier.fillMaxWidth().padding(top = 20.dp),
+                    modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
                 ) {
                     Text("Amministrazione")
                 }
@@ -186,6 +201,18 @@ fun ProfileScreen(
             ) {
                 Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = null, modifier = Modifier.size(18.dp))
                 Text("Esci", modifier = Modifier.padding(start = 8.dp))
+            }
+
+            // Mostra anche il popup di aggiornamento se disponibile (dal controllo manuale).
+            val info = updateState.info
+            if (updateState.showDialog && info != null) {
+                com.dcapps.spese.feature.update.UpdateDialog(
+                    state = updateState,
+                    info = info,
+                    canInstall = updateViewModel.canInstall(),
+                    onUpdate = updateViewModel::onUpdateClick,
+                    onDismiss = updateViewModel::dismiss,
+                )
             }
         }
     }
