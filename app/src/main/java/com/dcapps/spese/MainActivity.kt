@@ -18,6 +18,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dcapps.spese.feature.auth.AuthViewModel
 import com.dcapps.spese.feature.auth.SignInScreen
+import com.dcapps.spese.feature.update.UpdateDialog
+import com.dcapps.spese.feature.update.UpdateViewModel
 import com.dcapps.spese.navigation.SpeseNavHost
 import com.dcapps.spese.ui.theme.SpeseTheme
 import com.dcapps.spese.ui.theme.ThemePreference
@@ -60,6 +62,24 @@ private fun SpeseApp(viewModel: AuthViewModel = hiltViewModel()) {
                 )
             }
         }
+
+        // Controllo aggiornamenti: mostra il popup se su GitHub c'è una versione maggiore.
+        UpdateGate()
+    }
+}
+
+@Composable
+private fun UpdateGate(updateViewModel: UpdateViewModel = hiltViewModel()) {
+    val updateState by updateViewModel.uiState.collectAsStateWithLifecycle()
+    val info = updateState.info
+    if (updateState.showDialog && info != null) {
+        UpdateDialog(
+            state = updateState,
+            info = info,
+            canInstall = updateViewModel.canInstall(),
+            onUpdate = updateViewModel::onUpdateClick,
+            onDismiss = updateViewModel::dismiss,
+        )
     }
 }
 

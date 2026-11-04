@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <!-- Cache esterna privata dell'app: qui viene scaricato l'APK di aggiornamento. -->
+    <external-cache-path name="update_cache" path="." />
+</paths>
