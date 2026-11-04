@@ -1,4 +1,5 @@
 import java.io.File
+import java.util.Properties
 
 plugins {
     alias(libs.plugins.android.application)
@@ -19,6 +20,17 @@ val appVersionCode: Int = run {
     val minor = parts.getOrElse(1) { 0 }
     val patch = parts.getOrElse(2) { 1 }
     major * 10000 + minor * 100 + patch
+}
+
+// Token GitHub per le segnalazioni bug (SEGRETO): da local.properties
+// (`github.bugreport.token`) o dalla env var GITHUB_BUGREPORT_TOKEN; vuoto se assente.
+val githubBugReportToken: String = run {
+    val props = Properties()
+    val lp = rootProject.file("local.properties")
+    if (lp.exists()) lp.inputStream().use { props.load(it) }
+    props.getProperty("github.bugreport.token")
+        ?: System.getenv("GITHUB_BUGREPORT_TOKEN")
+        ?: ""
 }
 
 android {
@@ -49,6 +61,9 @@ android {
             "GOOGLE_WEB_CLIENT_ID",
             "\"587215754394-qkpq6j17tog605f0tthbfmol52ad9fjv.apps.googleusercontent.com\"",
         )
+
+        // Token GitHub per creare issue di segnalazione bug (calcolato a livello di script).
+        buildConfigField("String", "GITHUB_BUGREPORT_TOKEN", "\"$githubBugReportToken\"")
     }
 
     // Firma release: usata solo se i secret sono presenti nell'ambiente (CI).

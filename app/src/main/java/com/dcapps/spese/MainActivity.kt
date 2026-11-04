@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -62,6 +63,30 @@ private fun SpeseApp(viewModel: AuthViewModel = hiltViewModel()) {
 
         // Controllo aggiornamenti: mostra il popup se su GitHub c'è una versione maggiore.
         UpdateGate()
+
+        // Proposta di segnalazione dopo un crash.
+        CrashReportGate()
+    }
+}
+
+@Composable
+private fun CrashReportGate(
+    bugReportViewModel: com.dcapps.spese.feature.bugreport.BugReportViewModel = hiltViewModel(),
+) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    var show by androidx.compose.runtime.remember {
+        androidx.compose.runtime.mutableStateOf(
+            com.dcapps.spese.core.bugreport.CrashStore.read(context) != null,
+        )
+    }
+    androidx.compose.runtime.LaunchedEffect(show) {
+        if (show) bugReportViewModel.prefillFromLastError()
+    }
+    if (show) {
+        com.dcapps.spese.feature.bugreport.BugReportDialog(
+            onDismiss = { show = false },
+            viewModel = bugReportViewModel,
+        )
     }
 }
 

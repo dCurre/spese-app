@@ -4,6 +4,8 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -72,6 +74,7 @@ fun ProfileScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
+                .verticalScroll(rememberScrollState())
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
@@ -152,8 +155,8 @@ fun ProfileScreen(
                         val current = user?.themePreference ?: "auto"
                         ThemeChip("Chiaro", "light", current, viewModel::setTheme)
                         ThemeChip("Scuro", "dark", current, viewModel::setTheme)
-                        ThemeChip("Auto", "auto", current, viewModel::setTheme)
                         ThemeChip("Legacy", "legacy", current, viewModel::setTheme)
+                        ThemeChip("Auto", "auto", current, viewModel::setTheme)
                     }
                 }
             }

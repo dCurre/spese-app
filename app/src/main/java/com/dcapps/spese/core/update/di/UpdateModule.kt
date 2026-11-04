@@ -1,5 +1,6 @@
 package com.dcapps.spese.core.update.di
 
+import com.dcapps.spese.core.bugreport.BugReportApi
 import com.dcapps.spese.core.update.GithubApi
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import dagger.Module
@@ -16,15 +17,22 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object UpdateModule {
 
-    @Provides
-    @Singleton
-    fun provideGithubApi(client: OkHttpClient, json: Json): GithubApi {
+    private fun githubRetrofit(client: OkHttpClient, json: Json): Retrofit {
         val contentType = "application/json".toMediaType()
-        val retrofit = Retrofit.Builder()
+        return Retrofit.Builder()
             .baseUrl("https://api.github.com/")
             .client(client)
             .addConverterFactory(json.asConverterFactory(contentType))
             .build()
-        return retrofit.create(GithubApi::class.java)
     }
+
+    @Provides
+    @Singleton
+    fun provideGithubApi(client: OkHttpClient, json: Json): GithubApi =
+        githubRetrofit(client, json).create(GithubApi::class.java)
+
+    @Provides
+    @Singleton
+    fun provideBugReportApi(client: OkHttpClient, json: Json): BugReportApi =
+        githubRetrofit(client, json).create(BugReportApi::class.java)
 }

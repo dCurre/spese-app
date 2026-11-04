@@ -53,11 +53,18 @@ class ProfileViewModel @Inject constructor(
         viewModelScope.launch {
             when (val result = userRepository.getWithLists(user.email)) {
                 is ApiResult.Success -> {
-                    session.setUser(result.data.user)
+                    // Conserva la preferenza tema corrente: il reload delle statistiche non
+                    // deve sovrascrivere un tema appena scelto dall'utente (che potrebbe non
+                    // essere ancora stato persistito sul server).
+                    val currentTheme = session.currentUser.value?.themePreference
+                    val freshUser = result.data.user.copy(
+                        themePreference = currentTheme ?: result.data.user.themePreference,
+                    )
+                    session.setUser(freshUser)
                     val lists = result.data.expensesLists
                     _uiState.update {
                         it.copy(
-                            user = result.data.user,
+                            user = freshUser,
                             statsLoaded = true,
                             stats = ProfileStats(
                                 listsOwned = lists.count { l -> l.userId == user.id },

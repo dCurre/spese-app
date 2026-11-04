@@ -51,18 +51,17 @@ fun SpeseTheme(
     dynamicColor: Boolean = false,
     content: @Composable () -> Unit,
 ) {
-    if (preference == ThemePreference.LEGACY) {
-        MaterialTheme(colorScheme = LegacyColorScheme, typography = Typography, content = content)
-        return
-    }
-
     val darkTheme = when (preference) {
         ThemePreference.LIGHT -> false
         ThemePreference.DARK -> true
-        else -> isSystemInDarkTheme()
+        ThemePreference.LEGACY -> true
+        ThemePreference.AUTO -> isSystemInDarkTheme()
     }
 
+    // Un unico MaterialTheme: cambia solo il colorScheme, così il passaggio tra temi è
+    // istantaneo e non rimonta l'albero (niente "ricaricamento" dell'app).
     val colorScheme = when {
+        preference == ThemePreference.LEGACY -> LegacyColorScheme
         dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
             val context = LocalContext.current
             if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)

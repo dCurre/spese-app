@@ -29,15 +29,20 @@ suspend fun <T> apiCall(json: Json, block: suspend () -> T): ApiResult<T> =
             message = extractErrorMessage(json, e) ?: "Errore ${e.code()}",
             code = e.code(),
             cause = e,
-        )
+        ).also { it.report() }
     } catch (e: IOException) {
         ApiResult.Error(
             message = "Impossibile contattare il server. Controlla la connessione.",
             cause = e,
-        )
+        ).also { it.report() }
     } catch (e: Exception) {
-        ApiResult.Error(message = e.message ?: "Errore imprevisto", cause = e)
+        ApiResult.Error(message = e.message ?: "Errore imprevisto", cause = e).also { it.report() }
     }
+
+private fun ApiResult.Error.report() {
+    com.dcapps.spese.core.bugreport.ErrorReporterHolder.instance
+        ?.record(message, cause)
+}
 
 private fun extractErrorMessage(json: Json, e: HttpException): String? {
     val body = e.response()?.errorBody()?.string()?.takeIf { it.isNotBlank() } ?: return null
