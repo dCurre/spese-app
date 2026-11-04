@@ -90,9 +90,17 @@ In sviluppo incrementale, feature per feature:
 
 - [x] **Step 1** — Setup progetto (Gradle, Compose, Hilt, dipendenze)
 - [x] **Step 2** — Layer di rete (Retrofit, modelli, API)
-- [x] **Step 3** — Auth (Google Sign-In → upsert-by-email) *(richiede config Firebase per l'esecuzione)*
+- [x] **Step 3** — Auth (Google Sign-In → upsert-by-email)
 - [x] **Step 4** — Liste spese + saldi (elenco, dettaglio, CRUD spese, saldo con grafico)
 - [x] **Step 5** — Realtime (Supabase) su liste, spese, partecipanti
-- [ ] Step 6 — Checklist
-- [ ] Step 7 — Profilo + tema
-- [ ] Step 8 — Statistiche
+- [x] **Step 6** — Checklist (elenco, dettaglio ad albero, spunta, aggiunta/eliminazione articoli, realtime)
+- [x] **Step 7** — Profilo + tema (avatar, tema chiaro/scuro/auto, statistiche, logout)
+- [x] **Step 8** — Statistiche (spese per persona/tipologia nel saldo)
+- [x] **Navigazione a tab** (Spese / Spesa / Profilo)
+- [x] **Aggiornamento in-app** via GitHub Releases
+- [x] **CI/CD**: versioning automatico + release APK firmato su GitHub
+
+### Da completare / migliorare
+- Editing avanzato checklist (gestione categorie/sottocategorie da UI, riordino, batch-save)
+- Funzioni avanzate liste spese (ospiti, trasferimento proprietà)
+- Storico prezzi, pannello admin (presenti nella webapp, non ancora portati)

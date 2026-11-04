@@ -3,6 +3,7 @@ package com.dcapps.spese.navigation
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ListAlt
+import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
@@ -21,6 +22,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.dcapps.spese.feature.checklist.ChecklistDetailScreen
+import com.dcapps.spese.feature.checklist.ChecklistScreen
 import com.dcapps.spese.feature.expenses.ExpensesDetailScreen
 import com.dcapps.spese.feature.expenses.ExpensesListScreen
 import com.dcapps.spese.feature.profile.ProfileScreen
@@ -28,14 +31,18 @@ import com.dcapps.spese.feature.profile.ProfileScreen
 object Routes {
     const val EXPENSES_LIST = "expenses"
     const val EXPENSES_DETAIL = "expenses/{listId}"
+    const val CHECKLIST = "checklist"
+    const val CHECKLIST_DETAIL = "checklist/{listId}"
     const val PROFILE = "profile"
     fun expensesDetail(listId: Long) = "expenses/$listId"
+    fun checklistDetail(listId: Long) = "checklist/$listId"
 }
 
 private data class TopLevel(val route: String, val label: String, val icon: ImageVector)
 
 private val topLevelDestinations = listOf(
-    TopLevel(Routes.EXPENSES_LIST, "Liste", Icons.AutoMirrored.Filled.ListAlt),
+    TopLevel(Routes.EXPENSES_LIST, "Spese", Icons.AutoMirrored.Filled.ListAlt),
+    TopLevel(Routes.CHECKLIST, "Spesa", Icons.Default.ShoppingCart),
     TopLevel(Routes.PROFILE, "Profilo", Icons.Default.Person),
 )
 
@@ -90,6 +97,17 @@ fun SpeseNavHost() {
                 arguments = listOf(navArgument("listId") { type = NavType.LongType }),
             ) {
                 ExpensesDetailScreen(onBack = { navController.popBackStack() })
+            }
+            composable(Routes.CHECKLIST) {
+                ChecklistScreen(
+                    onOpenList = { list -> navController.navigate(Routes.checklistDetail(list.id)) },
+                )
+            }
+            composable(
+                route = Routes.CHECKLIST_DETAIL,
+                arguments = listOf(navArgument("listId") { type = NavType.LongType }),
+            ) {
+                ChecklistDetailScreen(onBack = { navController.popBackStack() })
             }
             composable(Routes.PROFILE) {
                 ProfileScreen()
