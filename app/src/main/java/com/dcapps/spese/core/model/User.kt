@@ -74,3 +74,7 @@ data class ProfileImageResponse(
     val url: String,
     val history: List<String> = emptyList(),
 )
+
+/** Body per selezionare un'immagine profilo dallo storico ({"url": "..."}). */
+@Serializable
+data class SelectImageRequest(val url: String)

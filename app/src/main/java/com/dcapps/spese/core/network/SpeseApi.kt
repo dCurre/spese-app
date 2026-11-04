@@ -107,7 +107,7 @@ interface SpeseApi {
     @PUT("api/users/{id}/profile-image/select")
     suspend fun selectProfileImage(
         @Path("id") id: Long,
-        @Body body: Map<String, String>,
+        @Body body: com.dcapps.spese.core.model.SelectImageRequest,
     ): ProfileImageResponse
 
     // ---------- Expenses lists ----------

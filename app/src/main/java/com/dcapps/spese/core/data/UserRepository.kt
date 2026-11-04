@@ -52,5 +52,7 @@ class UserRepository @Inject constructor(
 
     /** Seleziona come immagine profilo una già presente nello storico. */
     suspend fun selectProfileImage(userId: Long, url: String): ApiResult<ProfileImageResponse> =
-        apiCall(json) { api.selectProfileImage(userId, mapOf("url" to url)) }
+        apiCall(json) {
+            api.selectProfileImage(userId, com.dcapps.spese.core.model.SelectImageRequest(url))
+        }
 }

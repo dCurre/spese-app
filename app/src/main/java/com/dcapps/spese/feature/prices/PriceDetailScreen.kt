@@ -156,8 +156,8 @@ fun PriceDetailScreen(
 
     if (showAddPurchase) {
         NewPurchaseDialog(
-            defaultUnitId = state.product?.defaultUnitId,
-            units = state.units,
+            productUnitId = state.product?.defaultUnitId,
+            productUnitSymbol = state.product?.defaultUnitSymbol,
             onDismiss = { showAddPurchase = false },
             onConfirm = { price, qty, unitId, date, store ->
                 viewModel.addPurchase(price, qty, unitId, date, store)
@@ -168,8 +168,8 @@ fun PriceDetailScreen(
 
     editingPurchase?.let { p ->
         NewPurchaseDialog(
-            defaultUnitId = state.product?.defaultUnitId,
-            units = state.units,
+            productUnitId = state.product?.defaultUnitId,
+            productUnitSymbol = state.product?.defaultUnitSymbol,
             purchase = p,
             onDismiss = { editingPurchase = null },
             onConfirm = { price, qty, unitId, date, store ->

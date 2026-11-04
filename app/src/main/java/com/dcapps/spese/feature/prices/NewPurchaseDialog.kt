@@ -6,12 +6,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
-import androidx.compose.material3.MenuAnchorType
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -27,11 +22,14 @@ import com.dcapps.spese.core.model.Purchase
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
-@OptIn(ExperimentalMaterial3Api::class)
+/**
+ * Dialog nuovo/modifica acquisto. L'unità di misura NON si sceglie qui: è quella del prodotto
+ * ([productUnitId]); viene solo mostrata come riferimento e inviata automaticamente.
+ */
 @Composable
 fun NewPurchaseDialog(
-    defaultUnitId: Long?,
-    units: List<MeasurementUnit>,
+    productUnitId: Long?,
+    productUnitSymbol: String?,
     purchase: Purchase? = null,
     onDismiss: () -> Unit,
     onConfirm: (price: Double, quantity: Double, unitId: Long, purchasedAt: String, store: String?) -> Unit,
@@ -39,10 +37,10 @@ fun NewPurchaseDialog(
     var priceText by remember { mutableStateOf(purchase?.price?.toString() ?: "") }
     var qtyText by remember { mutableStateOf(purchase?.quantity?.toString() ?: "1") }
     var store by remember { mutableStateOf(purchase?.store ?: "") }
-    var unitId by remember {
-        mutableStateOf(purchase?.unitId ?: defaultUnitId ?: units.firstOrNull()?.id)
-    }
-    var expanded by remember { mutableStateOf(false) }
+
+    // L'unità è quella dell'acquisto (in modifica) o quella del prodotto.
+    val unitId = purchase?.unitId ?: productUnitId
+    val unitSymbol = purchase?.unitSymbol ?: productUnitSymbol
 
     val price = priceText.replace(",", ".").toDoubleOrNull()
     val qty = qtyText.replace(",", ".").toDoubleOrNull()
@@ -64,35 +62,18 @@ fun NewPurchaseDialog(
                 OutlinedTextField(
                     value = qtyText,
                     onValueChange = { qtyText = it },
-                    label = { Text("Quantità") },
+                    label = { Text(if (unitSymbol != null) "Quantità ($unitSymbol)" else "Quantità") },
                     singleLine = true,
                     isError = qtyText.isNotBlank() && (qty == null || qty <= 0),
                     modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                 )
-                if (units.isNotEmpty()) {
-                    val selected = units.firstOrNull { it.id == unitId }
-                    ExposedDropdownMenuBox(
-                        expanded = expanded,
-                        onExpandedChange = { expanded = it },
-                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                    ) {
-                        OutlinedTextField(
-                            value = selected?.let { "${it.name} (${it.symbol})" } ?: "",
-                            onValueChange = {},
-                            readOnly = true,
-                            label = { Text("Unità") },
-                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                            modifier = Modifier.fillMaxWidth().menuAnchor(MenuAnchorType.PrimaryNotEditable),
-                        )
-                        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                            units.forEach { u ->
-                                DropdownMenuItem(
-                                    text = { Text("${u.name} (${u.symbol})") },
-                                    onClick = { unitId = u.id; expanded = false },
-                                )
-                            }
-                        }
-                    }
+                if (unitId == null) {
+                    Text(
+                        "Questo prodotto non ha un'unità di misura. Impostala modificando il prodotto.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.padding(top = 8.dp),
+                    )
                 }
                 OutlinedTextField(
                     value = store,
