@@ -11,7 +11,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
@@ -47,7 +46,6 @@ import com.dcapps.spese.ui.components.ErrorSnackbarEffect
 @Composable
 fun ExpensesListScreen(
     onOpenList: (ExpensesList) -> Unit,
-    onOpenDrawer: () -> Unit = {},
     viewModel: ExpensesListViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -63,16 +61,7 @@ fun ExpensesListScreen(
     }
 
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.lists_title)) },
-                navigationIcon = {
-                    IconButton(onClick = onOpenDrawer) {
-                        Icon(Icons.Default.Menu, contentDescription = stringResource(R.string.drawer_open))
-                    }
-                },
-            )
-        },
+        topBar = { TopAppBar(title = { Text(stringResource(R.string.lists_title)) }) },
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { innerPadding ->
         androidx.compose.material3.pulltorefresh.PullToRefreshBox(

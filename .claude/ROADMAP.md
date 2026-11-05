@@ -17,7 +17,11 @@ da fare: aggiornare qui (spuntare / rimuovere quando completato).
 
 - [ ] **Restyling estetico dell'app (grosso, da pianificare).** Miglioria generale dell'aspetto:
   coerenza visiva, spaziature, tipografia, palette/tema, card e liste. Da pianificare in dettaglio
-  quando ci si arriva.
+  quando ci si arriva. **Include**: sistema di colori semantici ("colori specifici per cose
+  specifiche" — es. spesa/saldo/entrata, accento primario, stati successo/errore) definito dentro i
+  temi esistenti (chiaro/scuro/legacy/auto), usato in modo consistente in tutta l'app invece del solo
+  colore primario Material. NB: il selettore temi e la persistenza (come la lingua) restano; qui si
+  definisce la palette *dentro* ogni tema.
 
 ## Fuori scope / escluse
 

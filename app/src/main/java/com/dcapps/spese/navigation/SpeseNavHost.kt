@@ -9,28 +9,17 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ListAlt
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.ShoppingCart
-import androidx.compose.material.icons.filled.AdminPanelSettings
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.DrawerValue
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.ModalDrawerSheet
-import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -39,7 +28,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.dcapps.spese.R
-import kotlinx.coroutines.launch
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavType
@@ -57,6 +45,9 @@ import com.dcapps.spese.feature.admin.AdminScreen
 import com.dcapps.spese.feature.prices.PriceDetailScreen
 import com.dcapps.spese.feature.prices.PriceListScreen
 import com.dcapps.spese.feature.profile.ProfileScreen
+import com.dcapps.spese.feature.profile.ProfileEditScreen
+import com.dcapps.spese.feature.profile.ProfileSettingsScreen
+import com.dcapps.spese.feature.profile.ProfileStatsScreen
 
 object Routes {
     const val EXPENSES_LIST = "expenses"
@@ -66,6 +57,9 @@ object Routes {
     const val PRICES = "prices"
     const val PRICE_DETAIL = "prices/{productId}"
     const val PROFILE = "profile"
+    const val PROFILE_EDIT = "profile/edit"
+    const val PROFILE_SETTINGS = "profile/settings"
+    const val PROFILE_STATS = "profile/stats"
     const val ADMIN = "admin"
     const val ABOUT = "about"
     fun expensesDetail(listId: Long) = "expenses/$listId"
@@ -100,13 +94,8 @@ fun SpeseNavHost(
         currentDestination?.hierarchy?.any { it.route == dest.route } == true
     }
 
-    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
-    val scope = rememberCoroutineScope()
     val user by authViewModel.currentUser.collectAsStateWithLifecycle()
-    val isAdmin = user?.role == "admin" || user?.role == "superadmin"
     val updateState by updateViewModel.uiState.collectAsStateWithLifecycle()
-    val openDrawer: () -> Unit = { scope.launch { drawerState.open() } }
-    val closeDrawer: () -> Unit = { scope.launch { drawerState.close() } }
     val snackbarHostState = remember { androidx.compose.material3.SnackbarHostState() }
 
     // Feedback del controllo aggiornamenti manuale (es. "Nessun aggiornamento disponibile").
@@ -114,47 +103,6 @@ fun SpeseNavHost(
         updateState.checkMessage, snackbarHostState, updateViewModel::clearCheckMessage,
     )
 
-    ModalNavigationDrawer(
-        drawerState = drawerState,
-        drawerContent = {
-            ModalDrawerSheet(modifier = Modifier.fillMaxWidth(0.78f)) {
-                Text(
-                    stringResource(R.string.drawer_menu),
-                    style = androidx.compose.material3.MaterialTheme.typography.titleLarge,
-                    modifier = Modifier.padding(start = 28.dp, top = 24.dp, bottom = 12.dp),
-                )
-                HorizontalDivider()
-                NavigationDrawerItem(
-                    icon = { Icon(Icons.Default.Refresh, contentDescription = null) },
-                    label = {
-                        Text(
-                            if (updateState.checking) stringResource(R.string.profile_checking)
-                            else stringResource(R.string.profile_check_updates),
-                        )
-                    },
-                    selected = false,
-                    onClick = { closeDrawer(); updateViewModel.checkForUpdateManual() },
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-                )
-                if (isAdmin) {
-                    NavigationDrawerItem(
-                        icon = { Icon(Icons.Default.AdminPanelSettings, contentDescription = null) },
-                        label = { Text(stringResource(R.string.profile_admin)) },
-                        selected = currentDestination?.route == Routes.ADMIN,
-                        onClick = { closeDrawer(); navController.navigate(Routes.ADMIN) },
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-                    )
-                }
-                NavigationDrawerItem(
-                    icon = { Icon(Icons.Default.Info, contentDescription = null) },
-                    label = { Text(stringResource(R.string.profile_about)) },
-                    selected = currentDestination?.route == Routes.ABOUT,
-                    onClick = { closeDrawer(); navController.navigate(Routes.ABOUT) },
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-                )
-            }
-        },
-    ) {
     Scaffold(
         snackbarHost = { androidx.compose.material3.SnackbarHost(snackbarHostState) },
         bottomBar = {
@@ -179,10 +127,13 @@ fun SpeseNavHost(
             }
         },
     ) { innerPadding ->
+        // Applica solo il padding inferiore (per la bottom bar): l'inset superiore
+        // (status bar) lo gestiscono le TopAppBar delle singole schermate, altrimenti
+        // verrebbe applicato due volte lasciando spazio vuoto sopra il titolo.
         NavHost(
             navController = navController,
             startDestination = Routes.EXPENSES_LIST,
-            modifier = Modifier.padding(innerPadding),
+            modifier = Modifier.padding(bottom = innerPadding.calculateBottomPadding()),
             enterTransition = {
                 androidx.compose.animation.slideInHorizontally(initialOffsetX = { it / 4 }) +
                     androidx.compose.animation.fadeIn()
@@ -197,7 +148,6 @@ fun SpeseNavHost(
             composable(Routes.EXPENSES_LIST) {
                 ExpensesListScreen(
                     onOpenList = { list -> navController.navigate(Routes.expensesDetail(list.id)) },
-                    onOpenDrawer = openDrawer,
                 )
             }
             composable(
@@ -209,7 +159,6 @@ fun SpeseNavHost(
             composable(Routes.CHECKLIST) {
                 ChecklistScreen(
                     onOpenList = { list -> navController.navigate(Routes.checklistDetail(list.id)) },
-                    onOpenDrawer = openDrawer,
                 )
             }
             composable(
@@ -221,7 +170,6 @@ fun SpeseNavHost(
             composable(Routes.PRICES) {
                 PriceListScreen(
                     onOpenProduct = { product -> navController.navigate(Routes.priceDetail(product.id)) },
-                    onOpenDrawer = openDrawer,
                 )
             }
             composable(
@@ -231,7 +179,24 @@ fun SpeseNavHost(
                 PriceDetailScreen(onBack = { navController.popBackStack() })
             }
             composable(Routes.PROFILE) {
-                ProfileScreen(onOpenDrawer = openDrawer)
+                ProfileScreen(
+                    onOpenProfileDetail = { navController.navigate(Routes.PROFILE_EDIT) },
+                    onOpenSettings = { navController.navigate(Routes.PROFILE_SETTINGS) },
+                    onOpenStats = { navController.navigate(Routes.PROFILE_STATS) },
+                    onOpenAbout = { navController.navigate(Routes.ABOUT) },
+                    onOpenAdmin = { navController.navigate(Routes.ADMIN) },
+                    onCheckUpdates = { updateViewModel.checkForUpdateManual() },
+                    updateChecking = updateState.checking,
+                )
+            }
+            composable(Routes.PROFILE_EDIT) {
+                ProfileEditScreen(onBack = { navController.popBackStack() })
+            }
+            composable(Routes.PROFILE_SETTINGS) {
+                ProfileSettingsScreen(onBack = { navController.popBackStack() })
+            }
+            composable(Routes.PROFILE_STATS) {
+                ProfileStatsScreen(onBack = { navController.popBackStack() })
             }
             composable(Routes.ADMIN) {
                 AdminScreen(onBack = { navController.popBackStack() })
@@ -241,7 +206,6 @@ fun SpeseNavHost(
             }
         }
     }
-    } // ModalNavigationDrawer
 
     // Popup di aggiornamento se il controllo manuale trova una versione nuova.
     val info = updateState.info

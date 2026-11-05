@@ -13,7 +13,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.StarBorder
@@ -49,7 +48,6 @@ import com.dcapps.spese.feature.expenses.CreateListDialog
 @Composable
 fun ChecklistScreen(
     onOpenList: (ShoppingList) -> Unit,
-    onOpenDrawer: () -> Unit = {},
     viewModel: ChecklistViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -64,16 +62,7 @@ fun ChecklistScreen(
     }
 
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.checklist_title)) },
-                navigationIcon = {
-                    IconButton(onClick = onOpenDrawer) {
-                        Icon(Icons.Default.Menu, contentDescription = stringResource(R.string.drawer_open))
-                    }
-                },
-            )
-        },
+        topBar = { TopAppBar(title = { Text(stringResource(R.string.checklist_title)) }) },
         snackbarHost = { androidx.compose.material3.SnackbarHost(snackbarHostState) },
     ) { innerPadding ->
         androidx.compose.material3.pulltorefresh.PullToRefreshBox(
