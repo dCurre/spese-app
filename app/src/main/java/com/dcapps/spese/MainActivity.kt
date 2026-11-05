@@ -42,8 +42,8 @@ class MainActivity : AppCompatActivity() {
             )
             val fade = ObjectAnimator.ofFloat(icon, "alpha", 1f, 0f)
             slide.interpolator = AnticipateInterpolator(1.2f)
-            slide.duration = 450
-            fade.duration = 450
+            slide.duration = 750
+            fade.duration = 750
             slide.doOnEnd { provider.remove() }
             slide.start()
             fade.start()

@@ -19,10 +19,10 @@
         <group
             android:pivotX="0"
             android:pivotY="0"
-            android:scaleX="0.74"
-            android:scaleY="0.74"
-            android:translateX="13.3"
-            android:translateY="4.0">
+            android:scaleX="0.62"
+            android:scaleY="0.62"
+            android:translateX="19.9"
+            android:translateY="16.8">
 
             <path
                 android:pathData="M12,50H34M8,62H30M16,74H36"

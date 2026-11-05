@@ -100,6 +100,16 @@ Lo stacktrace è **offuscato da R8** (classi tipo `T6.p`, `v3.c`) → identifica
 errore (es. `HTTP 500`, endpoint) più che dai nomi di classe. Per chiudere una issue serve auth
 (il token `BUGREPORT_TOKEN` è solo `Issues:write`, non è in locale): la chiusura la fa l'utente.
 
+## Scelta del modello (Opus vs Sonnet)
+
+Default **Sonnet**; passa a **Opus** per i punti difficili.
+- **Sonnet** (meccanico, ben definito): conversione i18n stringa per stringa, aggiungere voci a
+  menu/liste, cambiare colori/padding/testi, edit ripetitivi su molti file, feature la cui logica
+  esiste già (serve solo la UI).
+- **Opus** (ragionamento/rischio): debug non ovvio, refactor ampi, modifiche a navigazione o
+  architettura, build/release e R8, decisioni di design, tutto ciò dove sbagliare costa.
+- Si cambia al volo con `/model`; `/fast` = Opus con output più rapido.
+
 ## Dove sta il contesto
 
 Decisioni e fatti stabili del progetto stanno nella memoria di Claude; le cose DA FARE stanno in

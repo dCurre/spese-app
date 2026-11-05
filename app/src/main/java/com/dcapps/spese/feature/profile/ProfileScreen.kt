@@ -12,6 +12,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.AdminPanelSettings
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Person
@@ -64,14 +65,11 @@ fun ProfileScreen(
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp),
         ) {
-            // Intestazione account: avatar con il nome sotto, apre il dettaglio profilo.
+            // Intestazione account: avatar (non cliccabile) con sotto il nome + freccetta,
+            // allineati a sinistra. Solo il nome apre il dettaglio account.
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(MaterialTheme.shapes.large)
-                    .clickable(onClick = onOpenProfileDetail)
-                    .padding(vertical = 8.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                horizontalAlignment = Alignment.Start,
             ) {
                 val img = user?.profileImage
                 if (!img.isNullOrBlank()) {
@@ -91,12 +89,25 @@ fun ProfileScreen(
                         modifier = Modifier.size(96.dp),
                     )
                 }
-                Text(
-                    user?.displayName ?: "",
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(top = 12.dp),
-                )
+                // Nome + freccetta: cliccabile, apre il dettaglio account.
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .clip(MaterialTheme.shapes.small)
+                        .clickable(onClick = onOpenProfileDetail)
+                        .padding(top = 12.dp, bottom = 4.dp, end = 8.dp),
+                ) {
+                    Text(
+                        user?.displayName ?: "",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Icon(
+                        Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                        contentDescription = null,
+                        modifier = Modifier.padding(start = 4.dp).size(28.dp),
+                    )
+                }
             }
 
             // Gruppo: Impostazioni, Statistiche.

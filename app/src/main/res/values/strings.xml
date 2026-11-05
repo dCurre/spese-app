@@ -210,7 +210,7 @@
 
     <!-- Login -->
     <string name="signin_tagline">Gestisci spese condivise e liste della spesa</string>
-    <string name="signin_google">Continua con Google</string>
+    <string name="signin_google">Accedi con Google</string>
 
     <!-- Informazioni (About) -->
     <string name="about_version">Versione %1$s</string>
