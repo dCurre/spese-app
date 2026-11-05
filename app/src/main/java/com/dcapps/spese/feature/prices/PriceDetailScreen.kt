@@ -18,7 +18,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -93,7 +93,7 @@ fun PriceDetailScreen(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { showAddPurchase = true }) {
+            SmallFloatingActionButton(onClick = { showAddPurchase = true }) {
                 Icon(Icons.Default.Add, contentDescription = stringResource(R.string.purchase_new_title))
             }
         },
@@ -104,7 +104,9 @@ fun PriceDetailScreen(
                 state.error != null -> Text(state.error!!, Modifier.align(Alignment.Center).padding(32.dp))
                 else -> LazyColumn(
                     Modifier.fillMaxSize(),
-                    contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                        start = 16.dp, top = 16.dp, end = 16.dp, bottom = 88.dp,
+                    ),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     // Statistiche prodotto (calcolate dagli acquisti: prezzo unitario).
@@ -171,8 +173,9 @@ fun PriceDetailScreen(
                                     val sub = listOfNotNull(p.purchasedAt, p.store).joinToString(" · ")
                                     Text(sub, style = MaterialTheme.typography.bodySmall)
                                 }
+                                val unitSym = p.unitSymbol ?: state.product?.defaultUnitSymbol ?: "u"
                                 Text(
-                                    "%.2f €/u".format(p.unitPrice),
+                                    "%.2f €/%s".format(p.unitPrice, unitSym),
                                     style = MaterialTheme.typography.bodyMedium,
                                 )
                                 IconButton(onClick = { purchaseToDelete = p }) {

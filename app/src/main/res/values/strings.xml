@@ -239,6 +239,8 @@
     <string name="checklist_section_completed">Completate</string>
     <string name="checklist_star_remove">Rimuovi dai preferiti</string>
     <string name="checklist_star_add">Aggiungi ai preferiti</string>
+    <string name="checklist_delete_title">Elimina checklist</string>
+    <string name="checklist_delete_message">Vuoi eliminare \"%1$s\" e tutti i suoi articoli?</string>
 
     <!-- Storico prezzi -->
     <string name="prices_title">Storico prezzi</string>

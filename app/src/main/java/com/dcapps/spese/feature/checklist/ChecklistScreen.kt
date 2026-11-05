@@ -1,5 +1,6 @@
 package com.dcapps.spese.feature.checklist
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -9,15 +10,17 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -33,6 +36,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -59,7 +63,7 @@ fun ChecklistScreen(
         topBar = { TopAppBar(title = { Text(stringResource(R.string.checklist_title)) }) },
         snackbarHost = { androidx.compose.material3.SnackbarHost(snackbarHostState) },
         floatingActionButton = {
-            FloatingActionButton(onClick = { showCreate = true }) {
+            SmallFloatingActionButton(onClick = { showCreate = true }) {
                 Icon(Icons.Default.Add, contentDescription = stringResource(R.string.checklist_new))
             }
         },
@@ -102,9 +106,12 @@ private fun ChecklistContent(
     val starredTitle = stringResource(R.string.checklist_section_starred)
     val activeTitle = stringResource(R.string.checklist_section_active)
     val completedTitle = stringResource(R.string.checklist_section_completed)
+    var listToDelete by remember { mutableStateOf<ShoppingList?>(null) }
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(
+            start = 16.dp, top = 16.dp, end = 16.dp, bottom = 88.dp,
+        ),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         item {
@@ -139,9 +146,18 @@ private fun ChecklistContent(
             }
         }
 
-        section(starredTitle, state.starred, viewModel, onOpenList)
-        section(activeTitle, state.active, viewModel, onOpenList)
-        section(completedTitle, state.completed, viewModel, onOpenList)
+        section(starredTitle, state.starred, viewModel, onOpenList, onRequestDelete = { listToDelete = it })
+        section(activeTitle, state.active, viewModel, onOpenList, onRequestDelete = { listToDelete = it })
+        section(completedTitle, state.completed, viewModel, onOpenList, onRequestDelete = { listToDelete = it })
+    }
+
+    listToDelete?.let { list ->
+        com.dcapps.spese.ui.components.ConfirmDialog(
+            title = stringResource(R.string.checklist_delete_title),
+            message = stringResource(R.string.checklist_delete_message, list.name),
+            onConfirm = { viewModel.delete(list) },
+            onDismiss = { listToDelete = null },
+        )
     }
 }
 
@@ -150,6 +166,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.section(
     lists: List<ShoppingList>,
     viewModel: ChecklistViewModel,
     onOpenList: (ShoppingList) -> Unit,
+    onRequestDelete: (ShoppingList) -> Unit,
 ) {
     if (lists.isEmpty()) return
     item(key = "header-$title") {
@@ -161,7 +178,66 @@ private fun androidx.compose.foundation.lazy.LazyListScope.section(
         )
     }
     items(lists, key = { it.id }) { list ->
-        ChecklistCard(list, onOpenList, onStar = { viewModel.toggleStarred(list) })
+        SwipeableChecklistCard(
+            list = list,
+            onOpenList = onOpenList,
+            onStar = { viewModel.toggleStarred(list) },
+            onRequestDelete = { onRequestDelete(list) },
+        )
+    }
+}
+
+/**
+ * Card checklist con swipe (verso sinistra) che rivela uno sfondo rosso "Elimina"; al termine
+ * dello swipe chiede conferma tramite [onRequestDelete] (non elimina direttamente). La card
+ * viene riportata in posizione: l'eliminazione effettiva avviene solo dopo la conferma.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SwipeableChecklistCard(
+    list: ShoppingList,
+    onOpenList: (ShoppingList) -> Unit,
+    onStar: () -> Unit,
+    onRequestDelete: () -> Unit,
+) {
+    val dismissState = androidx.compose.material3.rememberSwipeToDismissBoxState(
+        confirmValueChange = { value ->
+            if (value == androidx.compose.material3.SwipeToDismissBoxValue.EndToStart) {
+                onRequestDelete()
+            }
+            // Non confermare il dismiss: la card torna in posizione, l'eliminazione passa
+            // dal dialog di conferma.
+            false
+        },
+    )
+    androidx.compose.material3.SwipeToDismissBox(
+        state = dismissState,
+        enableDismissFromStartToEnd = false,
+        backgroundContent = {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 2.dp)
+                    .clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp))
+                    .background(MaterialTheme.colorScheme.errorContainer)
+                    .padding(horizontal = 20.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.End,
+            ) {
+                Icon(
+                    Icons.Default.Delete,
+                    contentDescription = stringResource(R.string.action_delete),
+                    tint = MaterialTheme.colorScheme.onErrorContainer,
+                )
+                Text(
+                    stringResource(R.string.action_delete),
+                    color = MaterialTheme.colorScheme.onErrorContainer,
+                    modifier = Modifier.padding(start = 8.dp),
+                )
+            }
+        },
+    ) {
+        ChecklistCard(list, onOpenList, onStar = onStar)
     }
 }
 

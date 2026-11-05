@@ -46,6 +46,8 @@ data class ChecklistDetailUiState(
     val editState: ChecklistEditState? = null,
     val saving: Boolean = false,
     val message: String? = null,
+    // Impostato dopo l'eliminazione della lista: la UI torna indietro.
+    val deleted: Boolean = false,
 ) {
     val isEditing: Boolean get() = editState != null
 }
@@ -199,6 +201,16 @@ class ChecklistDetailViewModel @Inject constructor(
         viewModelScope.launch {
             itemRepository.deleteCategory(category.id)
             load()
+        }
+    }
+
+    /** Elimina l'intera checklist; al successo imposta [deleted] così la UI torna indietro. */
+    fun deleteList() {
+        viewModelScope.launch {
+            when (val result = shoppingRepository.delete(listId)) {
+                is ApiResult.Success -> _uiState.update { it.copy(deleted = true) }
+                is ApiResult.Error -> _uiState.update { it.copy(message = result.message) }
+            }
         }
     }
 

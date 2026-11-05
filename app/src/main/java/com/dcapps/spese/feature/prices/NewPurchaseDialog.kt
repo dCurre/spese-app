@@ -1,15 +1,23 @@
 package com.dcapps.spese.feature.prices
 
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -20,7 +28,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.dcapps.spese.R
 import com.dcapps.spese.core.model.Purchase
+import java.time.Instant
 import java.time.LocalDate
+import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 
 /**
@@ -42,6 +52,15 @@ fun NewPurchaseDialog(
     var store by remember { mutableStateOf(purchase?.store ?: "") }
     var notes by remember { mutableStateOf(purchase?.notes ?: "") }
     var storeMenuExpanded by remember { mutableStateOf(false) }
+    // Data dell'acquisto (yyyy-MM-dd): in modifica quella esistente, altrimenti oggi.
+    val isoFmt = remember { DateTimeFormatter.ofPattern("yyyy-MM-dd") }
+    var purchaseDate by remember {
+        mutableStateOf(
+            purchase?.purchasedAt?.let { runCatching { LocalDate.parse(it.take(10)) }.getOrNull() }
+                ?: LocalDate.now(),
+        )
+    }
+    var showDatePicker by remember { mutableStateOf(false) }
 
     // L'unità è quella dell'acquisto (in modifica) o quella del prodotto.
     val unitId = purchase?.unitId ?: productUnitId
@@ -120,6 +139,21 @@ fun NewPurchaseDialog(
                         }
                     }
                 }
+                // Data acquisto: in sola lettura, apre il date picker al tocco (un Box trasparente
+                // sopra il campo intercetta il click, come nel dialog spesa).
+                Box(Modifier.fillMaxWidth().padding(top = 8.dp)) {
+                    OutlinedTextField(
+                        value = purchaseDate.format(isoFmt),
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text(stringResource(R.string.expense_date)) },
+                        trailingIcon = { Icon(Icons.Default.DateRange, contentDescription = null) },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    Box(
+                        Modifier.matchParentSize().clickable { showDatePicker = true },
+                    )
+                }
                 OutlinedTextField(
                     value = notes,
                     onValueChange = { notes = it },
@@ -132,12 +166,32 @@ fun NewPurchaseDialog(
             TextButton(
                 enabled = valid,
                 onClick = {
-                    val date = purchase?.purchasedAt
-                        ?: LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
-                    onConfirm(price!!, qty!!, unitId!!, date, store, notes)
+                    onConfirm(price!!, qty!!, unitId!!, purchaseDate.format(isoFmt), store, notes)
                 },
             ) { Text(stringResource(R.string.action_save)) }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
     )
+
+    if (showDatePicker) {
+        val pickerState = rememberDatePickerState(
+            initialSelectedDateMillis = purchaseDate.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli(),
+        )
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    pickerState.selectedDateMillis?.let {
+                        purchaseDate = Instant.ofEpochMilli(it).atZone(ZoneOffset.UTC).toLocalDate()
+                    }
+                    showDatePicker = false
+                }) { Text(stringResource(R.string.action_ok)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) { Text(stringResource(R.string.action_cancel)) }
+            },
+        ) {
+            DatePicker(state = pickerState)
+        }
+    }
 }

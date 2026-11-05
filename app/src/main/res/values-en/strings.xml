@@ -239,6 +239,8 @@
     <string name="checklist_section_completed">Completed</string>
     <string name="checklist_star_remove">Remove from favourites</string>
     <string name="checklist_star_add">Add to favourites</string>
+    <string name="checklist_delete_title">Delete checklist</string>
+    <string name="checklist_delete_message">Delete \"%1$s\" and all its items?</string>
 
     <!-- Price history -->
     <string name="prices_title">Price history</string>

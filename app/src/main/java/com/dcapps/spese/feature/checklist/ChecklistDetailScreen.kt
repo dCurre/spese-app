@@ -67,11 +67,17 @@ fun ChecklistDetailScreen(
     var categoryToDelete by remember { mutableStateOf<ShoppingCategory?>(null) }
     var showNewCategory by remember { mutableStateOf(false) }
     var showImport by remember { mutableStateOf(false) }
+    var showDeleteList by remember { mutableStateOf(false) }
 
     val snackbarHostState = remember { androidx.compose.material3.SnackbarHostState() }
     com.dcapps.spese.ui.components.ErrorSnackbarEffect(
         state.message, snackbarHostState, viewModel::clearMessage,
     )
+
+    // Torna indietro quando la checklist viene eliminata.
+    androidx.compose.runtime.LaunchedEffect(state.deleted) {
+        if (state.deleted) onBack()
+    }
 
     // Condivisione: quando arriva un token, apre il selettore di condivisione di sistema.
     val token = state.inviteToken
@@ -113,6 +119,7 @@ fun ChecklistDetailScreen(
                                 )
                             },
                             onImport = { showImport = true },
+                            onDelete = { showDeleteList = true },
                         )
                     }
                 },
@@ -253,6 +260,15 @@ fun ChecklistDetailScreen(
             onImport = { text -> viewModel.importFromText(text); showImport = false },
         )
     }
+
+    if (showDeleteList) {
+        com.dcapps.spese.ui.components.ConfirmDialog(
+            title = stringResource(R.string.checklist_delete_title),
+            message = stringResource(R.string.checklist_delete_message, state.list?.name ?: ""),
+            onConfirm = { viewModel.deleteList() },
+            onDismiss = { showDeleteList = false },
+        )
+    }
 }
 
 @Composable
@@ -305,6 +321,7 @@ private fun OverflowMenu(
     onNewCategory: () -> Unit,
     onExport: () -> Unit,
     onImport: () -> Unit,
+    onDelete: () -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
     IconButton(onClick = { expanded = true }) {
@@ -346,6 +363,16 @@ private fun OverflowMenu(
         DropdownMenuItem(
             text = { Text(stringResource(R.string.cd_import_confirm)) },
             onClick = { expanded = false; onImport() },
+        )
+        androidx.compose.material3.HorizontalDivider()
+        DropdownMenuItem(
+            text = {
+                Text(
+                    stringResource(R.string.checklist_delete_title),
+                    color = MaterialTheme.colorScheme.error,
+                )
+            },
+            onClick = { expanded = false; onDelete() },
         )
     }
 }
