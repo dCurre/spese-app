@@ -4,8 +4,10 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -63,12 +65,12 @@ fun ProfileScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
                 .verticalScroll(rememberScrollState())
-                .padding(16.dp),
+                .padding(bottom = 16.dp),
         ) {
             // Intestazione account: avatar (non cliccabile) con sotto il nome + freccetta,
             // allineati a sinistra. Solo il nome apre il dettaglio account.
             Column(
-                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
                 horizontalAlignment = Alignment.Start,
             ) {
                 val img = user?.profileImage
@@ -110,48 +112,56 @@ fun ProfileScreen(
                 }
             }
 
-            // Gruppo: Impostazioni, Statistiche.
-            Card(Modifier.fillMaxWidth().padding(top = 20.dp)) {
-                Column {
-                    ProfileListItem(
-                        icon = Icons.Default.Settings,
-                        title = stringResource(R.string.profile_settings),
-                        subtitle = stringResource(R.string.profile_settings_subtitle),
-                        onClick = onOpenSettings,
-                    )
-                    ProfileListItem(
-                        icon = Icons.Default.QueryStats,
-                        title = stringResource(R.string.profile_stats),
-                        onClick = onOpenStats,
-                    )
-                }
-            }
+            // Gruppo: Impostazioni, Statistiche (righe + divisori, stile liste).
+            Spacer(Modifier.height(16.dp))
+            ProfileGroupDivider()
+            ProfileListItem(
+                icon = Icons.Default.Settings,
+                title = stringResource(R.string.profile_settings),
+                subtitle = stringResource(R.string.profile_settings_subtitle),
+                onClick = onOpenSettings,
+            )
+            ProfileGroupDivider()
+            ProfileListItem(
+                icon = Icons.Default.QueryStats,
+                title = stringResource(R.string.profile_stats),
+                onClick = onOpenStats,
+            )
+            ProfileGroupDivider()
 
             // Gruppo staccato: Controlla aggiornamenti, Amministrazione (admin), Informazioni.
-            Card(Modifier.fillMaxWidth().padding(top = 16.dp)) {
-                Column {
-                    ProfileListItem(
-                        icon = Icons.Default.Refresh,
-                        title = stringResource(R.string.profile_check_updates),
-                        onClick = { if (!updateChecking) onCheckUpdates() },
-                        trailing = if (updateChecking) {
-                            { CircularProgressIndicator(Modifier.size(20.dp)) }
-                        } else null,
-                    )
-                    if (isAdmin) {
-                        ProfileListItem(
-                            icon = Icons.Default.AdminPanelSettings,
-                            title = stringResource(R.string.profile_admin),
-                            onClick = onOpenAdmin,
-                        )
-                    }
-                    ProfileListItem(
-                        icon = Icons.Default.Info,
-                        title = stringResource(R.string.profile_about),
-                        onClick = onOpenAbout,
-                    )
-                }
+            Spacer(Modifier.height(24.dp))
+            ProfileGroupDivider()
+            ProfileListItem(
+                icon = Icons.Default.Refresh,
+                title = stringResource(R.string.profile_check_updates),
+                onClick = { if (!updateChecking) onCheckUpdates() },
+                trailing = if (updateChecking) {
+                    { CircularProgressIndicator(Modifier.size(20.dp)) }
+                } else null,
+            )
+            ProfileGroupDivider()
+            if (isAdmin) {
+                ProfileListItem(
+                    icon = Icons.Default.AdminPanelSettings,
+                    title = stringResource(R.string.profile_admin),
+                    onClick = onOpenAdmin,
+                )
+                ProfileGroupDivider()
             }
+            ProfileListItem(
+                icon = Icons.Default.Info,
+                title = stringResource(R.string.profile_about),
+                onClick = onOpenAbout,
+            )
+            ProfileGroupDivider()
         }
     }
+}
+
+@Composable
+private fun ProfileGroupDivider() {
+    androidx.compose.material3.HorizontalDivider(
+        color = com.dcapps.spese.ui.theme.SpeseTheme.colors.divider,
+    )
 }

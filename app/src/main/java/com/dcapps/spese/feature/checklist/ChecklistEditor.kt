@@ -76,7 +76,7 @@ fun ChecklistEditor(
                     singleLine = true,
                 )
                 IconButton(onClick = { onEdit { it.removeCategory(cat.id) } }) {
-                    Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.editor_delete_category))
+                    Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.editor_delete_category), tint = com.dcapps.spese.ui.theme.SpeseTheme.colors.danger)
                 }
             }
         }
@@ -145,7 +145,7 @@ private fun EditItemRow(
                 singleLine = true,
             )
             IconButton(onClick = onDelete) {
-                Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.editor_delete_item))
+                Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.editor_delete_item), tint = com.dcapps.spese.ui.theme.SpeseTheme.colors.danger)
             }
         }
         CategoryDropdown(

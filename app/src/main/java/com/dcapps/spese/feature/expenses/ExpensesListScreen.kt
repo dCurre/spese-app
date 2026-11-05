@@ -234,7 +234,7 @@ private fun ListRow(
             Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         IconButton(onClick = { onDeleteList(list) }) {
-            Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.action_delete))
+            Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.action_delete), tint = com.dcapps.spese.ui.theme.SpeseTheme.colors.danger)
         }
     }
 }

@@ -217,7 +217,7 @@ private fun SwipeableChecklistRow(
             Row(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.errorContainer)
+                    .background(com.dcapps.spese.ui.theme.SpeseTheme.colors.dangerBg)
                     .padding(horizontal = 24.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.End,
@@ -225,11 +225,11 @@ private fun SwipeableChecklistRow(
                 Icon(
                     Icons.Default.Delete,
                     contentDescription = stringResource(R.string.action_delete),
-                    tint = MaterialTheme.colorScheme.onErrorContainer,
+                    tint = com.dcapps.spese.ui.theme.SpeseTheme.colors.danger,
                 )
                 Text(
                     stringResource(R.string.action_delete),
-                    color = MaterialTheme.colorScheme.onErrorContainer,
+                    color = com.dcapps.spese.ui.theme.SpeseTheme.colors.danger,
                     modifier = Modifier.padding(start = 8.dp),
                 )
             }
@@ -270,7 +270,7 @@ private fun ChecklistRow(
             if (list.starred) {
                 Icon(Icons.Default.Star, contentDescription = stringResource(R.string.checklist_star_remove), tint = com.dcapps.spese.ui.theme.SpeseTheme.colors.accent)
             } else {
-                Icon(Icons.Outlined.StarBorder, contentDescription = stringResource(R.string.checklist_star_add))
+                Icon(Icons.Outlined.StarBorder, contentDescription = stringResource(R.string.checklist_star_add), tint = com.dcapps.spese.ui.theme.SpeseTheme.colors.accent)
             }
         }
     }

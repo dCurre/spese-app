@@ -411,7 +411,7 @@ private fun CategoryHeaderRow(
             Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.cd_edit_category))
         }
         IconButton(onClick = onDelete) {
-            Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.editor_delete_category))
+            Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.editor_delete_category), tint = com.dcapps.spese.ui.theme.SpeseTheme.colors.danger)
         }
     }
     HorizontalDivider(Modifier.padding(horizontal = 16.dp))

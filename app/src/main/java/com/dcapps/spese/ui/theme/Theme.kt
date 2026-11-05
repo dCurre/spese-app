@@ -31,6 +31,10 @@ data class SpeseSemanticColors(
     val accent: Color,
     val divider: Color,
     val badgeBg: Color,
+    // Errore / azioni distruttive: UN solo colore [danger]; [dangerBg] è lo stesso con bassa
+    // opacità (sfondo swipe-delete), derivato automaticamente.
+    val danger: Color,
+    val dangerBg: Color,
 )
 
 val LocalSpeseColors = staticCompositionLocalOf { LightTokens.toSemanticColors() }
@@ -69,6 +73,10 @@ private fun ThemeTokens.toSemanticColors() = SpeseSemanticColors(
     accent = accent,
     divider = border,
     badgeBg = bgInput,
+    danger = danger,
+    // Sfondo dell'azione elimina: lo stesso rosso con bassa opacità (coerente in ogni tema,
+    // un solo colore da mantenere).
+    dangerBg = danger.copy(alpha = 0.18f),
 )
 
 @Composable

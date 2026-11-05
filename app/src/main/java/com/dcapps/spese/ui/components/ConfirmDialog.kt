@@ -25,7 +25,7 @@ fun ConfirmDialog(
             TextButton(
                 onClick = { onConfirm(); onDismiss() },
                 colors = androidx.compose.material3.ButtonDefaults.textButtonColors(
-                    contentColor = MaterialTheme.colorScheme.error,
+                    contentColor = com.dcapps.spese.ui.theme.SpeseTheme.colors.danger,
                 ),
             ) { Text(confirmText) }
         },

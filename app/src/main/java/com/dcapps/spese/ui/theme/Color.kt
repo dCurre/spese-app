@@ -25,6 +25,9 @@ data class ThemeTokens(
     val credit: Color,        // positivo / credito
     val debit: Color,         // negativo / debito / spesa
     val accent: Color,        // accento (es. stella preferiti, seconda fetta grafico)
+    // errore / azioni distruttive (cestino, Annulla/Cancel, sfondo swipe-delete).
+    // UN solo colore: sfondo e "sopra" si derivano da questo nel builder (vedi Theme.kt).
+    val danger: Color,
 )
 
 // --- LIGHT ("Ledger verde" chiaro) ---
@@ -41,6 +44,7 @@ val LightTokens = ThemeTokens(
     credit = Color(0xFF1D9E75),
     debit = Color(0xFFD1495B),
     accent = Color(0xFFE8A13A),
+    danger = Color(0xFFD1495B),
 )
 
 // --- DARK (scuro material attuale, viola — invariato come look) ---
@@ -57,6 +61,7 @@ val DarkTokens = ThemeTokens(
     credit = Color(0xFF3FD39E),
     debit = Color(0xFFF4738A),
     accent = Color(0xFFE8A13A),
+    danger = Color(0xFFF4738A),
 )
 
 // --- DEFAULT / "Predefinito" (scuro-verde "Ledger" su fondo scuro) ---
@@ -73,6 +78,7 @@ val DefaultTokens = ThemeTokens(
     credit = Color(0xFF3FD39E),
     debit = Color(0xFFF4738A),
     accent = Color(0xFFE8A13A),
+    danger = Color(0xFFF4738A),
 )
 
 // --- LEGACY (navy del frontend webapp: dark blu + accent verde) ---
@@ -89,6 +95,7 @@ val LegacyTokens = ThemeTokens(
     credit = Color(0xFF00B37E),
     debit = Color(0xFFF4738A),
     accent = Color(0xFFE8A13A),
+    danger = Color(0xFFF4738A),
 )
 
 // Brand verde (icona app) — usato anche fuori dai temi (es. splash/icona via @color).

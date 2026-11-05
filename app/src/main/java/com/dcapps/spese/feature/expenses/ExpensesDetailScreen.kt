@@ -16,6 +16,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Card
@@ -284,7 +285,7 @@ private fun DetailContent(
         modifier = Modifier.fillMaxSize(),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 88.dp),
     ) {
-        // Totale: numero grande, senza card.
+        // Totale: numero grande con i centesimi più piccoli/attenuati (come nel mock).
         item {
             Column(Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp)) {
                 Text(
@@ -292,8 +293,22 @@ private fun DetailContent(
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+                val euro = state.total.toEuro()
+                // Separa i centesimi (dopo la virgola) per mostrarli più piccoli.
+                val commaIdx = euro.lastIndexOf(',')
+                val centsSize = MaterialTheme.typography.headlineSmall.fontSize
+                val centsColor = MaterialTheme.colorScheme.onSurfaceVariant
                 Text(
-                    state.total.toEuro(),
+                    text = androidx.compose.ui.text.buildAnnotatedString {
+                        if (commaIdx > 0) {
+                            append(euro.substring(0, commaIdx))
+                            pushStyle(androidx.compose.ui.text.SpanStyle(fontSize = centsSize, color = centsColor))
+                            append(euro.substring(commaIdx))
+                            pop()
+                        } else {
+                            append(euro)
+                        }
+                    },
                     style = MaterialTheme.typography.displaySmall,
                     fontWeight = FontWeight.ExtraBold,
                 )
@@ -317,6 +332,7 @@ private fun DetailContent(
                 onValueChange = onQueryChange,
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
                 placeholder = { Text(stringResource(R.string.detail_search_expense)) },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                 shape = androidx.compose.foundation.shape.RoundedCornerShape(24.dp),
                 singleLine = true,
             )

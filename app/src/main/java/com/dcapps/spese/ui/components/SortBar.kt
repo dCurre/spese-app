@@ -48,6 +48,11 @@ fun <K> SortBar(
                 selected = selected,
                 onClick = { onSelect(option.key) },
                 label = { androidx.compose.material3.Text(option.label) },
+                colors = androidx.compose.material3.FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = androidx.compose.material3.MaterialTheme.colorScheme.primary,
+                    selectedLabelColor = androidx.compose.material3.MaterialTheme.colorScheme.onPrimary,
+                    selectedTrailingIconColor = androidx.compose.material3.MaterialTheme.colorScheme.onPrimary,
+                ),
                 trailingIcon = if (selected) {
                     {
                         Icon(

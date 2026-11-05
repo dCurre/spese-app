@@ -69,7 +69,14 @@ fun BalanceSection(
 ) {
     var groupBy by remember { mutableStateOf(GroupBy.PERSON) }
 
-    Card(modifier.fillMaxWidth()) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        colors = androidx.compose.material3.CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface,
+        ),
+        elevation = androidx.compose.material3.CardDefaults.cardElevation(defaultElevation = 0.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, com.dcapps.spese.ui.theme.SpeseTheme.colors.divider),
+    ) {
         Column(Modifier.padding(16.dp)) {
             Text(stringResource(R.string.balance_title), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
 

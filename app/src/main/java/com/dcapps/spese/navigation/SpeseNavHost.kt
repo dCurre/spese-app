@@ -285,6 +285,8 @@ private fun CenterFabBottomBar(
             FloatingActionButton(
                 onClick = onCreate,
                 shape = CircleShape,
+                containerColor = androidx.compose.material3.MaterialTheme.colorScheme.primary,
+                contentColor = androidx.compose.material3.MaterialTheme.colorScheme.onPrimary,
                 modifier = Modifier.padding(top = 2.dp).size(56.dp),
             ) {
                 Icon(Icons.Default.Add, contentDescription = stringResource(R.string.action_add))

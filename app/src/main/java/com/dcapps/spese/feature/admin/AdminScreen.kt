@@ -144,7 +144,7 @@ private fun NameSection(
                             Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.action_edit))
                         }
                         IconButton(onClick = { toDelete = id to name }) {
-                            Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.action_delete))
+                            Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.action_delete), tint = com.dcapps.spese.ui.theme.SpeseTheme.colors.danger)
                         }
                     } else {
                         Text(stringResource(R.string.admin_protected), style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(end = 16.dp))
@@ -229,7 +229,7 @@ private fun UnitSection(viewModel: AdminViewModel, state: AdminUiState) {
                     }
                     if (!u.protected) {
                         IconButton(onClick = { viewModel.deleteUnit(u.id) }) {
-                            Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.action_delete))
+                            Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.action_delete), tint = com.dcapps.spese.ui.theme.SpeseTheme.colors.danger)
                         }
                     } else {
                         Text(stringResource(R.string.admin_protected), style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(end = 16.dp))

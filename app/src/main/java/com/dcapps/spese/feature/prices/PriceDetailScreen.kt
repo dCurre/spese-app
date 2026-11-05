@@ -188,7 +188,7 @@ fun PriceDetailScreen(
                                 color = com.dcapps.spese.ui.theme.SpeseTheme.colors.credit,
                             )
                             IconButton(onClick = { purchaseToDelete = p }) {
-                                Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.product_delete_purchase))
+                                Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.product_delete_purchase), tint = com.dcapps.spese.ui.theme.SpeseTheme.colors.danger)
                             }
                         }
                         androidx.compose.material3.HorizontalDivider(

@@ -33,15 +33,15 @@ class MainActivity : AppCompatActivity() {
         val splashScreen = installSplashScreen()
         super.onCreate(savedInstanceState)
 
-        // Animazione d'uscita dello splash: "corre via" verso destra (slide-out + fade) prima
-        // di mostrare l'app. Animo la splash view intera (sempre presente); l'iconView può essere
-        // null su alcuni device, quindi non lo uso (causava un NPE all'avvio).
+        // Animazione d'uscita dello splash: la banconota "corre via" verso destra (slide-out +
+        // fade). Si anima l'iconView (così scorre via solo l'icona, non lo sfondo); l'iconView può
+        // essere null su alcuni device (causava un NPE), quindi si ricade sulla view intera.
         splashScreen.setOnExitAnimationListener { provider ->
-            val view = provider.view
+            val target = provider.iconView ?: provider.view
             val slide = ObjectAnimator.ofFloat(
-                view, "translationX", 0f, view.width.toFloat() * 1.2f,
+                target, "translationX", 0f, provider.view.width.toFloat() * 1.2f,
             )
-            val fade = ObjectAnimator.ofFloat(view, "alpha", 1f, 0f)
+            val fade = ObjectAnimator.ofFloat(target, "alpha", 1f, 0f)
             slide.interpolator = AnticipateInterpolator(1.2f)
             slide.duration = 650
             fade.duration = 650
