@@ -101,6 +101,7 @@ fun ChecklistScreen(
                 viewModel.create(name, shared)
                 showCreate = false
             },
+            titleRes = R.string.checklist_new,
         )
     }
 }
@@ -222,8 +223,7 @@ private fun SwipeableChecklistCard(
         backgroundContent = {
             Row(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 2.dp)
+                    .fillMaxSize()
                     .clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp))
                     .background(MaterialTheme.colorScheme.errorContainer)
                     .padding(horizontal = 20.dp),

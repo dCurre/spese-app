@@ -25,13 +25,14 @@ import com.dcapps.spese.R
 fun CreateListDialog(
     onDismiss: () -> Unit,
     onCreate: (name: String, shared: Boolean) -> Unit,
+    @androidx.annotation.StringRes titleRes: Int = R.string.lists_new,
 ) {
     var name by remember { mutableStateOf("") }
     var shared by remember { mutableStateOf(true) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.lists_new)) },
+        title = { Text(stringResource(titleRes)) },
         text = {
             Column {
                 OutlinedTextField(

@@ -110,7 +110,12 @@ fun PriceDetailScreen(
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     // Statistiche prodotto (calcolate dagli acquisti: prezzo unitario).
-                    item { ProductStatsCard(state.purchases) }
+                    item {
+                        val statsUnit = state.product?.defaultUnitSymbol
+                            ?: state.purchases.firstNotNullOfOrNull { it.unitSymbol }
+                            ?: "u"
+                        ProductStatsCard(state.purchases, statsUnit)
+                    }
 
                     // Grafico prezzi.
                     item {
@@ -130,7 +135,10 @@ fun PriceDetailScreen(
                                     }
                                 }
                                 LineChart(
-                                    values = state.history.map { it.avgUnitPrice.toFloat() },
+                                    points = state.history,
+                                    unitSymbol = state.product?.defaultUnitSymbol
+                                        ?: state.purchases.firstNotNullOfOrNull { it.unitSymbol }
+                                        ?: "u",
                                     modifier = Modifier.padding(top = 12.dp),
                                 )
                             }
@@ -252,7 +260,10 @@ fun PriceDetailScreen(
 }
 
 @androidx.compose.runtime.Composable
-private fun ProductStatsCard(purchases: List<com.dcapps.spese.core.model.Purchase>) {
+private fun ProductStatsCard(
+    purchases: List<com.dcapps.spese.core.model.Purchase>,
+    unitSymbol: String,
+) {
     if (purchases.isEmpty()) return
     // Prezzo unitario per confronti (prezzo/quantità, già calcolato dal backend come unit_price).
     val byDate = purchases.sortedBy { it.purchasedAt }
@@ -268,8 +279,8 @@ private fun ProductStatsCard(purchases: List<com.dcapps.spese.core.model.Purchas
                 stringResource(R.string.profile_stats),
                 style = androidx.compose.material3.MaterialTheme.typography.titleMedium,
             )
-            StatLine(stringResource(R.string.product_stats_min_price), "%.2f €/u".format(minPrice) + (minP?.store?.let { " · $it" } ?: ""))
-            StatLine(stringResource(R.string.product_stats_last_price), "%.2f €/u".format(lastPrice))
+            StatLine(stringResource(R.string.product_stats_min_price), "%.2f €/%s".format(minPrice, unitSymbol) + (minP?.store?.let { " · $it" } ?: ""))
+            StatLine(stringResource(R.string.product_stats_last_price), "%.2f €/%s".format(lastPrice, unitSymbol))
             StatLine(
                 stringResource(R.string.product_stats_variation),
                 if (variationPct <= 0.0) stringResource(R.string.product_stats_at_minimum) else "+%.0f%%".format(variationPct),

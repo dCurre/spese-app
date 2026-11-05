@@ -34,6 +34,12 @@
     <!-- Navigation drawer -->
     <string name="drawer_open">Open menu</string>
     <string name="drawer_menu">Menu</string>
+
+    <!-- Bottom navigation -->
+    <string name="nav_expenses">Expenses</string>
+    <string name="nav_checklist">Checklist</string>
+    <string name="nav_prices">Prices</string>
+    <string name="nav_profile">Profile</string>
     <string name="profile_admin">Administration</string>
     <string name="profile_about">About</string>
     <string name="profile_logout">Log out</string>
@@ -90,6 +96,9 @@
     <string name="product_delete_title">Delete product</string>
     <string name="product_delete_message">Delete \"%1$s\" and all its purchases?</string>
     <string name="product_price_trend">Price trend</string>
+    <string name="chart_insufficient_data">Not enough data for the chart</string>
+    <string name="chart_unit_price">Unit price (€)</string>
+    <string name="chart_point_tooltip">%1$s · %2$s €/%3$s</string>
     <string name="product_purchases">Purchases</string>
     <string name="product_no_purchases">No purchases recorded.</string>
     <string name="product_delete_purchase">Delete purchase</string>

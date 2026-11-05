@@ -34,6 +34,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -72,13 +73,17 @@ object Routes {
     fun priceDetail(productId: Long) = "prices/$productId"
 }
 
-private data class TopLevel(val route: String, val label: String, val icon: ImageVector)
+private data class TopLevel(
+    val route: String,
+    @androidx.annotation.StringRes val labelRes: Int,
+    val icon: ImageVector,
+)
 
 private val topLevelDestinations = listOf(
-    TopLevel(Routes.EXPENSES_LIST, "Spese", Icons.AutoMirrored.Filled.ListAlt),
-    TopLevel(Routes.CHECKLIST, "Checklist", Icons.Default.ShoppingCart),
-    TopLevel(Routes.PRICES, "Prezzi", Icons.AutoMirrored.Filled.TrendingUp),
-    TopLevel(Routes.PROFILE, "Profilo", Icons.Default.Person),
+    TopLevel(Routes.EXPENSES_LIST, R.string.nav_expenses, Icons.AutoMirrored.Filled.ListAlt),
+    TopLevel(Routes.CHECKLIST, R.string.nav_checklist, Icons.Default.ShoppingCart),
+    TopLevel(Routes.PRICES, R.string.nav_prices, Icons.AutoMirrored.Filled.TrendingUp),
+    TopLevel(Routes.PROFILE, R.string.nav_profile, Icons.Default.Person),
 )
 
 @Composable
@@ -112,7 +117,7 @@ fun SpeseNavHost(
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
-            ModalDrawerSheet {
+            ModalDrawerSheet(modifier = Modifier.fillMaxWidth(0.78f)) {
                 Text(
                     stringResource(R.string.drawer_menu),
                     style = androidx.compose.material3.MaterialTheme.typography.titleLarge,
@@ -169,6 +174,7 @@ fun SpeseNavHost(
                     onNavigate = navigate,
                     createRoute = createRoute,
                     onCreate = { createRoute?.let { CreateActionBus.request(it) } },
+                    profileImageUrl = user?.profileImage,
                 )
             }
         },
@@ -270,6 +276,7 @@ private fun CenterFabBottomBar(
     onNavigate: (String) -> Unit,
     createRoute: String?,
     onCreate: () -> Unit,
+    profileImageUrl: String?,
 ) {
     Box(
         modifier = Modifier.fillMaxWidth(),
@@ -277,8 +284,9 @@ private fun CenterFabBottomBar(
     ) {
         NavigationBar {
             destinations.forEachIndexed { index, dest ->
-                // Inserisce uno slot vuoto al centro per far spazio al "+".
-                if (index == destinations.size / 2) {
+                // Slot vuoto centrale solo quando il "+" è presente, così su Profilo (niente "+")
+                // le voci riempiono la barra senza lasciare un buco.
+                if (createRoute != null && index == destinations.size / 2) {
                     NavigationBarItem(
                         selected = false,
                         onClick = {},
@@ -287,11 +295,25 @@ private fun CenterFabBottomBar(
                     )
                 }
                 val selected = currentDestination?.hierarchy?.any { it.route == dest.route } == true
+                val label = stringResource(dest.labelRes)
                 NavigationBarItem(
                     selected = selected,
                     onClick = { onNavigate(dest.route) },
-                    icon = { Icon(dest.icon, contentDescription = dest.label) },
-                    label = { Text(dest.label) },
+                    icon = {
+                        if (dest.route == Routes.PROFILE && !profileImageUrl.isNullOrBlank()) {
+                            coil.compose.AsyncImage(
+                                model = profileImageUrl,
+                                contentDescription = label,
+                                contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                                modifier = Modifier
+                                    .size(24.dp)
+                                    .clip(CircleShape),
+                            )
+                        } else {
+                            Icon(dest.icon, contentDescription = label)
+                        }
+                    },
+                    label = { Text(label) },
                 )
             }
         }
