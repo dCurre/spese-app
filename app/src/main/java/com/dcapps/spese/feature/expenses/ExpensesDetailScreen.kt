@@ -1,14 +1,18 @@
 package com.dcapps.spese.feature.expenses
 
-import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.clip
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
@@ -278,30 +282,32 @@ private fun DetailContent(
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(
-            start = 16.dp, top = 16.dp, end = 16.dp, bottom = 88.dp,
-        ),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 88.dp),
     ) {
+        // Totale: numero grande, senza card.
         item {
-            Card(Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(16.dp)) {
-                    Text(stringResource(R.string.detail_total), style = MaterialTheme.typography.labelMedium)
-                    Text(
-                        state.total.toEuro(),
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold,
-                    )
-                }
+            Column(Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp)) {
+                Text(
+                    stringResource(R.string.detail_total).uppercase(),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Text(
+                    state.total.toEuro(),
+                    style = MaterialTheme.typography.displaySmall,
+                    fontWeight = FontWeight.ExtraBold,
+                )
             }
         }
         if (state.list?.type == com.dcapps.spese.core.model.ListType.SHARED && state.balanceTotals.isNotEmpty()) {
             item {
-                BalanceSection(
-                    totals = state.balanceTotals,
-                    balance = state.balanceEntries,
-                    expenses = state.expenses,
-                )
+                Box(Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+                    BalanceSection(
+                        totals = state.balanceTotals,
+                        balance = state.balanceEntries,
+                        expenses = state.expenses,
+                    )
+                }
             }
         }
 
@@ -309,8 +315,9 @@ private fun DetailContent(
             OutlinedTextField(
                 value = state.query,
                 onValueChange = onQueryChange,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
                 placeholder = { Text(stringResource(R.string.detail_search_expense)) },
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(24.dp),
                 singleLine = true,
             )
         }
@@ -324,6 +331,7 @@ private fun DetailContent(
                 selectedKey = state.sort,
                 ascending = state.sortAsc,
                 onSelect = onSortChange,
+                modifier = Modifier.padding(horizontal = 16.dp),
             )
         }
 
@@ -332,49 +340,74 @@ private fun DetailContent(
                 Text(
                     stringResource(R.string.detail_empty),
                     style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(top = 16.dp),
+                    modifier = Modifier.padding(16.dp),
                 )
             }
         }
 
-        items(state.visibleExpenses, key = { it.id }) { expense ->
-            ExpenseCard(expense, onEdit, onRepeat)
+        itemsIndexed(state.visibleExpenses, key = { _, it -> it.id }) { index, expense ->
+            if (index == 0) {
+                androidx.compose.material3.HorizontalDivider(
+                    Modifier.padding(horizontal = 16.dp),
+                    color = com.dcapps.spese.ui.theme.SpeseTheme.colors.divider,
+                )
+            }
+            ExpenseRow(expense, onEdit, onRepeat)
+            androidx.compose.material3.HorizontalDivider(
+                Modifier.padding(horizontal = 16.dp),
+                color = com.dcapps.spese.ui.theme.SpeseTheme.colors.divider,
+            )
         }
     }
 }
 
+/** Riga spesa in stile "ledger": badge €, nome + sottotitolo, importo colorato a destra. */
 @Composable
-private fun ExpenseCard(
+private fun ExpenseRow(
     expense: Expense,
     onEdit: (Expense) -> Unit,
     onRepeat: (Expense) -> Unit,
 ) {
-    Card(onClick = { onEdit(expense) }, modifier = Modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(start = 16.dp, top = 8.dp, bottom = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onEdit(expense) }
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        // Badge circolare €
+        Box(
+            Modifier
+                .size(36.dp)
+                .clip(androidx.compose.foundation.shape.CircleShape)
+                .background(MaterialTheme.colorScheme.surfaceVariant),
+            contentAlignment = Alignment.Center,
         ) {
-            Column(Modifier.weight(1f)) {
-                Text(expense.name, style = MaterialTheme.typography.titleMedium)
-                val owner = expense.owner?.let {
-                    listOfNotNull(it.name, it.surname).joinToString(" ").ifBlank { it.email ?: "" }
-                } ?: ""
-                val subtitle = buildString {
-                    if (owner.isNotBlank()) append(owner)
-                    expense.expenseType?.let { if (isNotEmpty()) append(" · "); append(it) }
-                    expense.expenseDate?.let { append(" · "); append(it.toShortDate()) }
-                }
-                Text(subtitle, style = MaterialTheme.typography.bodySmall)
+            Text("€", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        Column(Modifier.weight(1f).padding(start = 12.dp)) {
+            Text(expense.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+            val owner = expense.owner?.let {
+                listOfNotNull(it.name, it.surname).joinToString(" ").ifBlank { it.email ?: "" }
+            } ?: ""
+            val subtitle = buildString {
+                if (owner.isNotBlank()) append(owner)
+                expense.expenseType?.let { if (isNotEmpty()) append(" · "); append(it) }
+                expense.expenseDate?.let { append(" · "); append(it.toShortDate()) }
             }
-            Text(
-                expense.amount.toEuro(),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-            )
-            IconButton(onClick = { onRepeat(expense) }) {
-                Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.detail_repeat_expense))
+            if (subtitle.isNotBlank()) {
+                Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
+        }
+        // Importo: colore semantico (spesa = debito/rosso).
+        Text(
+            expense.amount.toEuro(),
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = com.dcapps.spese.ui.theme.SpeseTheme.colors.debit,
+        )
+        IconButton(onClick = { onRepeat(expense) }) {
+            Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.detail_repeat_expense))
         }
     }
 }

@@ -22,6 +22,17 @@ da fare: aggiornare qui (spuntare / rimuovere quando completato).
   temi esistenti (chiaro/scuro/legacy/auto), usato in modo consistente in tutta l'app invece del solo
   colore primario Material. NB: il selettore temi e la persistenza (come la lingua) restano; qui si
   definisce la palette *dentro* ogni tema.
+  - **Consolidamento colori semantici (a fine restyling):** stesso schema della lingua — un set
+    unico di "nomi semantici" (uno per ogni cosa a schermo: credit/debit/accent/divider/badge/chip…)
+    valorizzato per i 3 temi (light/dark/legacy), niente colori hardcoded nelle schermate. Già
+    impostato il meccanismo (`SpeseSemanticColors` + `SpeseTheme.colors` in `ui/theme/Theme.kt`):
+    resta da RACCOGLIERE tutti i colori usati nelle schermate ridisegnate in questo set completo.
+    **Architettura voluta** (idea dell'utente, come la lingua): definire i TOKEN semantici
+    (`bgPage, bgCard, bgInput, textPrimary, textSecondary, border, brand, credit, debit, accent`),
+    poi UN SOLO builder che mappa token→ColorScheme (sempre `surface=bgCard`, `onSurface=textPrimary`,
+    `outline=border`, ecc.) e TRE set di VALORI (light/dark/legacy = le "colonne"). Così la mappatura
+    cosa→token è una sola e un nuovo tema = riempire una colonna. Oggi invece ci sono 3 ColorScheme
+    completi scritti a mano: va rifattorizzato in token + builder.
 
 ## Fuori scope / escluse
 

@@ -138,6 +138,7 @@ fun BalanceSection(
                             d.toPay.toBigDecimal().setScale(2, RoundingMode.HALF_UP).toEuro(),
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.SemiBold,
+                            color = com.dcapps.spese.ui.theme.SpeseTheme.colors.debit,
                         )
                     }
                 }

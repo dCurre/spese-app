@@ -1,5 +1,6 @@
 package com.dcapps.spese.feature.prices
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -163,33 +164,37 @@ fun PriceDetailScreen(
                     }
 
                     items(state.purchases, key = { it.id }) { p ->
-                        Card(
-                            onClick = { editingPurchase = p },
-                            modifier = Modifier.fillMaxWidth(),
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { editingPurchase = p }
+                                .padding(horizontal = 16.dp, vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            Row(
-                                Modifier.fillMaxWidth().padding(start = 16.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                            ) {
-                                Column(Modifier.weight(1f).padding(vertical = 16.dp)) {
-                                    Text(
-                                        "%.2f € · %.3g %s".format(p.price, p.quantity, p.unitSymbol ?: ""),
-                                        style = MaterialTheme.typography.titleMedium,
-                                    )
-                                    val sub = listOfNotNull(p.purchasedAt, p.store).joinToString(" · ")
-                                    Text(sub, style = MaterialTheme.typography.bodySmall)
-                                }
-                                val unitSym = p.unitSymbol ?: state.product?.defaultUnitSymbol ?: "u"
+                            Column(Modifier.weight(1f)) {
                                 Text(
-                                    "%.2f €/%s".format(p.unitPrice, unitSym),
-                                    style = MaterialTheme.typography.bodyMedium,
+                                    "%.2f € · %.3g %s".format(p.price, p.quantity, p.unitSymbol ?: ""),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.SemiBold,
                                 )
-                                IconButton(onClick = { purchaseToDelete = p }) {
-                                    Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.product_delete_purchase))
-                                }
+                                val sub = listOfNotNull(p.purchasedAt, p.store).joinToString(" · ")
+                                Text(sub, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                            val unitSym = p.unitSymbol ?: state.product?.defaultUnitSymbol ?: "u"
+                            Text(
+                                "%.2f €/%s".format(p.unitPrice, unitSym),
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = com.dcapps.spese.ui.theme.SpeseTheme.colors.credit,
+                            )
+                            IconButton(onClick = { purchaseToDelete = p }) {
+                                Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.product_delete_purchase))
                             }
                         }
+                        androidx.compose.material3.HorizontalDivider(
+                            Modifier.padding(horizontal = 16.dp),
+                            color = com.dcapps.spese.ui.theme.SpeseTheme.colors.divider,
+                        )
                     }
                 }
             }

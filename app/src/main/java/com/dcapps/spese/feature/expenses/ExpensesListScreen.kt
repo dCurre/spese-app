@@ -1,5 +1,6 @@
 package com.dcapps.spese.feature.expenses
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,7 +13,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -115,16 +115,16 @@ private fun ListContent(
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(top = 8.dp, bottom = 88.dp),
     ) {
         item {
             OutlinedTextField(
                 value = state.query,
                 onValueChange = onQueryChange,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
                 placeholder = { Text(stringResource(R.string.lists_search)) },
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(24.dp),
                 singleLine = true,
             )
         }
@@ -137,6 +137,7 @@ private fun ListContent(
                 selectedKey = state.sort,
                 ascending = state.sortAsc,
                 onSelect = onSortChange,
+                modifier = Modifier.padding(horizontal = 16.dp),
             )
         }
 
@@ -145,7 +146,7 @@ private fun ListContent(
                 Text(
                     stringResource(R.string.lists_empty),
                     style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(top = 24.dp),
+                    modifier = Modifier.padding(16.dp),
                 )
             }
         }
@@ -153,14 +154,15 @@ private fun ListContent(
         if (state.activeLists.isNotEmpty()) {
             item { SectionHeader(stringResource(R.string.lists_section_active)) }
             items(state.activeLists, key = { it.id }) { list ->
-                ListCard(list, onOpenList, onDeleteList)
+                ListRow(list, onOpenList, onDeleteList)
+                RowDivider()
             }
         }
 
         if (state.paidLists.isNotEmpty()) {
             item {
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                    modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
@@ -175,7 +177,8 @@ private fun ListContent(
             }
             if (state.paidListsShown) {
                 items(state.paidLists, key = { it.id }) { list ->
-                    ListCard(list, onOpenList, onDeleteList)
+                    ListRow(list, onOpenList, onDeleteList)
+                    RowDivider()
                 }
             }
         }
@@ -186,46 +189,52 @@ private fun ListContent(
 private fun SectionHeader(text: String) {
     Text(
         text = text,
-        style = MaterialTheme.typography.titleMedium,
+        style = MaterialTheme.typography.titleSmall,
         fontWeight = FontWeight.SemiBold,
-        modifier = Modifier.padding(vertical = 4.dp),
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 4.dp),
     )
 }
 
 @Composable
-private fun ListCard(
+private fun RowDivider() {
+    androidx.compose.material3.HorizontalDivider(
+        Modifier.padding(horizontal = 16.dp),
+        color = com.dcapps.spese.ui.theme.SpeseTheme.colors.divider,
+    )
+}
+
+@Composable
+private fun ListRow(
     list: ExpensesList,
     onOpenList: (ExpensesList) -> Unit,
     onDeleteList: (ExpensesList) -> Unit,
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        onClick = { onOpenList(list) },
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onOpenList(list) }
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            Column(Modifier.weight(1f)) {
-                Text(list.name, style = MaterialTheme.typography.titleMedium)
-                val typeLabel =
-                    if (list.type == com.dcapps.spese.core.model.ListType.SHARED)
-                        stringResource(R.string.lists_type_shared)
-                    else stringResource(R.string.lists_type_personal)
-                val participantsLabel = list.participantsCount?.let {
-                    stringResource(R.string.lists_participants, it)
-                }
-                val expensesLabel = list.expensesCount?.let {
-                    stringResource(R.string.lists_expenses_count, it)
-                }
-                val subtitle = listOfNotNull(typeLabel, participantsLabel, expensesLabel)
-                    .joinToString(" · ")
-                Text(subtitle, style = MaterialTheme.typography.bodySmall)
+        Column(Modifier.weight(1f)) {
+            Text(list.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+            val typeLabel =
+                if (list.type == com.dcapps.spese.core.model.ListType.SHARED)
+                    stringResource(R.string.lists_type_shared)
+                else stringResource(R.string.lists_type_personal)
+            val participantsLabel = list.participantsCount?.let {
+                stringResource(R.string.lists_participants, it)
             }
-            IconButton(onClick = { onDeleteList(list) }) {
-                Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.action_delete))
+            val expensesLabel = list.expensesCount?.let {
+                stringResource(R.string.lists_expenses_count, it)
             }
+            val subtitle = listOfNotNull(typeLabel, participantsLabel, expensesLabel)
+                .joinToString(" · ")
+            Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        IconButton(onClick = { onDeleteList(list) }) {
+            Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.action_delete))
         }
     }
 }
