@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Zoom-in d'ingresso dell'icona splash: scala da 0.6 a 1 con lieve overshoot. -->
+<set xmlns:android="http://schemas.android.com/apk/res/android">
+    <objectAnimator
+        android:propertyName="scaleX"
+        android:duration="500"
+        android:valueFrom="0.6"
+        android:valueTo="1.0"
+        android:valueType="floatType"
+        android:interpolator="@android:interpolator/overshoot" />
+    <objectAnimator
+        android:propertyName="scaleY"
+        android:duration="500"
+        android:valueFrom="0.6"
+        android:valueTo="1.0"
+        android:valueType="floatType"
+        android:interpolator="@android:interpolator/overshoot" />
+</set>

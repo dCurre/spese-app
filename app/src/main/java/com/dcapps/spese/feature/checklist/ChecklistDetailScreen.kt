@@ -33,7 +33,6 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -90,13 +89,9 @@ fun ChecklistDetailScreen(
     Scaffold(
         snackbarHost = { androidx.compose.material3.SnackbarHost(snackbarHostState) },
         topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        if (editState != null) stringResource(R.string.cd_edit_list)
-                        else state.list?.name ?: stringResource(R.string.detail_list_fallback),
-                    )
-                },
+            com.dcapps.spese.ui.components.SpeseTopAppBar(
+                title = if (editState != null) stringResource(R.string.cd_edit_list)
+                    else state.list?.name ?: stringResource(R.string.detail_list_fallback),
                 navigationIcon = {
                     IconButton(onClick = { if (editState != null) viewModel.cancelEdit() else onBack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.action_back))

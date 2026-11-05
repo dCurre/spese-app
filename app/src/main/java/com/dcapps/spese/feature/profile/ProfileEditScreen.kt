@@ -32,7 +32,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -74,8 +73,8 @@ fun ProfileEditScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.profile_account)) },
+            com.dcapps.spese.ui.components.SpeseTopAppBar(
+                title = stringResource(R.string.profile_account),
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.action_back))
@@ -91,60 +90,94 @@ fun ProfileEditScreen(
                 .padding(innerPadding)
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            // Avatar modificabile.
-            Box(contentAlignment = Alignment.BottomEnd) {
-                val img = user?.profileImage
-                if (!img.isNullOrBlank()) {
-                    AsyncImage(
-                        model = img,
-                        contentDescription = stringResource(R.string.profile_avatar),
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier
-                            .size(96.dp)
-                            .clip(CircleShape)
-                            .border(1.dp, MaterialTheme.colorScheme.outline, CircleShape),
-                    )
-                } else {
-                    Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.size(96.dp))
+            // Avatar + foto recenti: blocco centrato in alto.
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Box(contentAlignment = Alignment.BottomEnd) {
+                    val img = user?.profileImage
+                    if (!img.isNullOrBlank()) {
+                        AsyncImage(
+                            model = img,
+                            contentDescription = stringResource(R.string.profile_avatar),
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier
+                                .size(96.dp)
+                                .clip(CircleShape)
+                                .border(1.dp, MaterialTheme.colorScheme.outline, CircleShape),
+                        )
+                    } else {
+                        Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.size(96.dp))
+                    }
+                    if (state.uploading) {
+                        CircularProgressIndicator(Modifier.size(24.dp))
+                    } else {
+                        Icon(
+                            Icons.Default.Edit,
+                            contentDescription = stringResource(R.string.profile_change_avatar),
+                            modifier = Modifier
+                                .size(28.dp)
+                                .clip(CircleShape)
+                                .clickable {
+                                    photoPicker.launch(
+                                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                                    )
+                                },
+                        )
+                    }
                 }
-                if (state.uploading) {
-                    CircularProgressIndicator(Modifier.size(24.dp))
-                } else {
-                    Icon(
-                        Icons.Default.Edit,
-                        contentDescription = stringResource(R.string.profile_change_avatar),
-                        modifier = Modifier
-                            .size(28.dp)
-                            .clip(CircleShape)
-                            .clickable {
-                                photoPicker.launch(
-                                    PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-                                )
-                            },
-                    )
+
+                // Storico avatar: sotto la foto, tocca per ripristinare una foto precedente.
+                val history = user?.profileImagesHistory ?: emptyList()
+                if (history.size > 1) {
+                    LazyRow(
+                        modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        items(history) { url ->
+                            AsyncImage(
+                                model = url,
+                                contentDescription = stringResource(R.string.profile_previous_photo),
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier
+                                    .size(48.dp)
+                                    .clip(CircleShape)
+                                    .border(1.dp, MaterialTheme.colorScheme.outline, CircleShape)
+                                    .clickable { viewModel.selectAvatar(url) },
+                            )
+                        }
+                    }
                 }
             }
 
-            // Nome con azione di modifica.
+            // Nome con azione di modifica (allineato a sinistra).
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(top = 12.dp),
+                modifier = Modifier.fillMaxWidth().padding(top = 24.dp),
             ) {
                 Text(
                     user?.displayName ?: "",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.weight(1f),
                 )
                 IconButton(onClick = { showEditName = true }) {
                     Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.profile_edit_name), modifier = Modifier.size(18.dp))
                 }
             }
 
-            // Email con azione di copia.
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(user?.email ?: "", style = MaterialTheme.typography.bodyMedium)
+            // Email con azione di copia (allineata a sinistra).
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(
+                    user?.email ?: "",
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.weight(1f),
+                )
                 IconButton(onClick = {
                     val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE)
                         as android.content.ClipboardManager
@@ -157,28 +190,6 @@ fun ProfileEditScreen(
                         contentDescription = stringResource(R.string.profile_copy_email),
                         modifier = Modifier.size(16.dp),
                     )
-                }
-            }
-
-            // Storico avatar: tocca per ripristinare una foto precedente.
-            val history = user?.profileImagesHistory ?: emptyList()
-            if (history.size > 1) {
-                LazyRow(
-                    modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    items(history) { url ->
-                        AsyncImage(
-                            model = url,
-                            contentDescription = stringResource(R.string.profile_previous_photo),
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier
-                                .size(48.dp)
-                                .clip(CircleShape)
-                                .border(1.dp, MaterialTheme.colorScheme.outline, CircleShape)
-                                .clickable { viewModel.selectAvatar(url) },
-                        )
-                    }
                 }
             }
 

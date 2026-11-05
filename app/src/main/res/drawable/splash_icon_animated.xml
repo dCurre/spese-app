@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Icona splash animata: zoom-in d'ingresso del gruppo "root". -->
+<animated-vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:drawable="@drawable/splash_icon">
+    <target android:name="root" android:animation="@animator/splash_zoom_in" />
+</animated-vector>

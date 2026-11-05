@@ -1,4 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="ic_launcher_background">#FFFFFF</color>
+    <!-- Sfondo dell'adaptive icon (verde). Il launcher lo ritaglia alla forma (cerchio/squircle). -->
+    <color name="ic_launcher_background">#1D9E75</color>
+    <!-- Colori dell'icona app (maneggiabili da qui). -->
+    <color name="ic_launcher_speed">#9FE1CB</color>
+    <color name="ic_launcher_bill">#E1F5EE</color>
+    <color name="ic_launcher_bill_line">#5DCAA5</color>
+    <color name="ic_launcher_coin">#085041</color>
 </resources>

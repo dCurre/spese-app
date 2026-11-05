@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Icona app (foreground adaptive): banconota con euro "in movimento" verso destra + linee di
+  velocità. Lo sfondo verde è nel <background> dell'adaptive icon (riempie tutta l'icona).
+  Il gruppo esterno scala/centra il contenuto nella safe zone (viewport 108). Colori in @color.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <group
+        android:pivotX="0"
+        android:pivotY="0"
+        android:scaleX="0.74"
+        android:scaleY="0.74"
+        android:translateX="13.3"
+        android:translateY="4.0">
+
+        <!-- linee di movimento -->
+        <path
+            android:pathData="M12,50H34M8,62H30M16,74H36"
+            android:strokeColor="@color/ic_launcher_speed"
+            android:strokeWidth="4"
+            android:strokeLineCap="round" />
+
+        <!-- banconota inclinata -->
+        <group
+            android:pivotX="68"
+            android:pivotY="60"
+            android:rotation="-14">
+
+            <path
+                android:fillColor="@color/ic_launcher_bill"
+                android:pathData="M42,40H96A6,6 0 0 1 102,46V74A6,6 0 0 1 96,80H42A6,6 0 0 1 36,74V46A6,6 0 0 1 42,40Z" />
+
+            <path
+                android:pathData="M44,45H94A3,3 0 0 1 97,48V72A3,3 0 0 1 94,75H44A3,3 0 0 1 41,72V48A3,3 0 0 1 44,45Z"
+                android:strokeColor="@color/ic_launcher_bill_line"
+                android:strokeWidth="2" />
+
+            <path
+                android:fillColor="@color/ic_launcher_coin"
+                android:pathData="M69,49A11,11 0 1 1 69,71A11,11 0 1 1 69,49Z" />
+
+            <!-- simbolo euro: arco + due barre -->
+            <path
+                android:pathData="M72.4,56.6A4.6,4.6 0 1 0 72.4,63.4"
+                android:strokeColor="@color/ic_launcher_bill"
+                android:strokeWidth="2.2" />
+            <path
+                android:pathData="M63.4,58.3H70.2M63.4,61.7H70.2"
+                android:strokeColor="@color/ic_launcher_bill"
+                android:strokeWidth="1.7" />
+        </group>
+    </group>
+</vector>

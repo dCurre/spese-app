@@ -4,4 +4,13 @@
          (DayNight, NoActionBar) richiesto perché MainActivity è AppCompatActivity (serve per
          il cambio lingua runtime via AppCompatDelegate.setApplicationLocales). -->
     <style name="Theme.Spese" parent="Theme.AppCompat.DayNight.NoActionBar" />
+
+    <!-- Tema dello splash screen (Splash Screen API). Sfondo verde dell'icona app,
+         icona animata (zoom-in); all'uscita l'Activity passa a Theme.Spese. -->
+    <style name="Theme.Spese.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/ic_launcher_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/splash_icon_animated</item>
+        <item name="windowSplashScreenAnimationDuration">500</item>
+        <item name="postSplashScreenTheme">@style/Theme.Spese</item>
+    </style>
 </resources>

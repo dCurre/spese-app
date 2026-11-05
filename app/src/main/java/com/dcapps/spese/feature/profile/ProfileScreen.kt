@@ -12,7 +12,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.AdminPanelSettings
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Person
@@ -26,7 +25,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -57,7 +55,7 @@ fun ProfileScreen(
     val isAdmin = user?.role == "admin" || user?.role == "superadmin"
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text(stringResource(R.string.profile_title)) }) },
+        topBar = { com.dcapps.spese.ui.components.SpeseTopAppBar(title = stringResource(R.string.profile_title)) },
     ) { innerPadding ->
         Column(
             modifier = Modifier
@@ -66,14 +64,14 @@ fun ProfileScreen(
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp),
         ) {
-            // Intestazione account: avatar + nome, apre il dettaglio profilo.
-            Row(
+            // Intestazione account: avatar con il nome sotto, apre il dettaglio profilo.
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(MaterialTheme.shapes.large)
                     .clickable(onClick = onOpenProfileDetail)
                     .padding(vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 val img = user?.profileImage
                 if (!img.isNullOrBlank()) {
@@ -82,7 +80,7 @@ fun ProfileScreen(
                         contentDescription = stringResource(R.string.profile_avatar),
                         contentScale = ContentScale.Crop,
                         modifier = Modifier
-                            .size(72.dp)
+                            .size(96.dp)
                             .clip(CircleShape)
                             .border(1.dp, MaterialTheme.colorScheme.outline, CircleShape),
                     )
@@ -90,45 +88,35 @@ fun ProfileScreen(
                     Icon(
                         Icons.Default.Person,
                         contentDescription = null,
-                        modifier = Modifier.size(72.dp),
+                        modifier = Modifier.size(96.dp),
                     )
                 }
                 Text(
                     user?.displayName ?: "",
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
-                    modifier = Modifier.weight(1f).padding(start = 16.dp),
-                )
-                Icon(
-                    Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                    contentDescription = null,
-                    modifier = Modifier.size(24.dp),
+                    modifier = Modifier.padding(top = 12.dp),
                 )
             }
 
-            // Gruppo: Informazioni, Statistiche, Impostazioni.
+            // Gruppo: Impostazioni, Statistiche.
             Card(Modifier.fillMaxWidth().padding(top = 20.dp)) {
                 Column {
-                    ProfileListItem(
-                        icon = Icons.Default.Info,
-                        title = stringResource(R.string.profile_about),
-                        onClick = onOpenAbout,
-                    )
-                    ProfileListItem(
-                        icon = Icons.Default.QueryStats,
-                        title = stringResource(R.string.profile_stats),
-                        onClick = onOpenStats,
-                    )
                     ProfileListItem(
                         icon = Icons.Default.Settings,
                         title = stringResource(R.string.profile_settings),
                         subtitle = stringResource(R.string.profile_settings_subtitle),
                         onClick = onOpenSettings,
                     )
+                    ProfileListItem(
+                        icon = Icons.Default.QueryStats,
+                        title = stringResource(R.string.profile_stats),
+                        onClick = onOpenStats,
+                    )
                 }
             }
 
-            // Gruppo: Controlla aggiornamenti (+ Amministrazione se admin).
+            // Gruppo staccato: Controlla aggiornamenti, Amministrazione (admin), Informazioni.
             Card(Modifier.fillMaxWidth().padding(top = 16.dp)) {
                 Column {
                     ProfileListItem(
@@ -146,6 +134,11 @@ fun ProfileScreen(
                             onClick = onOpenAdmin,
                         )
                     }
+                    ProfileListItem(
+                        icon = Icons.Default.Info,
+                        title = stringResource(R.string.profile_about),
+                        onClick = onOpenAbout,
+                    )
                 }
             }
         }

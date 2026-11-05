@@ -1,9 +1,13 @@
 package com.dcapps.spese
 
+import android.animation.ObjectAnimator
 import android.os.Bundle
+import android.view.animation.AnticipateInterpolator
+import androidx.core.animation.doOnEnd
 import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
 import androidx.activity.enableEdgeToEdge
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
@@ -26,7 +30,25 @@ import dagger.hilt.android.AndroidEntryPoint
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+        val splashScreen = installSplashScreen()
         super.onCreate(savedInstanceState)
+
+        // Animazione d'uscita dello splash: la banconota "corre via" verso destra
+        // (slide-out + fade) prima di mostrare l'app.
+        splashScreen.setOnExitAnimationListener { provider ->
+            val icon = provider.iconView
+            val slide = ObjectAnimator.ofFloat(
+                icon, "translationX", 0f, provider.view.width.toFloat() * 1.2f,
+            )
+            val fade = ObjectAnimator.ofFloat(icon, "alpha", 1f, 0f)
+            slide.interpolator = AnticipateInterpolator(1.2f)
+            slide.duration = 450
+            fade.duration = 450
+            slide.doOnEnd { provider.remove() }
+            slide.start()
+            fade.start()
+        }
+
         enableEdgeToEdge()
         setContent { SpeseApp() }
     }
