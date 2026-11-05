@@ -7,8 +7,8 @@ App Android nativa (Kotlin + Jetpack Compose, MVVM + Hilt). Client del backend R
 
 - **Backend NON modificabile.** Usa solo endpoint che esistono già in `spese-ms`
   (`app/api/*/routes.py`); verificali prima di scrivere il client.
-- **Push solo su ok esplicito** dell'utente. Prima di ogni push: `git pull --rebase`
-  (il CI incrementa `VERSION` e crea un tag ad ogni release, quindi il remote è avanti).
+- **Push solo su ok esplicito** dell'utente. **Non bumpare `VERSION` a mano**: lo fa
+  automaticamente l'hook `pre-push` (vedi sotto). Usa `git push` normale.
 - **Mai committare segreti.** `local.properties`, `google-services.json`, keystore, file
   `.b64` e `.apk` sono gitignored: fai sempre un safety-check prima di `git add -A`.
 - Identità git del repo: autore **dCurre**, nessuna attribuzione Claude nei commit.
@@ -71,6 +71,21 @@ Per i soli errori Kotlin: `./gradlew :app:compileDebugKotlin` e filtra `^e: `.
 - In `build.gradle.kts`: il codice che legge `local.properties` (es. `Properties()`) va a
   **livello top-level dello script**, NON dentro `android{}`/`defaultConfig`; serve
   `import java.util.Properties`.
+
+## Versionamento (bump automatico)
+
+- La patch di `VERSION` è bumpata **automaticamente a ogni `git push`** dall'hook
+  `scripts/hooks/pre-push` (versionato; attivo via `core.hooksPath = scripts/hooks`).
+  L'hook incrementa `VERSION`, la include **nello stesso commit** del codice (amend),
+  poi fa partire il push buono e annulla quello originale → a GitHub arriva **un solo
+  push = una sola build**. L'`error: failed to push` finale è **atteso** (è l'hook che
+  blocca il push vecchio dopo aver spinto quello aggiornato).
+- **Non bumpare `VERSION` a mano** e non aggiungere step di bump al CI: il workflow
+  `release.yml` ora **legge soltanto** `VERSION` e pubblica (se il tag esiste già,
+  fallisce di proposito per segnalare un bump mancato).
+- Dopo un **clone nuovo** l'hook va riattivato una volta: `git config core.hooksPath
+  scripts/hooks` (la config locale non si committa; lo script sì). Dettagli in
+  `scripts/README.md`.
 
 ## Attività da fare
 
