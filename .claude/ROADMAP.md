@@ -15,24 +15,11 @@ da fare: aggiornare qui (spuntare / rimuovere quando completato).
   checklist, serializer (BigDecimal/Instant), `SemVer`, parsing import (Samsung Notes), statistiche
   prodotto. Agganciarli al CI così un push che rompe la logica non diventa release.
 
-- [ ] **Restyling estetico dell'app (grosso, da pianificare).** Miglioria generale dell'aspetto:
-  coerenza visiva, spaziature, tipografia, palette/tema, card e liste. Da pianificare in dettaglio
-  quando ci si arriva. **Include**: sistema di colori semantici ("colori specifici per cose
-  specifiche" — es. spesa/saldo/entrata, accento primario, stati successo/errore) definito dentro i
-  temi esistenti (chiaro/scuro/legacy/auto), usato in modo consistente in tutta l'app invece del solo
-  colore primario Material. NB: il selettore temi e la persistenza (come la lingua) restano; qui si
-  definisce la palette *dentro* ogni tema.
-  - **Consolidamento colori semantici (a fine restyling):** stesso schema della lingua — un set
-    unico di "nomi semantici" (uno per ogni cosa a schermo: credit/debit/accent/divider/badge/chip…)
-    valorizzato per i 3 temi (light/dark/legacy), niente colori hardcoded nelle schermate. Già
-    impostato il meccanismo (`SpeseSemanticColors` + `SpeseTheme.colors` in `ui/theme/Theme.kt`):
-    resta da RACCOGLIERE tutti i colori usati nelle schermate ridisegnate in questo set completo.
-    **Architettura voluta** (idea dell'utente, come la lingua): definire i TOKEN semantici
-    (`bgPage, bgCard, bgInput, textPrimary, textSecondary, border, brand, credit, debit, accent`),
-    poi UN SOLO builder che mappa token→ColorScheme (sempre `surface=bgCard`, `onSurface=textPrimary`,
-    `outline=border`, ecc.) e TRE set di VALORI (light/dark/legacy = le "colonne"). Così la mappatura
-    cosa→token è una sola e un nuovo tema = riempire una colonna. Oggi invece ci sono 3 ColorScheme
-    completi scritti a mano: va rifattorizzato in token + builder.
+- [ ] **Restyling estetico dell'app — rifiniture rimaste.** Base fatta (stile "Ledger verde":
+  temi light/dark/legacy, liste a righe, colori semantici consolidati in token). Restano eventuali
+  rifiniture viste sull'APK e l'estensione dello stile a schermate minori/dialog se necessario.
+  Fatto: sistema colori a TOKEN (`ThemeTokens` in `Color.kt`) + builder unico token→ColorScheme
+  (`Theme.kt`) + 3 colonne di valori (light/dark/legacy), come la lingua.
 
 ## Fuori scope / escluse
 

@@ -2,42 +2,95 @@ package com.dcapps.spese.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Palette primaria material standard (usata ancora dal tema "dark" attuale).
-val Purple80 = Color(0xFFD0BCFF)
-val PurpleGrey80 = Color(0xFFCCC2DC)
-val Pink80 = Color(0xFFEFB8C8)
+/**
+ * TOKEN SEMANTICI del tema: un nome per ogni "cosa a schermo".
+ * La mappatura token→Material/semantico è UNICA (vedi Theme.kt); qui sotto ci sono solo i VALORI,
+ * una "colonna" per tema (light / dark / legacy). Aggiungere un tema = riempire una colonna;
+ * cambiare un colore = toccare un solo valore. (Stesso schema della lingua: stesse chiavi, valori diversi.)
+ */
+data class ThemeTokens(
+    // superfici / sfondi
+    val bgPage: Color,        // sfondo pagina
+    val bgCard: Color,        // card / superfici
+    val bgInput: Color,       // campi input / superfici elevate / badge
+    val border: Color,        // bordi / divisori
+    // testo
+    val textPrimary: Color,
+    val textSecondary: Color,
+    // brand / primario
+    val brand: Color,         // colore primario (bottoni, chip attivo, FAB)
+    val brandDark: Color,     // variante scura del primario
+    val onBrand: Color,       // testo/icone sopra il brand
+    // semantici (importi/saldi, accenti)
+    val credit: Color,        // positivo / credito
+    val debit: Color,         // negativo / debito / spesa
+    val accent: Color,        // accento (es. stella preferiti, seconda fetta grafico)
+)
 
-val Purple40 = Color(0xFF6650A4)
-val PurpleGrey40 = Color(0xFF625B71)
-val Pink40 = Color(0xFF7D5260)
+// --- LIGHT ("Ledger verde" chiaro) ---
+val LightTokens = ThemeTokens(
+    bgPage = Color(0xFFF5F7F6),
+    bgCard = Color(0xFFFFFFFF),
+    bgInput = Color(0xFFEDF1EF),
+    border = Color(0xFFE6EBE8),
+    textPrimary = Color(0xFF15241F),
+    textSecondary = Color(0xFF6B7D76),
+    brand = Color(0xFF1D9E75),
+    brandDark = Color(0xFF157A5A),
+    onBrand = Color(0xFFFFFFFF),
+    credit = Color(0xFF1D9E75),
+    debit = Color(0xFFD1495B),
+    accent = Color(0xFFE8A13A),
+)
 
-// --- Brand verde (icona app) ---
+// --- DARK (scuro material attuale, viola — invariato come look) ---
+val DarkTokens = ThemeTokens(
+    bgPage = Color(0xFF1C1B1F),
+    bgCard = Color(0xFF2B2930),
+    bgInput = Color(0xFF36343B),
+    border = Color(0xFF49454F),
+    textPrimary = Color(0xFFE6E1E5),
+    textSecondary = Color(0xFFCAC4D0),
+    brand = Color(0xFFD0BCFF),       // Purple80 (primario material scuro attuale)
+    brandDark = Color(0xFF9A82DB),
+    onBrand = Color(0xFF381E72),
+    credit = Color(0xFF3FD39E),
+    debit = Color(0xFFF4738A),
+    accent = Color(0xFFE8A13A),
+)
+
+// --- DEFAULT / "Predefinito" (scuro-verde "Ledger" su fondo scuro) ---
+val DefaultTokens = ThemeTokens(
+    bgPage = Color(0xFF0E1512),
+    bgCard = Color(0xFF17201C),
+    bgInput = Color(0xFF1E2A24),
+    border = Color(0xFF242E29),
+    textPrimary = Color(0xFFEAF1EE),
+    textSecondary = Color(0xFF8A9A93),
+    brand = Color(0xFF2FB996),
+    brandDark = Color(0xFF1D9E75),
+    onBrand = Color(0xFF0E1512),
+    credit = Color(0xFF3FD39E),
+    debit = Color(0xFFF4738A),
+    accent = Color(0xFFE8A13A),
+)
+
+// --- LEGACY (navy del frontend webapp: dark blu + accent verde) ---
+val LegacyTokens = ThemeTokens(
+    bgPage = Color(0xFF0D1018),
+    bgCard = Color(0xFF181E2E),
+    bgInput = Color(0xFF1E2538),
+    border = Color(0xFF252D45),
+    textPrimary = Color(0xFFDDE1EF),
+    textSecondary = Color(0xFF7B849E),
+    brand = Color(0xFF00B37E),
+    brandDark = Color(0xFF009E6E),
+    onBrand = Color(0xFF0D1018),
+    credit = Color(0xFF00B37E),
+    debit = Color(0xFFF4738A),
+    accent = Color(0xFFE8A13A),
+)
+
+// Brand verde (icona app) — usato anche fuori dai temi (es. splash/icona via @color).
 val BrandGreen = Color(0xFF1D9E75)
 val BrandGreenDark = Color(0xFF157A5A)
-
-// --- Tema LIGHT "Ledger verde" ---
-val LightBg = Color(0xFFF5F7F6)         // sfondo pagina
-val LightSurface = Color(0xFFFFFFFF)    // superfici / card
-val LightSurfaceVariant = Color(0xFFEDF1EF)
-val LightInk = Color(0xFF15241F)        // testo primario
-val LightSub = Color(0xFF6B7D76)        // testo secondario
-val LightDivider = Color(0xFFE6EBE8)
-
-// --- Tema LEGACY (scuro-verde della preview) ---
-val LegacyAccent = Color(0xFF2FB996)        // verde accent (più brillante sul dark)
-val LegacyAccentDark = Color(0xFF1D9E75)
-val LegacyBgPage = Color(0xFF0E1512)        // sfondo pagina
-val LegacyBgCard = Color(0xFF17201C)        // superfici / card
-val LegacyBgInput = Color(0xFF1E2A24)       // campi input / superfici elevate
-val LegacyTextPrimary = Color(0xFFEAF1EE)
-val LegacyTextSecondary = Color(0xFF8A9A93)
-val LegacyBorder = Color(0xFF242E29)
-
-// --- Colori semantici (saldi/importi), per tema chiaro e scuro ---
-val CreditLight = Color(0xFF1D9E75)   // credito / positivo
-val DebitLight = Color(0xFFD1495B)    // debito / negativo
-val AccentAmberLight = Color(0xFFE8A13A)
-
-val CreditDark = Color(0xFF3FD39E)
-val DebitDark = Color(0xFFF4738A)
-val AccentAmberDark = Color(0xFFE8A13A)

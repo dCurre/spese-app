@@ -33,17 +33,18 @@ class MainActivity : AppCompatActivity() {
         val splashScreen = installSplashScreen()
         super.onCreate(savedInstanceState)
 
-        // Animazione d'uscita dello splash: la banconota "corre via" verso destra
-        // (slide-out + fade) prima di mostrare l'app.
+        // Animazione d'uscita dello splash: "corre via" verso destra (slide-out + fade) prima
+        // di mostrare l'app. Animo la splash view intera (sempre presente); l'iconView può essere
+        // null su alcuni device, quindi non lo uso (causava un NPE all'avvio).
         splashScreen.setOnExitAnimationListener { provider ->
-            val icon = provider.iconView
+            val view = provider.view
             val slide = ObjectAnimator.ofFloat(
-                icon, "translationX", 0f, provider.view.width.toFloat() * 1.2f,
+                view, "translationX", 0f, view.width.toFloat() * 1.2f,
             )
-            val fade = ObjectAnimator.ofFloat(icon, "alpha", 1f, 0f)
+            val fade = ObjectAnimator.ofFloat(view, "alpha", 1f, 0f)
             slide.interpolator = AnticipateInterpolator(1.2f)
-            slide.duration = 750
-            fade.duration = 750
+            slide.duration = 650
+            fade.duration = 650
             slide.doOnEnd { provider.remove() }
             slide.start()
             fade.start()
@@ -60,10 +61,12 @@ private fun SpeseApp(viewModel: AuthViewModel = hiltViewModel()) {
     val user by viewModel.currentUser.collectAsStateWithLifecycle()
 
     val preference = when (user?.themePreference) {
+        "default" -> ThemePreference.DEFAULT
         "light" -> ThemePreference.LIGHT
         "dark" -> ThemePreference.DARK
         "legacy" -> ThemePreference.LEGACY
-        else -> ThemePreference.AUTO
+        "auto" -> ThemePreference.AUTO
+        else -> ThemePreference.DEFAULT
     }
 
     // Applica la lingua salvata sul backend quando l'utente è disponibile (es. dopo il login o

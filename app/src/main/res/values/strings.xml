@@ -23,6 +23,7 @@
     <string name="profile_theme_light">Chiaro</string>
     <string name="profile_theme_dark">Scuro</string>
     <string name="profile_theme_legacy">Legacy</string>
+    <string name="profile_theme_default">Predefinito</string>
     <string name="profile_theme_auto">Auto</string>
     <string name="profile_language">Lingua</string>
     <string name="profile_language_it">Italiano</string>

@@ -79,7 +79,8 @@ fun ProfileSettingsScreen(
                         Modifier.fillMaxWidth().padding(top = 8.dp),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
-                        val current = user?.themePreference ?: "auto"
+                        val current = user?.themePreference ?: "default"
+                        SelectableChip(stringResource(R.string.profile_theme_default), current == "default") { viewModel.setTheme("default") }
                         SelectableChip(stringResource(R.string.profile_theme_light), current == "light") { viewModel.setTheme("light") }
                         SelectableChip(stringResource(R.string.profile_theme_dark), current == "dark") { viewModel.setTheme("dark") }
                         SelectableChip(stringResource(R.string.profile_theme_legacy), current == "legacy") { viewModel.setTheme("legacy") }
