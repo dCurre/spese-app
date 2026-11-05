@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Tema base: l'UI reale è gestita da Compose (SpeseTheme). -->
-    <style name="Theme.Spese" parent="android:Theme.Material.Light.NoActionBar" />
+    <!-- Tema base: l'UI reale è gestita da Compose (SpeseTheme). Parent AppCompat/Material3
+         (DayNight, NoActionBar) richiesto perché MainActivity è AppCompatActivity (serve per
+         il cambio lingua runtime via AppCompatDelegate.setApplicationLocales). -->
+    <style name="Theme.Spese" parent="Theme.AppCompat.DayNight.NoActionBar" />
 </resources>
