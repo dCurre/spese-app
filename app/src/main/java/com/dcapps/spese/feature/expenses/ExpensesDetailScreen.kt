@@ -32,10 +32,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.dcapps.spese.R
 import com.dcapps.spese.core.model.Expense
 import com.dcapps.spese.core.util.toEuro
 import com.dcapps.spese.core.util.toShortDate
@@ -71,10 +73,10 @@ fun ExpensesDetailScreen(
         snackbarHost = { androidx.compose.material3.SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
-                title = { Text(state.list?.name ?: "Lista") },
+                title = { Text(state.list?.name ?: stringResource(R.string.detail_list_fallback)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Indietro")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.action_back))
                     }
                 },
                 actions = {
@@ -96,7 +98,7 @@ fun ExpensesDetailScreen(
         },
         floatingActionButton = {
             FloatingActionButton(onClick = { editing = null; showDialog = true }) {
-                Icon(Icons.Default.Add, contentDescription = "Nuova spesa")
+                Icon(Icons.Default.Add, contentDescription = stringResource(R.string.detail_new_expense))
             }
         },
     ) { innerPadding ->
@@ -110,6 +112,7 @@ fun ExpensesDetailScreen(
                 else -> DetailContent(
                     state = state,
                     onQueryChange = viewModel::onQueryChange,
+                    onSortChange = viewModel::onSortChange,
                     onEdit = { editing = it; repeating = false; showDialog = true },
                     onRepeat = { editing = it; repeating = true; showDialog = true },
                 )
@@ -146,8 +149,8 @@ fun ExpensesDetailScreen(
 
     expenseToDelete?.let { exp ->
         com.dcapps.spese.ui.components.ConfirmDialog(
-            title = "Elimina spesa",
-            message = "Vuoi eliminare \"${exp.name}\"?",
+            title = stringResource(R.string.detail_delete_expense_title),
+            message = stringResource(R.string.detail_delete_expense_message, exp.name),
             onConfirm = { viewModel.deleteExpense(exp) },
             onDismiss = { expenseToDelete = null },
         )
@@ -192,12 +195,12 @@ private fun RenameListDialog(
     var name by remember { mutableStateOf(currentName) }
     androidx.compose.material3.AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Rinomina lista") },
+        title = { Text(stringResource(R.string.detail_rename_list)) },
         text = {
             androidx.compose.material3.OutlinedTextField(
                 value = name,
                 onValueChange = { name = it },
-                label = { Text("Nome") },
+                label = { Text(stringResource(R.string.name)) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -206,10 +209,10 @@ private fun RenameListDialog(
             androidx.compose.material3.TextButton(
                 enabled = name.isNotBlank(),
                 onClick = { onConfirm(name) },
-            ) { Text("Salva") }
+            ) { Text(stringResource(R.string.action_save)) }
         },
         dismissButton = {
-            androidx.compose.material3.TextButton(onClick = onDismiss) { Text("Annulla") }
+            androidx.compose.material3.TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
         },
     )
 }
@@ -217,12 +220,14 @@ private fun RenameListDialog(
 @Composable
 private fun ShareLinkEffect(link: String, onShared: () -> Unit) {
     val context = androidx.compose.ui.platform.LocalContext.current
+    val shareText = stringResource(R.string.detail_share_text, link)
+    val chooserTitle = stringResource(R.string.detail_share_chooser)
     androidx.compose.runtime.LaunchedEffect(link) {
         val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
             type = "text/plain"
-            putExtra(android.content.Intent.EXTRA_TEXT, "Unisciti alla mia lista spese: $link")
+            putExtra(android.content.Intent.EXTRA_TEXT, shareText)
         }
-        context.startActivity(android.content.Intent.createChooser(intent, "Condividi lista"))
+        context.startActivity(android.content.Intent.createChooser(intent, chooserTitle))
         onShared()
     }
 }
@@ -237,27 +242,27 @@ private fun ExpensesListMenu(
 ) {
     var expanded by remember { mutableStateOf(false) }
     IconButton(onClick = { expanded = true }) {
-        Icon(Icons.Default.MoreVert, contentDescription = "Altre azioni")
+        Icon(Icons.Default.MoreVert, contentDescription = stringResource(R.string.detail_more_actions))
     }
     androidx.compose.material3.DropdownMenu(
         expanded = expanded,
         onDismissRequest = { expanded = false },
     ) {
         androidx.compose.material3.DropdownMenuItem(
-            text = { Text("Rinomina lista") },
+            text = { Text(stringResource(R.string.detail_rename_list)) },
             onClick = { expanded = false; onRename() },
         )
         if (isShared) {
             androidx.compose.material3.DropdownMenuItem(
-                text = { Text("Condividi") },
+                text = { Text(stringResource(R.string.detail_share)) },
                 onClick = { expanded = false; onShare() },
             )
             androidx.compose.material3.DropdownMenuItem(
-                text = { Text("Partecipanti") },
+                text = { Text(stringResource(R.string.detail_participants)) },
                 onClick = { expanded = false; onParticipants() },
             )
             androidx.compose.material3.DropdownMenuItem(
-                text = { Text("Trasferisci proprietà") },
+                text = { Text(stringResource(R.string.detail_transfer_owner)) },
                 onClick = { expanded = false; onTransfer() },
             )
         }
@@ -268,6 +273,7 @@ private fun ExpensesListMenu(
 private fun DetailContent(
     state: ExpensesDetailUiState,
     onQueryChange: (String) -> Unit,
+    onSortChange: (ExpenseSort) -> Unit,
     onEdit: (Expense) -> Unit,
     onRepeat: (Expense) -> Unit,
 ) {
@@ -279,7 +285,7 @@ private fun DetailContent(
         item {
             Card(Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(16.dp)) {
-                    Text("Totale", style = MaterialTheme.typography.labelMedium)
+                    Text(stringResource(R.string.detail_total), style = MaterialTheme.typography.labelMedium)
                     Text(
                         state.total.toEuro(),
                         style = MaterialTheme.typography.headlineSmall,
@@ -303,15 +309,27 @@ private fun DetailContent(
                 value = state.query,
                 onValueChange = onQueryChange,
                 modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("Cerca spesa") },
+                placeholder = { Text(stringResource(R.string.detail_search_expense)) },
                 singleLine = true,
+            )
+        }
+        item {
+            com.dcapps.spese.ui.components.SortBar(
+                options = listOf(
+                    com.dcapps.spese.ui.components.SortOption(ExpenseSort.DATE, stringResource(R.string.sort_date)),
+                    com.dcapps.spese.ui.components.SortOption(ExpenseSort.NAME, stringResource(R.string.sort_name)),
+                    com.dcapps.spese.ui.components.SortOption(ExpenseSort.AMOUNT, stringResource(R.string.sort_amount)),
+                ),
+                selectedKey = state.sort,
+                ascending = state.sortAsc,
+                onSelect = onSortChange,
             )
         }
 
         if (state.visibleExpenses.isEmpty()) {
             item {
                 Text(
-                    "Nessuna spesa. Aggiungine una con il +.",
+                    stringResource(R.string.detail_empty),
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.padding(top = 16.dp),
                 )
@@ -354,7 +372,7 @@ private fun ExpenseCard(
                 fontWeight = FontWeight.SemiBold,
             )
             IconButton(onClick = { onRepeat(expense) }) {
-                Icon(Icons.Default.Refresh, contentDescription = "Ripeti spesa")
+                Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.detail_repeat_expense))
             }
         }
     }

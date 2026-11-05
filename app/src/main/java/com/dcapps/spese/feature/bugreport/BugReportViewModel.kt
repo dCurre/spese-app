@@ -57,7 +57,9 @@ class BugReportViewModel @Inject constructor(
         }
         viewModelScope.launch {
             _uiState.update { it.copy(sending = true, error = null) }
-            when (val r = repository.report(state.description, state.stackTrace)) {
+            // Il crash salvato su disco non ha contesto di rete; l'ultimo errore runtime sì.
+            val netError = if (CrashStore.read(context) == null) errorReporter.lastError else null
+            when (val r = repository.report(state.description, state.stackTrace, netError)) {
                 is ApiResult.Success -> {
                     CrashStore.clear(context)
                     errorReporter.clear()

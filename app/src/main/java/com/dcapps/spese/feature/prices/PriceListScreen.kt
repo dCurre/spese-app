@@ -28,9 +28,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.dcapps.spese.R
 import com.dcapps.spese.core.model.Product
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -47,11 +49,11 @@ fun PriceListScreen(
     )
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text("Storico prezzi") }) },
+        topBar = { TopAppBar(title = { Text(stringResource(R.string.prices_title)) }) },
         snackbarHost = { androidx.compose.material3.SnackbarHost(snackbarHostState) },
         floatingActionButton = {
             FloatingActionButton(onClick = { showCreate = true }) {
-                Icon(Icons.Default.Add, contentDescription = "Nuovo prodotto")
+                Icon(Icons.Default.Add, contentDescription = stringResource(R.string.prices_new_product))
             }
         },
     ) { innerPadding ->
@@ -63,7 +65,7 @@ fun PriceListScreen(
             when {
                 state.error != null -> Column(Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(state.error!!)
-                    TextButton(onClick = viewModel::load) { Text("Riprova") }
+                    TextButton(onClick = viewModel::load) { Text(stringResource(R.string.action_retry)) }
                 }
                 else -> LazyColumn(
                     Modifier.fillMaxSize(),
@@ -75,15 +77,25 @@ fun PriceListScreen(
                             value = state.query,
                             onValueChange = viewModel::onQueryChange,
                             modifier = Modifier.fillMaxWidth(),
-                            placeholder = { Text("Cerca prodotto") },
+                            placeholder = { Text(stringResource(R.string.prices_search)) },
                             leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                             singleLine = true,
+                        )
+                    }
+                    item {
+                        com.dcapps.spese.ui.components.SortBar(
+                            options = listOf(
+                                com.dcapps.spese.ui.components.SortOption(Unit, stringResource(R.string.sort_name)),
+                            ),
+                            selectedKey = Unit,
+                            ascending = state.sortAsc,
+                            onSelect = { viewModel.toggleSort() },
                         )
                     }
                     if (state.visibleProducts.isEmpty()) {
                         item {
                             Text(
-                                "Nessun prodotto. Creane uno con il +.",
+                                stringResource(R.string.prices_empty),
                                 style = MaterialTheme.typography.bodyMedium,
                                 modifier = Modifier.padding(top = 24.dp),
                             )
@@ -95,7 +107,7 @@ fun PriceListScreen(
                                 Text(product.name, style = MaterialTheme.typography.titleMedium)
                                 val subtitle = listOfNotNull(
                                     product.brand?.takeIf { it.isNotBlank() },
-                                    product.defaultUnitSymbol?.let { "unità: $it" },
+                                    product.defaultUnitSymbol?.let { stringResource(R.string.prices_unit, it) },
                                 ).joinToString(" · ")
                                 if (subtitle.isNotBlank()) {
                                     Text(subtitle, style = MaterialTheme.typography.bodySmall)

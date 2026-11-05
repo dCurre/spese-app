@@ -1,0 +1,249 @@
+<resources>
+    <string name="app_name">Spese</string>
+
+    <!-- Common -->
+    <string name="action_save">Save</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_delete">Delete</string>
+    <string name="action_edit">Edit</string>
+    <string name="action_create">Create</string>
+    <string name="action_add">Add</string>
+    <string name="action_retry">Retry</string>
+    <string name="action_close">Close</string>
+    <string name="action_back">Back</string>
+    <string name="action_confirm">Confirm</string>
+    <string name="name">Name</string>
+
+    <!-- Profile -->
+    <string name="profile_title">Profile</string>
+    <string name="profile_theme">Theme</string>
+    <string name="profile_theme_light">Light</string>
+    <string name="profile_theme_dark">Dark</string>
+    <string name="profile_theme_legacy">Legacy</string>
+    <string name="profile_theme_auto">Auto</string>
+    <string name="profile_language">Language</string>
+    <string name="profile_language_it">Italiano</string>
+    <string name="profile_language_en">English</string>
+    <string name="profile_stats">Statistics</string>
+    <string name="profile_stats_owned">Owned lists</string>
+    <string name="profile_stats_participating">Participations</string>
+    <string name="profile_stats_expenses">Total expenses</string>
+    <string name="profile_check_updates">Check for updates</string>
+    <string name="profile_checking">Checking…</string>
+    <string name="profile_admin">Administration</string>
+    <string name="profile_about">About</string>
+    <string name="profile_logout">Log out</string>
+    <string name="profile_edit_name">Edit name</string>
+    <string name="profile_surname">Surname</string>
+    <string name="profile_copy_email">Copy email</string>
+    <string name="profile_avatar">Avatar</string>
+    <string name="profile_change_avatar">Change avatar</string>
+    <string name="profile_previous_photo">Previous photo</string>
+    <string name="profile_no_update">No update available</string>
+
+    <!-- Sorting -->
+    <string name="sort_date">Date</string>
+    <string name="sort_name">Name</string>
+    <string name="sort_amount">Amount</string>
+    <string name="sort_ascending">Ascending</string>
+    <string name="sort_descending">Descending</string>
+
+    <!-- Expense lists -->
+    <string name="lists_title">My lists</string>
+    <string name="lists_new">New list</string>
+    <string name="lists_search">Search list</string>
+    <string name="lists_empty">No lists. Create one with +.</string>
+    <string name="lists_section_active">Active</string>
+    <string name="lists_section_paid">Settled</string>
+    <string name="lists_hide">Hide</string>
+    <string name="lists_show">Show</string>
+    <string name="lists_delete_title">Delete list</string>
+    <string name="lists_delete_message">Delete \"%1$s\" and all its expenses?</string>
+    <string name="lists_type_shared">Shared</string>
+    <string name="lists_type_personal">Personal</string>
+    <string name="lists_participants">%1$d participants</string>
+    <string name="lists_expenses_count">%1$d expenses</string>
+
+    <!-- Expense list detail -->
+    <string name="detail_list_fallback">List</string>
+    <string name="detail_new_expense">New expense</string>
+    <string name="detail_more_actions">More actions</string>
+    <string name="detail_rename_list">Rename list</string>
+    <string name="detail_share">Share</string>
+    <string name="detail_participants">Participants</string>
+    <string name="detail_transfer_owner">Transfer ownership</string>
+    <string name="detail_total">Total</string>
+    <string name="detail_search_expense">Search expense</string>
+    <string name="detail_empty">No expenses. Add one with +.</string>
+    <string name="detail_repeat_expense">Repeat expense</string>
+    <string name="detail_delete_expense_title">Delete expense</string>
+    <string name="detail_delete_expense_message">Delete \"%1$s\"?</string>
+    <string name="detail_share_text">Join my expense list: %1$s</string>
+    <string name="detail_share_chooser">Share list</string>
+
+    <!-- Product detail -->
+    <string name="product_detail_fallback">Product</string>
+    <string name="product_delete_title">Delete product</string>
+    <string name="product_delete_message">Delete \"%1$s\" and all its purchases?</string>
+    <string name="product_price_trend">Price trend</string>
+    <string name="product_purchases">Purchases</string>
+    <string name="product_no_purchases">No purchases recorded.</string>
+    <string name="product_delete_purchase">Delete purchase</string>
+    <string name="product_delete_purchase_message">Delete this purchase?</string>
+    <string name="product_stats_min_price">Lowest price</string>
+    <string name="product_stats_last_price">Last price</string>
+    <string name="product_stats_variation">Change vs lowest</string>
+    <string name="product_stats_at_minimum">at all-time low</string>
+    <string name="granularity_day">Day</string>
+    <string name="granularity_month">Month</string>
+    <string name="granularity_year">Year</string>
+
+    <!-- Purchase dialog -->
+    <string name="purchase_new_title">New purchase</string>
+    <string name="purchase_edit_title">Edit purchase</string>
+    <string name="purchase_price">Price (€)</string>
+    <string name="purchase_quantity">Quantity</string>
+    <string name="purchase_quantity_unit">Quantity (%1$s)</string>
+    <string name="purchase_no_unit">This product has no unit of measure. Set it by editing the product.</string>
+    <string name="purchase_store">Store (optional)</string>
+    <string name="purchase_notes">Notes (optional)</string>
+
+    <!-- Product dialog -->
+    <string name="product_edit_title">Edit product</string>
+    <string name="product_brand">Brand (optional)</string>
+    <string name="product_unit">Unit of measure</string>
+
+    <!-- Expense dialog -->
+    <string name="expense_edit_title">Edit expense</string>
+    <string name="expense_amount">Amount (€)</string>
+    <string name="expense_who_paid">Who paid</string>
+    <string name="expense_type">Type</string>
+    <string name="expense_date">Date</string>
+    <string name="action_ok">OK</string>
+
+    <!-- Participants -->
+    <string name="participants_guest_suffix">(guest)</string>
+    <string name="participants_owner_suffix">owner</string>
+    <string name="participants_remove">Remove</string>
+    <string name="participants_add_user">Add user</string>
+    <string name="participants_add_guest">Add guest</string>
+    <string name="participants_guest_name">Guest name</string>
+
+    <!-- Balance -->
+    <string name="balance_title">Balance</string>
+    <string name="balance_empty">No balance data.</string>
+    <string name="balance_by_person">Person</string>
+    <string name="balance_by_type">Type</string>
+    <string name="balance_type_other">Other</string>
+    <string name="balance_who_owes">Who owes whom</string>
+
+    <!-- Transfer ownership -->
+    <string name="transfer_empty">No eligible participant. Add a registered user to the list first.</string>
+    <string name="transfer_confirm">Transfer</string>
+
+    <!-- Checklist (items/categories) -->
+    <string name="item_edit_title">Edit item</string>
+    <string name="item_quantity">Quantity</string>
+    <string name="item_category">Category</string>
+    <string name="item_no_category">(No category)</string>
+    <string name="editor_new_category">New category</string>
+    <string name="editor_delete_category">Delete category</string>
+    <string name="editor_items">Items</string>
+    <string name="editor_new_item">New item</string>
+    <string name="editor_add_item">Add item</string>
+    <string name="editor_qty_short">Qty</string>
+    <string name="editor_delete_item">Delete item</string>
+
+    <!-- Administration -->
+    <string name="admin_no_access">Access restricted to administrators.</string>
+    <string name="admin_tab_expense_types">Expense types</string>
+    <string name="admin_tab_units">Units</string>
+    <string name="admin_tab_roles">Roles</string>
+    <string name="admin_tab_users">Users</string>
+    <string name="admin_protected">protected</string>
+    <string name="admin_delete_message">Delete \"%1$s\"?</string>
+    <string name="admin_new_unit">New unit</string>
+    <string name="admin_unit_symbol">Symbol</string>
+    <string name="admin_unit_category">Category (weight/volume/number/length/energy)</string>
+    <string name="admin_no_users">No users.</string>
+    <string name="admin_role">Role</string>
+    <string name="admin_no_role">(no role)</string>
+
+    <!-- Bug report -->
+    <string name="bug_thanks_title">Thank you!</string>
+    <string name="bug_thanks_message">Report sent. We\'ll look into it as soon as possible.</string>
+    <string name="bug_title">Report a problem</string>
+    <string name="bug_intro">The app ran into an error. You can send us a report to help us fix it.</string>
+    <string name="bug_description_label">What were you doing? (optional)</string>
+    <string name="bug_tech_included">Technical details included</string>
+    <string name="bug_not_configured">Reporting is not configured in this build.</string>
+    <string name="bug_sending">Sending…</string>
+    <string name="bug_send">Send</string>
+    <string name="bug_no_thanks">No, thanks</string>
+
+    <!-- Update -->
+    <string name="update_title">Update available</string>
+    <string name="update_available">Version %1$s is available.</string>
+    <string name="update_downloading">Downloading… %1$d%%</string>
+    <string name="update_action">Update</string>
+    <string name="update_allow_install">Allow installation</string>
+    <string name="update_later">Later</string>
+
+    <!-- Snackbar -->
+    <string name="snackbar_report">Report</string>
+
+    <!-- Status messages (ViewModel) -->
+    <string name="vm_user_unavailable">User unavailable</string>
+    <string name="vm_image_read_error">Unable to read the image</string>
+
+    <!-- Sign in -->
+    <string name="signin_tagline">Manage shared expenses and shopping lists</string>
+    <string name="signin_google">Continue with Google</string>
+
+    <!-- About -->
+    <string name="about_version">Version %1$s</string>
+    <string name="about_logo_desc">Spese logo</string>
+    <string name="about_tagline">Shared expenses, shopping lists and price history management.</string>
+    <string name="about_features">Features:\n• Shared expense lists with balance calculation\n• Collaborative checklists with categories\n• Product price history\n• Real-time sync\n• Light / dark / legacy themes</string>
+
+    <!-- Checklist detail -->
+    <string name="cd_edit_list">Edit list</string>
+    <string name="cd_saving">Saving…</string>
+    <string name="cd_empty">Empty list. Add an item below.</string>
+    <string name="cd_export_chooser">Export checklist</string>
+    <string name="cd_share_text">Join my checklist: %1$s</string>
+    <string name="cd_delete_item_message">Delete \"%1$s\"?</string>
+    <string name="cd_delete_category_title">Delete category</string>
+    <string name="cd_delete_category_message">Delete category \"%1$s\"? Items will become uncategorised.</string>
+    <string name="cd_import_title">Import items</string>
+    <string name="cd_import_help">One item per line. A line ending with \":\" becomes a category. Supports Samsung Notes checkboxes ([v]/[ ]) and quantities (e.g. \"Apples x3\").</string>
+    <string name="cd_import_placeholder">Fruit:\n[ ] Apples x3\n[v] Bananas\nMilk</string>
+    <string name="cd_import_confirm">Import</string>
+    <string name="cd_menu_check_all">Check all</string>
+    <string name="cd_menu_uncheck_all">Restart (uncheck all)</string>
+    <string name="cd_menu_collapse_all">Collapse all</string>
+    <string name="cd_menu_expand_all">Expand all</string>
+    <string name="cd_menu_export">Export</string>
+    <string name="cd_expand">Expand</string>
+    <string name="cd_collapse">Collapse</string>
+    <string name="cd_edit_category">Edit category</string>
+    <string name="cd_category_title">Category</string>
+    <string name="cd_parent_category">Parent category</string>
+    <string name="cd_parent_none">(None — top-level category)</string>
+
+    <!-- Checklist -->
+    <string name="checklist_title">My checklists</string>
+    <string name="checklist_new">New checklist</string>
+    <string name="checklist_section_starred">Favourites</string>
+    <string name="checklist_section_active">Active</string>
+    <string name="checklist_section_completed">Completed</string>
+    <string name="checklist_star_remove">Remove from favourites</string>
+    <string name="checklist_star_add">Add to favourites</string>
+
+    <!-- Price history -->
+    <string name="prices_title">Price history</string>
+    <string name="prices_new_product">New product</string>
+    <string name="prices_search">Search product</string>
+    <string name="prices_empty">No products. Create one with +.</string>
+    <string name="prices_unit">unit: %1$s</string>
+</resources>

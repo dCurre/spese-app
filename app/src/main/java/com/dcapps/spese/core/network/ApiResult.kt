@@ -25,11 +25,24 @@ suspend fun <T> apiCall(json: Json, block: suspend () -> T): ApiResult<T> =
     try {
         ApiResult.Success(block())
     } catch (e: HttpException) {
+        // Corpo di risposta del backend (es. {"error": "..."}): utile sia per il messaggio che
+        // per la segnalazione, perché lo stacktrace è offuscato da R8.
+        val rawBody = e.response()?.errorBody()?.string()?.takeIf { it.isNotBlank() }
+        val request = e.response()?.raw()?.request
         ApiResult.Error(
-            message = extractErrorMessage(json, e) ?: "Errore ${e.code()}",
+            message = parseErrorMessage(json, rawBody) ?: "Errore ${e.code()}",
             code = e.code(),
             cause = e,
-        ).also { it.report() }
+        ).also {
+            com.dcapps.spese.core.bugreport.ErrorReporterHolder.instance?.record(
+                message = it.message,
+                cause = e,
+                httpMethod = request?.method,
+                url = request?.url?.encodedPath,
+                httpCode = e.code(),
+                serverBody = rawBody,
+            )
+        }
     } catch (e: IOException) {
         ApiResult.Error(
             message = "Impossibile contattare il server. Controlla la connessione.",
@@ -44,8 +57,9 @@ private fun ApiResult.Error.report() {
         ?.record(message, cause)
 }
 
-private fun extractErrorMessage(json: Json, e: HttpException): String? {
-    val body = e.response()?.errorBody()?.string()?.takeIf { it.isNotBlank() } ?: return null
+/** Estrae il messaggio dal corpo `{"error": ...}` già letto; [rawBody] può essere null. */
+private fun parseErrorMessage(json: Json, rawBody: String?): String? {
+    val body = rawBody ?: return null
     return try {
         val obj = json.parseToJsonElement(body).jsonObject
         when (val error = obj["error"]) {
@@ -57,3 +71,4 @@ private fun extractErrorMessage(json: Json, e: HttpException): String? {
         body
     }
 }
+

@@ -33,8 +33,10 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.dcapps.spese.R
 import com.dcapps.spese.core.model.BalanceEntry
 import com.dcapps.spese.core.model.BalanceTotal
 import com.dcapps.spese.core.model.Expense
@@ -69,11 +71,11 @@ fun BalanceSection(
 
     Card(modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp)) {
-            Text("Saldo", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+            Text(stringResource(R.string.balance_title), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
 
             if (totals.isEmpty()) {
                 Text(
-                    "Nessun dato di saldo.",
+                    stringResource(R.string.balance_empty),
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.padding(top = 8.dp),
                 )
@@ -87,19 +89,20 @@ fun BalanceSection(
                     selected = groupBy == GroupBy.PERSON,
                     onClick = { groupBy = GroupBy.PERSON },
                     shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
-                ) { Text("Persona") }
+                ) { Text(stringResource(R.string.balance_by_person)) }
                 SegmentedButton(
                     selected = groupBy == GroupBy.TYPE,
                     onClick = { groupBy = GroupBy.TYPE },
                     shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
-                ) { Text("Tipo") }
+                ) { Text(stringResource(R.string.balance_by_type)) }
             }
 
             // Dati del grafico in base al raggruppamento scelto.
+            val otherTypeLabel = stringResource(R.string.balance_type_other)
             val slices: List<Slice> = when (groupBy) {
                 GroupBy.PERSON -> totals.map { Slice(it.name, it.amount) }
                 GroupBy.TYPE -> expenses
-                    .groupBy { it.expenseType ?: "Altro" }
+                    .groupBy { it.expenseType ?: otherTypeLabel }
                     .map { (type, list) -> Slice(type, list.sumOf { e -> e.amount.toDouble() }) }
                     .sortedBy { it.label.lowercase() }
             }
@@ -120,7 +123,7 @@ fun BalanceSection(
                 Spacer(Modifier.height(16.dp))
                 HorizontalDivider()
                 Spacer(Modifier.height(8.dp))
-                Text("Chi deve a chi", style = MaterialTheme.typography.labelLarge)
+                Text(stringResource(R.string.balance_who_owes), style = MaterialTheme.typography.labelLarge)
                 Spacer(Modifier.height(4.dp))
                 debts.forEach { d ->
                     Row(

@@ -28,7 +28,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.dcapps.spese.R
 
 /**
  * Editor della checklist in modalità modifica: tutte le modifiche sono locali ([onEdit])
@@ -54,13 +56,13 @@ fun ChecklistEditor(
                     value = newCatName,
                     onValueChange = { newCatName = it },
                     modifier = Modifier.weight(1f),
-                    placeholder = { Text("Nuova categoria") },
+                    placeholder = { Text(stringResource(R.string.editor_new_category)) },
                     singleLine = true,
                 )
                 TextButton(
                     enabled = newCatName.isNotBlank(),
                     onClick = { onEdit { it.addCategory(newCatName, null) }; newCatName = "" },
-                ) { Text("Aggiungi") }
+                ) { Text(stringResource(R.string.action_add)) }
             }
         }
 
@@ -70,18 +72,18 @@ fun ChecklistEditor(
                     value = cat.name,
                     onValueChange = { n -> onEdit { it.updateCategory(cat.id) { c -> c.copy(name = n) } } },
                     modifier = Modifier.weight(1f),
-                    label = { Text("Categoria") },
+                    label = { Text(stringResource(R.string.item_category)) },
                     singleLine = true,
                 )
                 IconButton(onClick = { onEdit { it.removeCategory(cat.id) } }) {
-                    Icon(Icons.Default.Delete, contentDescription = "Elimina categoria")
+                    Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.editor_delete_category))
                 }
             }
         }
 
         item {
             Text(
-                "Articoli",
+                stringResource(R.string.editor_items),
                 style = MaterialTheme.typography.titleSmall,
                 modifier = Modifier.padding(top = 8.dp),
             )
@@ -105,13 +107,13 @@ fun ChecklistEditor(
                     value = newItemName,
                     onValueChange = { newItemName = it },
                     modifier = Modifier.weight(1f),
-                    placeholder = { Text("Nuovo articolo") },
+                    placeholder = { Text(stringResource(R.string.editor_new_item)) },
                     singleLine = true,
                 )
                 IconButton(
                     enabled = newItemName.isNotBlank(),
                     onClick = { onEdit { it.addItem(newItemName, null) }; newItemName = "" },
-                ) { Icon(Icons.Default.Add, contentDescription = "Aggiungi articolo") }
+                ) { Icon(Icons.Default.Add, contentDescription = stringResource(R.string.editor_add_item)) }
             }
         }
     }
@@ -132,18 +134,18 @@ private fun EditItemRow(
                 value = item.name,
                 onValueChange = onNameChange,
                 modifier = Modifier.weight(1f),
-                label = { Text("Nome") },
+                label = { Text(stringResource(R.string.name)) },
                 singleLine = true,
             )
             OutlinedTextField(
                 value = item.quantity.toString(),
                 onValueChange = { onQtyChange(it.toIntOrNull()?.coerceAtLeast(1) ?: 1) },
                 modifier = Modifier.width(72.dp).padding(start = 8.dp),
-                label = { Text("Qt") },
+                label = { Text(stringResource(R.string.editor_qty_short)) },
                 singleLine = true,
             )
             IconButton(onClick = onDelete) {
-                Icon(Icons.Default.Delete, contentDescription = "Elimina articolo")
+                Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.editor_delete_item))
             }
         }
         CategoryDropdown(
@@ -161,7 +163,8 @@ private fun CategoryDropdown(
     onSelect: (Long?) -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
-    val selectedName = categories.firstOrNull { it.id == selectedId }?.name ?: "(Nessuna categoria)"
+    val noCategoryLabel = stringResource(R.string.item_no_category)
+    val selectedName = categories.firstOrNull { it.id == selectedId }?.name ?: noCategoryLabel
 
     OutlinedButton(
         onClick = { expanded = true },
@@ -171,7 +174,7 @@ private fun CategoryDropdown(
     }
     DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
         DropdownMenuItem(
-            text = { Text("(Nessuna categoria)") },
+            text = { Text(noCategoryLabel) },
             onClick = { onSelect(null); expanded = false },
         )
         categories.forEach { c ->

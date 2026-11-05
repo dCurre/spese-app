@@ -17,6 +17,7 @@ data class User(
     @SerialName("profile_images_history") val profileImagesHistory: List<String> = emptyList(),
     @SerialName("paid_list_shown") val paidListShown: Boolean = true,
     @SerialName("theme_preference") val themePreference: String = "auto",
+    @SerialName("language_preference") val languagePreference: String? = null,
     val role: String? = null,
     @SerialName("is_guest") val isGuest: Boolean = false,
 ) {
@@ -53,6 +54,7 @@ data class UpdateUserRequest(
     @SerialName("profile_image") val profileImage: String? = null,
     @SerialName("paid_list_shown") val paidListShown: Boolean? = null,
     @SerialName("theme_preference") val themePreference: String? = null,
+    @SerialName("language_preference") val languagePreference: String? = null,
     @SerialName("role_id") val roleId: Long? = null,
     @SerialName("caller_email") val callerEmail: String? = null,
 )

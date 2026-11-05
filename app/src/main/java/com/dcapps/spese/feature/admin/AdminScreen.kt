@@ -36,9 +36,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.dcapps.spese.R
 import com.dcapps.spese.ui.components.ConfirmDialog
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -58,10 +60,10 @@ fun AdminScreen(
         snackbarHost = { androidx.compose.material3.SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
-                title = { Text("Amministrazione") },
+                title = { Text(stringResource(R.string.profile_admin)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Indietro")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.action_back))
                     }
                 },
             )
@@ -70,16 +72,16 @@ fun AdminScreen(
         Box(Modifier.fillMaxSize().padding(innerPadding)) {
             when {
                 !state.isAdmin -> Text(
-                    "Accesso riservato agli amministratori.",
+                    stringResource(R.string.admin_no_access),
                     Modifier.align(Alignment.Center).padding(32.dp),
                 )
                 state.isLoading -> CircularProgressIndicator(Modifier.align(Alignment.Center))
                 else -> Column(Modifier.fillMaxSize()) {
                     androidx.compose.material3.ScrollableTabRow(selectedTabIndex = tab, edgePadding = 0.dp) {
-                        Tab(selected = tab == 0, onClick = { tab = 0 }, text = { Text("Tipi spesa") })
-                        Tab(selected = tab == 1, onClick = { tab = 1 }, text = { Text("Unità") })
-                        Tab(selected = tab == 2, onClick = { tab = 2 }, text = { Text("Ruoli") })
-                        Tab(selected = tab == 3, onClick = { tab = 3 }, text = { Text("Utenti") })
+                        Tab(selected = tab == 0, onClick = { tab = 0 }, text = { Text(stringResource(R.string.admin_tab_expense_types)) })
+                        Tab(selected = tab == 1, onClick = { tab = 1 }, text = { Text(stringResource(R.string.admin_tab_units)) })
+                        Tab(selected = tab == 2, onClick = { tab = 2 }, text = { Text(stringResource(R.string.admin_tab_roles)) })
+                        Tab(selected = tab == 3, onClick = { tab = 3 }, text = { Text(stringResource(R.string.admin_tab_users)) })
                     }
                     when (tab) {
                         0 -> NameSection(
@@ -126,7 +128,7 @@ private fun NameSection(
         item {
             TextButton(onClick = { showAdd = true }) {
                 Icon(Icons.Default.Add, contentDescription = null)
-                Text("Aggiungi", Modifier.padding(start = 4.dp))
+                Text(stringResource(R.string.action_add), Modifier.padding(start = 4.dp))
             }
         }
         items(items, key = { it.first }) { (id, name) ->
@@ -140,13 +142,13 @@ private fun NameSection(
                     Text(name, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
                     if (!isProtected) {
                         IconButton(onClick = { editing = id to name }) {
-                            Icon(Icons.Default.Edit, contentDescription = "Modifica")
+                            Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.action_edit))
                         }
                         IconButton(onClick = { toDelete = id to name }) {
-                            Icon(Icons.Default.Delete, contentDescription = "Elimina")
+                            Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.action_delete))
                         }
                     } else {
-                        Text("protetto", style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(end = 16.dp))
+                        Text(stringResource(R.string.admin_protected), style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(end = 16.dp))
                     }
                 }
             }
@@ -154,19 +156,19 @@ private fun NameSection(
     }
 
     if (showAdd) {
-        NameDialog(title = "Aggiungi", initial = "", onDismiss = { showAdd = false }, onConfirm = {
+        NameDialog(title = stringResource(R.string.action_add), initial = "", onDismiss = { showAdd = false }, onConfirm = {
             onAdd(it); showAdd = false
         })
     }
     editing?.let { (id, name) ->
-        NameDialog(title = "Modifica", initial = name, onDismiss = { editing = null }, onConfirm = {
+        NameDialog(title = stringResource(R.string.action_edit), initial = name, onDismiss = { editing = null }, onConfirm = {
             onUpdate(id, it); editing = null
         })
     }
     toDelete?.let { (id, name) ->
         ConfirmDialog(
-            title = "Elimina",
-            message = "Vuoi eliminare \"$name\"?",
+            title = stringResource(R.string.action_delete),
+            message = stringResource(R.string.admin_delete_message, name),
             onConfirm = { onDelete(id) },
             onDismiss = { toDelete = null },
         )
@@ -188,15 +190,15 @@ private fun NameDialog(
             OutlinedTextField(
                 value = value,
                 onValueChange = { value = it },
-                label = { Text("Nome") },
+                label = { Text(stringResource(R.string.name)) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
             )
         },
         confirmButton = {
-            TextButton(enabled = value.isNotBlank(), onClick = { onConfirm(value.trim()) }) { Text("Salva") }
+            TextButton(enabled = value.isNotBlank(), onClick = { onConfirm(value.trim()) }) { Text(stringResource(R.string.action_save)) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Annulla") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
     )
 }
 
@@ -212,7 +214,7 @@ private fun UnitSection(viewModel: AdminViewModel, state: AdminUiState) {
         item {
             TextButton(onClick = { showAdd = true }) {
                 Icon(Icons.Default.Add, contentDescription = null)
-                Text("Aggiungi", Modifier.padding(start = 4.dp))
+                Text(stringResource(R.string.action_add), Modifier.padding(start = 4.dp))
             }
         }
         items(state.units, key = { it.id }) { u ->
@@ -228,10 +230,10 @@ private fun UnitSection(viewModel: AdminViewModel, state: AdminUiState) {
                     }
                     if (!u.protected) {
                         IconButton(onClick = { viewModel.deleteUnit(u.id) }) {
-                            Icon(Icons.Default.Delete, contentDescription = "Elimina")
+                            Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.action_delete))
                         }
                     } else {
-                        Text("protetto", style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(end = 16.dp))
+                        Text(stringResource(R.string.admin_protected), style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(end = 16.dp))
                     }
                 }
             }
@@ -259,21 +261,21 @@ private fun UnitDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Nuova unità") },
+        title = { Text(stringResource(R.string.admin_new_unit)) },
         text = {
             Column {
-                OutlinedTextField(name, { name = it }, label = { Text("Nome") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(symbol, { symbol = it }, label = { Text("Simbolo") }, singleLine = true, modifier = Modifier.fillMaxWidth().padding(top = 8.dp))
-                OutlinedTextField(category, { category = it }, label = { Text("Categoria (peso/volume/numero/lunghezza/energia)") }, singleLine = true, modifier = Modifier.fillMaxWidth().padding(top = 8.dp))
+                OutlinedTextField(name, { name = it }, label = { Text(stringResource(R.string.name)) }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(symbol, { symbol = it }, label = { Text(stringResource(R.string.admin_unit_symbol)) }, singleLine = true, modifier = Modifier.fillMaxWidth().padding(top = 8.dp))
+                OutlinedTextField(category, { category = it }, label = { Text(stringResource(R.string.admin_unit_category)) }, singleLine = true, modifier = Modifier.fillMaxWidth().padding(top = 8.dp))
             }
         },
         confirmButton = {
             TextButton(
                 enabled = name.isNotBlank() && symbol.isNotBlank() && category.isNotBlank(),
                 onClick = { onConfirm(name.trim(), symbol.trim(), category.trim()) },
-            ) { Text("Crea") }
+            ) { Text(stringResource(R.string.action_create)) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Annulla") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
     )
 }
 
@@ -287,7 +289,7 @@ private fun UsersSection(viewModel: AdminViewModel, state: AdminUiState) {
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         if (state.users.isEmpty()) {
-            item { Text("Nessun utente.", style = MaterialTheme.typography.bodyMedium) }
+            item { Text(stringResource(R.string.admin_no_users), style = MaterialTheme.typography.bodyMedium) }
         }
         items(state.users, key = { it.id }) { user ->
             Card(Modifier.fillMaxWidth()) {
@@ -315,7 +317,7 @@ private fun RolePicker(
     modifier: Modifier = Modifier,
 ) {
     var expanded by remember { mutableStateOf(false) }
-    val currentLabel = currentRoleName ?: "(nessun ruolo)"
+    val currentLabel = currentRoleName ?: stringResource(R.string.admin_no_role)
 
     androidx.compose.material3.ExposedDropdownMenuBox(
         expanded = expanded,
@@ -326,7 +328,7 @@ private fun RolePicker(
             value = currentLabel,
             onValueChange = {},
             readOnly = true,
-            label = { Text("Ruolo") },
+            label = { Text(stringResource(R.string.admin_role)) },
             trailingIcon = {
                 androidx.compose.material3.ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
             },

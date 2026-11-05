@@ -1,3 +1,249 @@
 <resources>
     <string name="app_name">Spese</string>
+
+    <!-- Comuni -->
+    <string name="action_save">Salva</string>
+    <string name="action_cancel">Annulla</string>
+    <string name="action_delete">Elimina</string>
+    <string name="action_edit">Modifica</string>
+    <string name="action_create">Crea</string>
+    <string name="action_add">Aggiungi</string>
+    <string name="action_retry">Riprova</string>
+    <string name="action_close">Chiudi</string>
+    <string name="action_back">Indietro</string>
+    <string name="action_confirm">Conferma</string>
+    <string name="name">Nome</string>
+
+    <!-- Profilo -->
+    <string name="profile_title">Profilo</string>
+    <string name="profile_theme">Tema</string>
+    <string name="profile_theme_light">Chiaro</string>
+    <string name="profile_theme_dark">Scuro</string>
+    <string name="profile_theme_legacy">Legacy</string>
+    <string name="profile_theme_auto">Auto</string>
+    <string name="profile_language">Lingua</string>
+    <string name="profile_language_it">Italiano</string>
+    <string name="profile_language_en">English</string>
+    <string name="profile_stats">Statistiche</string>
+    <string name="profile_stats_owned">Liste possedute</string>
+    <string name="profile_stats_participating">Partecipazioni</string>
+    <string name="profile_stats_expenses">Spese totali</string>
+    <string name="profile_check_updates">Controlla aggiornamenti</string>
+    <string name="profile_checking">Controllo…</string>
+    <string name="profile_admin">Amministrazione</string>
+    <string name="profile_about">Informazioni</string>
+    <string name="profile_logout">Esci</string>
+    <string name="profile_edit_name">Modifica nome</string>
+    <string name="profile_surname">Cognome</string>
+    <string name="profile_copy_email">Copia email</string>
+    <string name="profile_avatar">Avatar</string>
+    <string name="profile_change_avatar">Cambia avatar</string>
+    <string name="profile_previous_photo">Foto precedente</string>
+    <string name="profile_no_update">Nessun aggiornamento disponibile</string>
+
+    <!-- Ordinamento -->
+    <string name="sort_date">Data</string>
+    <string name="sort_name">Nome</string>
+    <string name="sort_amount">Importo</string>
+    <string name="sort_ascending">Crescente</string>
+    <string name="sort_descending">Decrescente</string>
+
+    <!-- Liste spese -->
+    <string name="lists_title">Le mie liste</string>
+    <string name="lists_new">Nuova lista</string>
+    <string name="lists_search">Cerca lista</string>
+    <string name="lists_empty">Nessuna lista. Creane una con il +.</string>
+    <string name="lists_section_active">Attive</string>
+    <string name="lists_section_paid">Saldate</string>
+    <string name="lists_hide">Nascondi</string>
+    <string name="lists_show">Mostra</string>
+    <string name="lists_delete_title">Elimina lista</string>
+    <string name="lists_delete_message">Vuoi eliminare \"%1$s\" e tutte le sue spese?</string>
+    <string name="lists_type_shared">Condivisa</string>
+    <string name="lists_type_personal">Personale</string>
+    <string name="lists_participants">%1$d partecipanti</string>
+    <string name="lists_expenses_count">%1$d spese</string>
+
+    <!-- Dettaglio lista spese -->
+    <string name="detail_list_fallback">Lista</string>
+    <string name="detail_new_expense">Nuova spesa</string>
+    <string name="detail_more_actions">Altre azioni</string>
+    <string name="detail_rename_list">Rinomina lista</string>
+    <string name="detail_share">Condividi</string>
+    <string name="detail_participants">Partecipanti</string>
+    <string name="detail_transfer_owner">Trasferisci proprietà</string>
+    <string name="detail_total">Totale</string>
+    <string name="detail_search_expense">Cerca spesa</string>
+    <string name="detail_empty">Nessuna spesa. Aggiungine una con il +.</string>
+    <string name="detail_repeat_expense">Ripeti spesa</string>
+    <string name="detail_delete_expense_title">Elimina spesa</string>
+    <string name="detail_delete_expense_message">Vuoi eliminare \"%1$s\"?</string>
+    <string name="detail_share_text">Unisciti alla mia lista spese: %1$s</string>
+    <string name="detail_share_chooser">Condividi lista</string>
+
+    <!-- Dettaglio prodotto -->
+    <string name="product_detail_fallback">Prodotto</string>
+    <string name="product_delete_title">Elimina prodotto</string>
+    <string name="product_delete_message">Vuoi eliminare \"%1$s\" e tutti i suoi acquisti?</string>
+    <string name="product_price_trend">Andamento prezzo</string>
+    <string name="product_purchases">Acquisti</string>
+    <string name="product_no_purchases">Nessun acquisto registrato.</string>
+    <string name="product_delete_purchase">Elimina acquisto</string>
+    <string name="product_delete_purchase_message">Vuoi eliminare questo acquisto?</string>
+    <string name="product_stats_min_price">Prezzo minimo</string>
+    <string name="product_stats_last_price">Ultimo prezzo</string>
+    <string name="product_stats_variation">Variazione sul minimo</string>
+    <string name="product_stats_at_minimum">al minimo storico</string>
+    <string name="granularity_day">Giorno</string>
+    <string name="granularity_month">Mese</string>
+    <string name="granularity_year">Anno</string>
+
+    <!-- Dialog acquisto -->
+    <string name="purchase_new_title">Nuovo acquisto</string>
+    <string name="purchase_edit_title">Modifica acquisto</string>
+    <string name="purchase_price">Prezzo (€)</string>
+    <string name="purchase_quantity">Quantità</string>
+    <string name="purchase_quantity_unit">Quantità (%1$s)</string>
+    <string name="purchase_no_unit">Questo prodotto non ha un\'unità di misura. Impostala modificando il prodotto.</string>
+    <string name="purchase_store">Negozio (opzionale)</string>
+    <string name="purchase_notes">Note (opzionale)</string>
+
+    <!-- Dialog prodotto -->
+    <string name="product_edit_title">Modifica prodotto</string>
+    <string name="product_brand">Marca (opzionale)</string>
+    <string name="product_unit">Unità di misura</string>
+
+    <!-- Dialog spesa -->
+    <string name="expense_edit_title">Modifica spesa</string>
+    <string name="expense_amount">Importo (€)</string>
+    <string name="expense_who_paid">Chi ha pagato</string>
+    <string name="expense_type">Tipologia</string>
+    <string name="expense_date">Data</string>
+    <string name="action_ok">OK</string>
+
+    <!-- Partecipanti -->
+    <string name="participants_guest_suffix">(ospite)</string>
+    <string name="participants_owner_suffix">proprietario</string>
+    <string name="participants_remove">Rimuovi</string>
+    <string name="participants_add_user">Aggiungi utente</string>
+    <string name="participants_add_guest">Aggiungi ospite</string>
+    <string name="participants_guest_name">Nome ospite</string>
+
+    <!-- Saldo -->
+    <string name="balance_title">Saldo</string>
+    <string name="balance_empty">Nessun dato di saldo.</string>
+    <string name="balance_by_person">Persona</string>
+    <string name="balance_by_type">Tipo</string>
+    <string name="balance_type_other">Altro</string>
+    <string name="balance_who_owes">Chi deve a chi</string>
+
+    <!-- Trasferimento proprietà -->
+    <string name="transfer_empty">Nessun partecipante idoneo. Aggiungi prima un utente registrato alla lista.</string>
+    <string name="transfer_confirm">Trasferisci</string>
+
+    <!-- Checklist (articoli/categorie) -->
+    <string name="item_edit_title">Modifica articolo</string>
+    <string name="item_quantity">Quantità</string>
+    <string name="item_category">Categoria</string>
+    <string name="item_no_category">(Nessuna categoria)</string>
+    <string name="editor_new_category">Nuova categoria</string>
+    <string name="editor_delete_category">Elimina categoria</string>
+    <string name="editor_items">Articoli</string>
+    <string name="editor_new_item">Nuovo articolo</string>
+    <string name="editor_add_item">Aggiungi articolo</string>
+    <string name="editor_qty_short">Qt</string>
+    <string name="editor_delete_item">Elimina articolo</string>
+
+    <!-- Amministrazione -->
+    <string name="admin_no_access">Accesso riservato agli amministratori.</string>
+    <string name="admin_tab_expense_types">Tipi spesa</string>
+    <string name="admin_tab_units">Unità</string>
+    <string name="admin_tab_roles">Ruoli</string>
+    <string name="admin_tab_users">Utenti</string>
+    <string name="admin_protected">protetto</string>
+    <string name="admin_delete_message">Vuoi eliminare \"%1$s\"?</string>
+    <string name="admin_new_unit">Nuova unità</string>
+    <string name="admin_unit_symbol">Simbolo</string>
+    <string name="admin_unit_category">Categoria (peso/volume/numero/lunghezza/energia)</string>
+    <string name="admin_no_users">Nessun utente.</string>
+    <string name="admin_role">Ruolo</string>
+    <string name="admin_no_role">(nessun ruolo)</string>
+
+    <!-- Segnalazione bug -->
+    <string name="bug_thanks_title">Grazie!</string>
+    <string name="bug_thanks_message">Segnalazione inviata. La esamineremo al più presto.</string>
+    <string name="bug_title">Segnala un problema</string>
+    <string name="bug_intro">L\'app ha riscontrato un errore. Puoi inviarci una segnalazione per aiutarci a risolverlo.</string>
+    <string name="bug_description_label">Cosa stavi facendo? (opzionale)</string>
+    <string name="bug_tech_included">Dettagli tecnici inclusi</string>
+    <string name="bug_not_configured">Segnalazione non configurata su questo build.</string>
+    <string name="bug_sending">Invio…</string>
+    <string name="bug_send">Invia</string>
+    <string name="bug_no_thanks">No, grazie</string>
+
+    <!-- Aggiornamento -->
+    <string name="update_title">Aggiornamento disponibile</string>
+    <string name="update_available">È disponibile la versione %1$s.</string>
+    <string name="update_downloading">Download in corso… %1$d%%</string>
+    <string name="update_action">Aggiorna</string>
+    <string name="update_allow_install">Consenti installazione</string>
+    <string name="update_later">Più tardi</string>
+
+    <!-- Snackbar -->
+    <string name="snackbar_report">Segnala</string>
+
+    <!-- Messaggi di stato (ViewModel) -->
+    <string name="vm_user_unavailable">Utente non disponibile</string>
+    <string name="vm_image_read_error">Impossibile leggere l\'immagine</string>
+
+    <!-- Login -->
+    <string name="signin_tagline">Gestisci spese condivise e liste della spesa</string>
+    <string name="signin_google">Continua con Google</string>
+
+    <!-- Informazioni (About) -->
+    <string name="about_version">Versione %1$s</string>
+    <string name="about_logo_desc">Logo Spese</string>
+    <string name="about_tagline">Gestione di spese condivise, liste della spesa e storico prezzi.</string>
+    <string name="about_features">Funzionalità:\n• Liste spese condivise con calcolo saldi\n• Checklist collaborative con categorie\n• Storico prezzi dei prodotti\n• Sincronizzazione in tempo reale\n• Temi chiaro / scuro / legacy</string>
+
+    <!-- Dettaglio checklist -->
+    <string name="cd_edit_list">Modifica lista</string>
+    <string name="cd_saving">Salvataggio…</string>
+    <string name="cd_empty">Lista vuota. Aggiungi un articolo qui sotto.</string>
+    <string name="cd_export_chooser">Esporta checklist</string>
+    <string name="cd_share_text">Unisciti alla mia checklist: %1$s</string>
+    <string name="cd_delete_item_message">Vuoi eliminare \"%1$s\"?</string>
+    <string name="cd_delete_category_title">Elimina categoria</string>
+    <string name="cd_delete_category_message">Vuoi eliminare la categoria \"%1$s\"? Gli articoli resteranno senza categoria.</string>
+    <string name="cd_import_title">Importa articoli</string>
+    <string name="cd_import_help">Un articolo per riga. Una riga che termina con \":\" diventa una categoria. Supporta le caselle di Samsung Notes ([v]/[ ]) e quantità (es. \"Mele x3\").</string>
+    <string name="cd_import_placeholder">Frutta:\n[ ] Mele x3\n[v] Banane\nLatte</string>
+    <string name="cd_import_confirm">Importa</string>
+    <string name="cd_menu_check_all">Spunta tutto</string>
+    <string name="cd_menu_uncheck_all">Ricomincia (despunta tutto)</string>
+    <string name="cd_menu_collapse_all">Comprimi tutto</string>
+    <string name="cd_menu_expand_all">Espandi tutto</string>
+    <string name="cd_menu_export">Esporta</string>
+    <string name="cd_expand">Espandi</string>
+    <string name="cd_collapse">Comprimi</string>
+    <string name="cd_edit_category">Modifica categoria</string>
+    <string name="cd_category_title">Categoria</string>
+    <string name="cd_parent_category">Categoria padre</string>
+    <string name="cd_parent_none">(Nessuna — categoria principale)</string>
+
+    <!-- Checklist -->
+    <string name="checklist_title">Le mie checklist</string>
+    <string name="checklist_new">Nuova checklist</string>
+    <string name="checklist_section_starred">Preferite</string>
+    <string name="checklist_section_active">Attive</string>
+    <string name="checklist_section_completed">Completate</string>
+    <string name="checklist_star_remove">Rimuovi dai preferiti</string>
+    <string name="checklist_star_add">Aggiungi ai preferiti</string>
+
+    <!-- Storico prezzi -->
+    <string name="prices_title">Storico prezzi</string>
+    <string name="prices_new_product">Nuovo prodotto</string>
+    <string name="prices_search">Cerca prodotto</string>
+    <string name="prices_empty">Nessun prodotto. Creane uno con il +.</string>
+    <string name="prices_unit">unità: %1$s</string>
 </resources>

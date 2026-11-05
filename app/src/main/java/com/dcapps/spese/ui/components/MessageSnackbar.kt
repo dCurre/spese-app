@@ -5,7 +5,9 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.dcapps.spese.R
 import com.dcapps.spese.feature.bugreport.BugReportGateViewModel
 
 /**
@@ -20,11 +22,12 @@ fun MessageSnackbarEffect(
     onShown: () -> Unit,
     onReport: (() -> Unit)? = null,
 ) {
+    val reportLabel = stringResource(R.string.snackbar_report)
     LaunchedEffect(message) {
         if (message != null) {
             val result = snackbarHostState.showSnackbar(
                 message = message,
-                actionLabel = if (onReport != null) "Segnala" else null,
+                actionLabel = if (onReport != null) reportLabel else null,
                 duration = SnackbarDuration.Long,
             )
             if (result == SnackbarResult.ActionPerformed) onReport?.invoke()

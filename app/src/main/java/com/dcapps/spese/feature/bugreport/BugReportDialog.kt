@@ -14,8 +14,10 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.dcapps.spese.R
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 /**
@@ -33,32 +35,32 @@ fun BugReportDialog(
     if (state.resultUrl != null) {
         AlertDialog(
             onDismissRequest = onDismiss,
-            title = { Text("Grazie!") },
-            text = { Text("Segnalazione inviata. La esamineremo al più presto.") },
-            confirmButton = { TextButton(onClick = onDismiss) { Text("Chiudi") } },
+            title = { Text(stringResource(R.string.bug_thanks_title)) },
+            text = { Text(stringResource(R.string.bug_thanks_message)) },
+            confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_close)) } },
         )
         return
     }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Segnala un problema") },
+        title = { Text(stringResource(R.string.bug_title)) },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState())) {
                 Text(
-                    "L'app ha riscontrato un errore. Puoi inviarci una segnalazione per aiutarci a risolverlo.",
+                    stringResource(R.string.bug_intro),
                     style = MaterialTheme.typography.bodyMedium,
                 )
                 OutlinedTextField(
                     value = state.description,
                     onValueChange = viewModel::onDescriptionChange,
-                    label = { Text("Cosa stavi facendo? (opzionale)") },
+                    label = { Text(stringResource(R.string.bug_description_label)) },
                     modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
                     minLines = 2,
                 )
                 if (state.stackTrace != null) {
                     Text(
-                        "Dettagli tecnici inclusi",
+                        stringResource(R.string.bug_tech_included),
                         style = MaterialTheme.typography.labelMedium,
                         modifier = Modifier.padding(top = 12.dp),
                     )
@@ -71,7 +73,7 @@ fun BugReportDialog(
                 }
                 if (state.notConfigured) {
                     Text(
-                        "Segnalazione non configurata su questo build.",
+                        stringResource(R.string.bug_not_configured),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.error,
                         modifier = Modifier.padding(top = 8.dp),
@@ -91,10 +93,15 @@ fun BugReportDialog(
             TextButton(
                 onClick = viewModel::send,
                 enabled = !state.sending && !state.notConfigured,
-            ) { Text(if (state.sending) "Invio…" else "Invia") }
+            ) {
+                Text(
+                    if (state.sending) stringResource(R.string.bug_sending)
+                    else stringResource(R.string.bug_send),
+                )
+            }
         },
         dismissButton = {
-            TextButton(onClick = { viewModel.dismissCrash(); onDismiss() }) { Text("No, grazie") }
+            TextButton(onClick = { viewModel.dismissCrash(); onDismiss() }) { Text(stringResource(R.string.bug_no_thanks)) }
         },
     )
 }

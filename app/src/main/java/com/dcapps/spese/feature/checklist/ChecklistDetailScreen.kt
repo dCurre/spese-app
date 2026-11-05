@@ -15,6 +15,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.AlertDialog
@@ -40,11 +42,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.dcapps.spese.R
 import com.dcapps.spese.core.model.ShoppingCategory
 import com.dcapps.spese.core.model.ShoppingItem
 
@@ -81,14 +85,20 @@ fun ChecklistDetailScreen(
         snackbarHost = { androidx.compose.material3.SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
-                title = { Text(if (editState != null) "Modifica lista" else state.list?.name ?: "Lista") },
+                title = {
+                    Text(
+                        if (editState != null) stringResource(R.string.cd_edit_list)
+                        else state.list?.name ?: stringResource(R.string.detail_list_fallback),
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = { if (editState != null) viewModel.cancelEdit() else onBack() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Indietro")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.action_back))
                     }
                 },
                 actions = {
                     if (editState == null) {
+                        val exportChooserTitle = stringResource(R.string.cd_export_chooser)
                         OverflowMenu(
                             viewModel,
                             onNewCategory = { showNewCategory = true },
@@ -99,7 +109,7 @@ fun ChecklistDetailScreen(
                                     putExtra(android.content.Intent.EXTRA_TEXT, text)
                                 }
                                 context.startActivity(
-                                    android.content.Intent.createChooser(intent, "Esporta checklist"),
+                                    android.content.Intent.createChooser(intent, exportChooserTitle),
                                 )
                             },
                             onImport = { showImport = true },
@@ -115,13 +125,18 @@ fun ChecklistDetailScreen(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     TextButton(onClick = viewModel::cancelEdit, modifier = Modifier.weight(1f)) {
-                        Text("Annulla")
+                        Text(stringResource(R.string.action_cancel))
                     }
                     androidx.compose.material3.Button(
                         onClick = viewModel::saveEdits,
                         enabled = !state.saving,
                         modifier = Modifier.weight(1f),
-                    ) { Text(if (state.saving) "Salvataggio…" else "Salva") }
+                    ) {
+                        Text(
+                            if (state.saving) stringResource(R.string.cd_saving)
+                            else stringResource(R.string.action_save),
+                        )
+                    }
                 }
             } else {
                 Row(
@@ -132,13 +147,13 @@ fun ChecklistDetailScreen(
                         value = newItem,
                         onValueChange = { newItem = it },
                         modifier = Modifier.weight(1f),
-                        placeholder = { Text("Aggiungi articolo") },
+                        placeholder = { Text(stringResource(R.string.editor_add_item)) },
                         singleLine = true,
                     )
                     IconButton(
                         onClick = { viewModel.addItem(newItem, null); newItem = "" },
                         enabled = newItem.isNotBlank(),
-                    ) { Icon(Icons.Default.Add, contentDescription = "Aggiungi") }
+                    ) { Icon(Icons.Default.Add, contentDescription = stringResource(R.string.action_add)) }
                 }
             }
         },
@@ -152,7 +167,7 @@ fun ChecklistDetailScreen(
                     onEdit = viewModel::editLocal,
                 )
                 state.rows.isEmpty() -> Text(
-                    "Lista vuota. Aggiungi un articolo qui sotto.",
+                    stringResource(R.string.cd_empty),
                     Modifier.align(Alignment.Center).padding(32.dp),
                     style = MaterialTheme.typography.bodyMedium,
                 )
@@ -161,8 +176,9 @@ fun ChecklistDetailScreen(
                         when (row) {
                             is ChecklistRow.CategoryHeader -> CategoryHeaderRow(
                                 row = row,
-                                onClick = { editingCategory = row.category },
                                 onToggleCollapse = { viewModel.toggleCategoryCollapsed(row.category.id) },
+                                onEdit = { editingCategory = row.category },
+                                onDelete = { categoryToDelete = row.category },
                             )
                             is ChecklistRow.Item -> ItemRow(
                                 row = row,
@@ -191,26 +207,33 @@ fun ChecklistDetailScreen(
 
     itemToDelete?.let { item ->
         com.dcapps.spese.ui.components.ConfirmDialog(
-            title = "Elimina articolo",
-            message = "Vuoi eliminare \"${item.name}\"?",
+            title = stringResource(R.string.editor_delete_item),
+            message = stringResource(R.string.cd_delete_item_message, item.name),
             onConfirm = { viewModel.deleteItem(item) },
             onDismiss = { itemToDelete = null },
         )
     }
 
     editingCategory?.let { cat ->
+        // Parent ammessi: tutte le categorie tranne la categoria stessa e i suoi discendenti
+        // (evita cicli).
+        val blocked = viewModel.descendantIds(cat.id)
+        val availableParents = state.categories.filter { it.id !in blocked }
         CategoryEditDialog(
             category = cat,
+            availableParents = availableParents,
             onDismiss = { editingCategory = null },
             onDelete = { categoryToDelete = cat; editingCategory = null },
-            onRename = { name -> viewModel.renameCategory(cat, name); editingCategory = null },
+            onConfirm = { name, parentId ->
+                viewModel.updateCategory(cat, name, parentId); editingCategory = null
+            },
         )
     }
 
     categoryToDelete?.let { cat ->
         com.dcapps.spese.ui.components.ConfirmDialog(
-            title = "Elimina categoria",
-            message = "Vuoi eliminare la categoria \"${cat.name}\"? Gli articoli resteranno senza categoria.",
+            title = stringResource(R.string.cd_delete_category_title),
+            message = stringResource(R.string.cd_delete_category_message, cat.name),
             onConfirm = { viewModel.deleteCategory(cat) },
             onDismiss = { categoryToDelete = null },
         )
@@ -237,40 +260,41 @@ private fun ImportDialog(onDismiss: () -> Unit, onImport: (String) -> Unit) {
     var text by remember { mutableStateOf("") }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Importa articoli") },
+        title = { Text(stringResource(R.string.cd_import_title)) },
         text = {
             androidx.compose.foundation.layout.Column {
                 Text(
-                    "Un articolo per riga. Una riga che termina con \":\" diventa una categoria. " +
-                        "Supporta le caselle di Samsung Notes ([v]/[ ]) e quantità (es. \"Mele x3\").",
+                    stringResource(R.string.cd_import_help),
                     style = MaterialTheme.typography.bodySmall,
                 )
                 OutlinedTextField(
                     value = text,
                     onValueChange = { text = it },
                     modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                    placeholder = { Text("Frutta:\n[ ] Mele x3\n[v] Banane\nLatte") },
+                    placeholder = { Text(stringResource(R.string.cd_import_placeholder)) },
                     minLines = 4,
                 )
             }
         },
         confirmButton = {
-            TextButton(enabled = text.isNotBlank(), onClick = { onImport(text) }) { Text("Importa") }
+            TextButton(enabled = text.isNotBlank(), onClick = { onImport(text) }) { Text(stringResource(R.string.cd_import_confirm)) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Annulla") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
     )
 }
 
 @Composable
 private fun LaunchedShare(token: String, onShared: () -> Unit) {
     val context = LocalContext.current
+    val link = "https://spese-dc.web.app/checklist/join/$token"
+    val shareText = stringResource(R.string.cd_share_text, link)
+    val chooserTitle = stringResource(R.string.detail_share_chooser)
     androidx.compose.runtime.LaunchedEffect(token) {
-        val link = "https://spese-dc.web.app/checklist/join/$token"
         val intent = Intent(Intent.ACTION_SEND).apply {
             type = "text/plain"
-            putExtra(Intent.EXTRA_TEXT, "Unisciti alla mia checklist: $link")
+            putExtra(Intent.EXTRA_TEXT, shareText)
         }
-        context.startActivity(Intent.createChooser(intent, "Condividi lista"))
+        context.startActivity(Intent.createChooser(intent, chooserTitle))
         onShared()
     }
 }
@@ -284,43 +308,43 @@ private fun OverflowMenu(
 ) {
     var expanded by remember { mutableStateOf(false) }
     IconButton(onClick = { expanded = true }) {
-        Icon(Icons.Default.MoreVert, contentDescription = "Altre azioni")
+        Icon(Icons.Default.MoreVert, contentDescription = stringResource(R.string.detail_more_actions))
     }
     DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
         DropdownMenuItem(
-            text = { Text("Modifica") },
+            text = { Text(stringResource(R.string.action_edit)) },
             onClick = { expanded = false; viewModel.enterEditMode() },
         )
         DropdownMenuItem(
-            text = { Text("Nuova categoria") },
+            text = { Text(stringResource(R.string.editor_new_category)) },
             onClick = { expanded = false; onNewCategory() },
         )
         DropdownMenuItem(
-            text = { Text("Spunta tutto") },
+            text = { Text(stringResource(R.string.cd_menu_check_all)) },
             onClick = { expanded = false; viewModel.checkAll(true) },
         )
         DropdownMenuItem(
-            text = { Text("Ricomincia (despunta tutto)") },
+            text = { Text(stringResource(R.string.cd_menu_uncheck_all)) },
             onClick = { expanded = false; viewModel.checkAll(false) },
         )
         DropdownMenuItem(
-            text = { Text("Comprimi tutto") },
+            text = { Text(stringResource(R.string.cd_menu_collapse_all)) },
             onClick = { expanded = false; viewModel.setAllCollapsed(true) },
         )
         DropdownMenuItem(
-            text = { Text("Espandi tutto") },
+            text = { Text(stringResource(R.string.cd_menu_expand_all)) },
             onClick = { expanded = false; viewModel.setAllCollapsed(false) },
         )
         DropdownMenuItem(
-            text = { Text("Condividi") },
+            text = { Text(stringResource(R.string.detail_share)) },
             onClick = { expanded = false; viewModel.generateInviteToken() },
         )
         DropdownMenuItem(
-            text = { Text("Esporta") },
+            text = { Text(stringResource(R.string.cd_menu_export)) },
             onClick = { expanded = false; onExport() },
         )
         DropdownMenuItem(
-            text = { Text("Importa") },
+            text = { Text(stringResource(R.string.cd_import_confirm)) },
             onClick = { expanded = false; onImport() },
         )
     }
@@ -334,13 +358,14 @@ private fun rowKey(row: ChecklistRow): String = when (row) {
 @Composable
 private fun CategoryHeaderRow(
     row: ChecklistRow.CategoryHeader,
-    onClick: () -> Unit,
     onToggleCollapse: () -> Unit,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit,
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = (8 + row.depth * 16).dp, end = 8.dp, top = 8.dp),
+            .padding(start = (8 + row.depth * 16).dp, end = 4.dp, top = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         IconButton(onClick = onToggleCollapse) {
@@ -350,15 +375,22 @@ private fun CategoryHeaderRow(
                 } else {
                     Icons.Default.KeyboardArrowDown
                 },
-                contentDescription = if (row.collapsed) "Espandi" else "Comprimi",
+                contentDescription = if (row.collapsed) stringResource(R.string.cd_expand) else stringResource(R.string.cd_collapse),
             )
         }
+        // Tap sul nome = collassa/espande (come la freccetta).
         Text(
             text = row.category.name,
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.SemiBold,
-            modifier = Modifier.weight(1f).clickable { onClick() }.padding(vertical = 8.dp),
+            modifier = Modifier.weight(1f).clickable { onToggleCollapse() }.padding(vertical = 8.dp),
         )
+        IconButton(onClick = onEdit) {
+            Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.cd_edit_category))
+        }
+        IconButton(onClick = onDelete) {
+            Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.editor_delete_category))
+        }
     }
     HorizontalDivider(Modifier.padding(horizontal = 16.dp))
 }
@@ -404,13 +436,13 @@ private fun NewCategoryDialog(
     var parentId by remember { mutableStateOf<Long?>(null) }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Nuova categoria") },
+        title = { Text(stringResource(R.string.editor_new_category)) },
         text = {
             androidx.compose.foundation.layout.Column {
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
-                    label = { Text("Nome") },
+                    label = { Text(stringResource(R.string.name)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
@@ -425,9 +457,9 @@ private fun NewCategoryDialog(
             }
         },
         confirmButton = {
-            TextButton(enabled = name.isNotBlank(), onClick = { onCreate(name, parentId) }) { Text("Crea") }
+            TextButton(enabled = name.isNotBlank(), onClick = { onCreate(name, parentId) }) { Text(stringResource(R.string.action_create)) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Annulla") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
     )
 }
 
@@ -439,9 +471,10 @@ private fun ParentCategoryPicker(
     onSelect: (Long?) -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
-    val options = listOf<Pair<Long?, String>>(null to "(Nessuna — categoria principale)") +
+    val noneLabel = stringResource(R.string.cd_parent_none)
+    val options = listOf<Pair<Long?, String>>(null to noneLabel) +
         categories.map { it.id to it.name }
-    val label = options.firstOrNull { it.first == selectedId }?.second ?: "(Nessuna — categoria principale)"
+    val label = options.firstOrNull { it.first == selectedId }?.second ?: noneLabel
 
     androidx.compose.material3.ExposedDropdownMenuBox(
         expanded = expanded,
@@ -452,7 +485,7 @@ private fun ParentCategoryPicker(
             value = label,
             onValueChange = {},
             readOnly = true,
-            label = { Text("Categoria padre") },
+            label = { Text(stringResource(R.string.cd_parent_category)) },
             trailingIcon = {
                 androidx.compose.material3.ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
             },
@@ -470,26 +503,35 @@ private fun ParentCategoryPicker(
 @Composable
 private fun CategoryEditDialog(
     category: ShoppingCategory,
+    availableParents: List<ShoppingCategory>,
     onDismiss: () -> Unit,
     onDelete: () -> Unit,
-    onRename: (String) -> Unit,
+    onConfirm: (name: String, parentId: Long?) -> Unit,
 ) {
     var name by remember { mutableStateOf(category.name) }
+    var parentId by remember { mutableStateOf(category.parentId) }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Categoria") },
+        title = { Text(stringResource(R.string.cd_category_title)) },
         text = {
-            OutlinedTextField(
-                value = name,
-                onValueChange = { name = it },
-                label = { Text("Nome") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-            )
+            androidx.compose.foundation.layout.Column {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text(stringResource(R.string.name)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                ParentCategoryPicker(
+                    categories = availableParents,
+                    selectedId = parentId,
+                    onSelect = { parentId = it },
+                )
+            }
         },
         confirmButton = {
-            TextButton(enabled = name.isNotBlank(), onClick = { onRename(name) }) { Text("Salva") }
+            TextButton(enabled = name.isNotBlank(), onClick = { onConfirm(name, parentId) }) { Text(stringResource(R.string.action_save)) }
         },
-        dismissButton = { TextButton(onClick = onDelete) { Text("Elimina") } },
+        dismissButton = { TextButton(onClick = onDelete) { Text(stringResource(R.string.action_delete)) } },
     )
 }

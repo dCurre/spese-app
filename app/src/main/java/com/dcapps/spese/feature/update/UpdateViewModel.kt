@@ -1,12 +1,15 @@
 package com.dcapps.spese.feature.update
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.dcapps.spese.R
 import com.dcapps.spese.core.update.ApkInstaller
 import com.dcapps.spese.core.update.DownloadState
 import com.dcapps.spese.core.update.UpdateInfo
 import com.dcapps.spese.core.update.UpdateRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -29,6 +32,7 @@ data class UpdateUiState(
 
 @HiltViewModel
 class UpdateViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val updateRepository: UpdateRepository,
     private val apkInstaller: ApkInstaller,
 ) : ViewModel() {
@@ -55,7 +59,7 @@ class UpdateViewModel @Inject constructor(
             val info = updateRepository.checkForUpdate()
             _uiState.update {
                 if (info != null) it.copy(checking = false, info = info, dismissed = false)
-                else it.copy(checking = false, checkMessage = "Nessun aggiornamento disponibile")
+                else it.copy(checking = false, checkMessage = context.getString(R.string.profile_no_update))
             }
         }
     }

@@ -5,13 +5,15 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
+import com.dcapps.spese.R
 
 /** Dialog di conferma generico, usato per le azioni distruttive (eliminazioni). */
 @Composable
 fun ConfirmDialog(
     title: String,
     message: String,
-    confirmText: String = "Elimina",
+    confirmText: String = stringResource(R.string.action_delete),
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -27,6 +29,6 @@ fun ConfirmDialog(
                 ),
             ) { Text(confirmText) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Annulla") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
     )
 }

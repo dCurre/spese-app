@@ -16,7 +16,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.dcapps.spese.R
 import com.dcapps.spese.core.model.Purchase
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -51,13 +53,18 @@ fun NewPurchaseDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(if (purchase == null) "Nuovo acquisto" else "Modifica acquisto") },
+        title = {
+            Text(
+                if (purchase == null) stringResource(R.string.purchase_new_title)
+                else stringResource(R.string.purchase_edit_title),
+            )
+        },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState())) {
                 OutlinedTextField(
                     value = priceText,
                     onValueChange = { priceText = it },
-                    label = { Text("Prezzo (€)") },
+                    label = { Text(stringResource(R.string.purchase_price)) },
                     singleLine = true,
                     isError = priceText.isNotBlank() && (price == null || price <= 0),
                     modifier = Modifier.fillMaxWidth(),
@@ -65,14 +72,19 @@ fun NewPurchaseDialog(
                 OutlinedTextField(
                     value = qtyText,
                     onValueChange = { qtyText = it },
-                    label = { Text(if (unitSymbol != null) "Quantità ($unitSymbol)" else "Quantità") },
+                    label = {
+                        Text(
+                            if (unitSymbol != null) stringResource(R.string.purchase_quantity_unit, unitSymbol)
+                            else stringResource(R.string.purchase_quantity),
+                        )
+                    },
                     singleLine = true,
                     isError = qtyText.isNotBlank() && (qty == null || qty <= 0),
                     modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                 )
                 if (unitId == null) {
                     Text(
-                        "Questo prodotto non ha un'unità di misura. Impostala modificando il prodotto.",
+                        stringResource(R.string.purchase_no_unit),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.error,
                         modifier = Modifier.padding(top = 8.dp),
@@ -91,7 +103,7 @@ fun NewPurchaseDialog(
                     OutlinedTextField(
                         value = store,
                         onValueChange = { store = it; storeMenuExpanded = true },
-                        label = { Text("Negozio (opzionale)") },
+                        label = { Text(stringResource(R.string.purchase_store)) },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
                             .menuAnchor(androidx.compose.material3.MenuAnchorType.PrimaryEditable),
@@ -111,7 +123,7 @@ fun NewPurchaseDialog(
                 OutlinedTextField(
                     value = notes,
                     onValueChange = { notes = it },
-                    label = { Text("Note (opzionale)") },
+                    label = { Text(stringResource(R.string.purchase_notes)) },
                     modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                 )
             }
@@ -124,8 +136,8 @@ fun NewPurchaseDialog(
                         ?: LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
                     onConfirm(price!!, qty!!, unitId!!, date, store, notes)
                 },
-            ) { Text("Salva") }
+            ) { Text(stringResource(R.string.action_save)) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Annulla") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
     )
 }

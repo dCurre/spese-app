@@ -1,7 +1,9 @@
 package com.dcapps.spese.feature.expenses
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.dcapps.spese.R
 import com.dcapps.spese.core.auth.SessionManager
 import com.dcapps.spese.core.data.ExpensesRepository
 import com.dcapps.spese.core.data.UserRepository
@@ -12,6 +14,7 @@ import com.dcapps.spese.core.model.ExpensesList
 import com.dcapps.spese.core.model.UpdateUserRequest
 import com.dcapps.spese.core.network.ApiResult
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -19,7 +22,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-enum class ListSort { DATE_DESC, DATE_ASC, NAME_ASC, NAME_DESC }
+enum class ListSort { DATE, NAME }
 
 data class ExpensesListUiState(
     val isLoading: Boolean = true,
@@ -27,13 +30,15 @@ data class ExpensesListUiState(
     val activeLists: List<ExpensesList> = emptyList(),
     val paidLists: List<ExpensesList> = emptyList(),
     val query: String = "",
-    val sort: ListSort = ListSort.DATE_DESC,
+    val sort: ListSort = ListSort.DATE,
+    val sortAsc: Boolean = false,
     val paidListsShown: Boolean = true,
     val message: String? = null,
 )
 
 @HiltViewModel
 class ExpensesListViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val expensesRepository: ExpensesRepository,
     private val userRepository: UserRepository,
     private val realtimeService: RealtimeService,
@@ -55,7 +60,7 @@ class ExpensesListViewModel @Inject constructor(
     fun load() {
         val email = session.currentUser.value?.email
         if (email.isNullOrBlank()) {
-            _uiState.update { it.copy(isLoading = false, error = "Utente non disponibile") }
+            _uiState.update { it.copy(isLoading = false, error = context.getString(R.string.vm_user_unavailable)) }
             return
         }
         _uiState.update { it.copy(isLoading = true, error = null) }
@@ -86,7 +91,9 @@ class ExpensesListViewModel @Inject constructor(
     }
 
     fun onSortChange(sort: ListSort) {
-        _uiState.update { it.copy(sort = sort) }
+        _uiState.update {
+            if (it.sort == sort) it.copy(sortAsc = !it.sortAsc) else it.copy(sort = sort, sortAsc = false)
+        }
         recompute()
     }
 
@@ -147,13 +154,11 @@ class ExpensesListViewModel @Inject constructor(
         val filtered = allLists.filter {
             state.query.isBlank() || it.name.contains(state.query, ignoreCase = true)
         }
-        val comparator: Comparator<ExpensesList> = when (state.sort) {
-            ListSort.DATE_DESC -> compareByDescending { it.createdAt }
-            ListSort.DATE_ASC -> compareBy { it.createdAt }
-            ListSort.NAME_ASC -> compareBy { it.name.lowercase() }
-            ListSort.NAME_DESC -> compareByDescending { it.name.lowercase() }
+        val base: Comparator<ExpensesList> = when (state.sort) {
+            ListSort.DATE -> compareBy { it.createdAt }
+            ListSort.NAME -> compareBy { it.name.lowercase() }
         }
-        val sorted = filtered.sortedWith(comparator)
+        val sorted = filtered.sortedWith(if (state.sortAsc) base else base.reversed())
         _uiState.update {
             it.copy(
                 activeLists = sorted.filter { l -> !l.paid },

@@ -4,9 +4,11 @@ import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.dcapps.spese.R
 import com.dcapps.spese.core.auth.AuthManager
 import com.dcapps.spese.core.auth.SessionManager
 import com.dcapps.spese.core.data.UserRepository
+import com.dcapps.spese.core.locale.LocaleManager
 import com.dcapps.spese.core.model.UpdateUserRequest
 import com.dcapps.spese.core.model.User
 import com.dcapps.spese.core.network.ApiResult
@@ -111,6 +113,18 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
+    /** Cambia la lingua: applica subito la locale, aggiorna la sessione e persiste sul backend. */
+    fun setLanguage(language: String) {
+        // Applica la lingua all'app (ricrea l'Activity con la nuova locale).
+        LocaleManager.setLanguage(language)
+        val user = session.currentUser.value ?: return
+        session.setUser(user.copy(languagePreference = language))
+        _uiState.update { it.copy(user = user.copy(languagePreference = language)) }
+        viewModelScope.launch {
+            userRepository.update(user.id, UpdateUserRequest(languagePreference = language))
+        }
+    }
+
     fun uploadAvatar(context: Context, uri: Uri) {
         val user = session.currentUser.value ?: return
         viewModelScope.launch {
@@ -120,7 +134,7 @@ class ProfileViewModel @Inject constructor(
                 resolver.openInputStream(uri)?.use { it.readBytes() }
             }.getOrNull()
             if (bytes == null) {
-                _uiState.update { it.copy(uploading = false, message = "Impossibile leggere l'immagine") }
+                _uiState.update { it.copy(uploading = false, message = context.getString(R.string.vm_image_read_error)) }
                 return@launch
             }
             val mime = resolver.getType(uri) ?: "image/jpeg"

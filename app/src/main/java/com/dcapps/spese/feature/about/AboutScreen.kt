@@ -19,10 +19,12 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.dcapps.spese.BuildConfig
+import com.dcapps.spese.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -30,10 +32,10 @@ fun AboutScreen(onBack: () -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Informazioni") },
+                title = { Text(stringResource(R.string.profile_about)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Indietro")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.action_back))
                     }
                 },
             )
@@ -49,32 +51,27 @@ fun AboutScreen(onBack: () -> Unit) {
         ) {
             AsyncImage(
                 model = "https://spese-dc.web.app/assets/ic_logo.png",
-                contentDescription = "Logo Spese",
+                contentDescription = stringResource(R.string.about_logo_desc),
                 modifier = Modifier.size(96.dp),
             )
             Text(
-                "Spese",
+                stringResource(R.string.app_name),
                 style = MaterialTheme.typography.headlineSmall,
                 modifier = Modifier.padding(top = 12.dp),
             )
             Text(
-                "Versione ${BuildConfig.VERSION_NAME}",
+                stringResource(R.string.about_version, BuildConfig.VERSION_NAME),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Text(
-                "Gestione di spese condivise, liste della spesa e storico prezzi.",
+                stringResource(R.string.about_tagline),
                 style = MaterialTheme.typography.bodyMedium,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(top = 24.dp),
             )
             Text(
-                "Funzionalità:\n" +
-                    "• Liste spese condivise con calcolo saldi\n" +
-                    "• Checklist collaborative con categorie\n" +
-                    "• Storico prezzi dei prodotti\n" +
-                    "• Sincronizzazione in tempo reale\n" +
-                    "• Temi chiaro / scuro / legacy",
+                stringResource(R.string.about_features),
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.padding(top = 16.dp),
             )

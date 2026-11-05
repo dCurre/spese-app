@@ -33,10 +33,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.dcapps.spese.R
 import com.dcapps.spese.core.model.ShoppingList
 import com.dcapps.spese.feature.expenses.CreateListDialog
 
@@ -54,11 +56,11 @@ fun ChecklistScreen(
     )
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text("Le mie checklist") }) },
+        topBar = { TopAppBar(title = { Text(stringResource(R.string.checklist_title)) }) },
         snackbarHost = { androidx.compose.material3.SnackbarHost(snackbarHostState) },
         floatingActionButton = {
             FloatingActionButton(onClick = { showCreate = true }) {
-                Icon(Icons.Default.Add, contentDescription = "Nuova checklist")
+                Icon(Icons.Default.Add, contentDescription = stringResource(R.string.checklist_new))
             }
         },
     ) { innerPadding ->
@@ -73,7 +75,7 @@ fun ChecklistScreen(
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Text(state.error!!)
-                    TextButton(onClick = viewModel::load) { Text("Riprova") }
+                    TextButton(onClick = viewModel::load) { Text(stringResource(R.string.action_retry)) }
                 }
                 else -> ChecklistContent(state, viewModel, onOpenList)
             }
@@ -97,6 +99,9 @@ private fun ChecklistContent(
     viewModel: ChecklistViewModel,
     onOpenList: (ShoppingList) -> Unit,
 ) {
+    val starredTitle = stringResource(R.string.checklist_section_starred)
+    val activeTitle = stringResource(R.string.checklist_section_active)
+    val completedTitle = stringResource(R.string.checklist_section_completed)
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
@@ -107,25 +112,36 @@ private fun ChecklistContent(
                 value = state.query,
                 onValueChange = viewModel::onQueryChange,
                 modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("Cerca lista") },
+                placeholder = { Text(stringResource(R.string.lists_search)) },
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                 singleLine = true,
+            )
+        }
+        item {
+            com.dcapps.spese.ui.components.SortBar(
+                options = listOf(
+                    com.dcapps.spese.ui.components.SortOption(ChecklistSort.DATE, stringResource(R.string.sort_date)),
+                    com.dcapps.spese.ui.components.SortOption(ChecklistSort.NAME, stringResource(R.string.sort_name)),
+                ),
+                selectedKey = state.sort,
+                ascending = state.sortAsc,
+                onSelect = viewModel::onSortChange,
             )
         }
 
         if (state.starred.isEmpty() && state.active.isEmpty() && state.completed.isEmpty()) {
             item {
                 Text(
-                    "Nessuna lista. Creane una con il +.",
+                    stringResource(R.string.lists_empty),
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.padding(top = 24.dp),
                 )
             }
         }
 
-        section("Preferite", state.starred, viewModel, onOpenList)
-        section("Attive", state.active, viewModel, onOpenList)
-        section("Completate", state.completed, viewModel, onOpenList)
+        section(starredTitle, state.starred, viewModel, onOpenList)
+        section(activeTitle, state.active, viewModel, onOpenList)
+        section(completedTitle, state.completed, viewModel, onOpenList)
     }
 }
 
@@ -166,17 +182,20 @@ private fun ChecklistCard(
                 Text(list.name, style = MaterialTheme.typography.titleMedium)
                 val total = list.itemsCount ?: 0
                 val checked = list.checkedCount ?: 0
+                val typeLabel =
+                    if (list.listType == "shared") stringResource(R.string.lists_type_shared)
+                    else stringResource(R.string.lists_type_personal)
                 val subtitle = buildString {
-                    append(if (list.listType == "shared") "Condivisa" else "Personale")
+                    append(typeLabel)
                     if (total > 0) append(" · $checked/$total")
                 }
                 Text(subtitle, style = MaterialTheme.typography.bodySmall)
             }
             IconButton(onClick = onStar) {
                 if (list.starred) {
-                    Icon(Icons.Default.Star, contentDescription = "Rimuovi dai preferiti")
+                    Icon(Icons.Default.Star, contentDescription = stringResource(R.string.checklist_star_remove))
                 } else {
-                    Icon(Icons.Outlined.StarBorder, contentDescription = "Aggiungi ai preferiti")
+                    Icon(Icons.Outlined.StarBorder, contentDescription = stringResource(R.string.checklist_star_add))
                 }
             }
         }

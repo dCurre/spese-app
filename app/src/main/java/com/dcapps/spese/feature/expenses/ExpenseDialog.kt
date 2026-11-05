@@ -29,7 +29,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.dcapps.spese.R
 import com.dcapps.spese.core.model.Expense
 import com.dcapps.spese.core.model.ExpenseType
 import com.dcapps.spese.core.model.ExpensesListParticipant
@@ -86,7 +88,12 @@ fun ExpenseDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(if (isEdit) "Modifica spesa" else "Nuova spesa") },
+        title = {
+            Text(
+                if (isEdit) stringResource(R.string.expense_edit_title)
+                else stringResource(R.string.detail_new_expense),
+            )
+        },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState())) {
                 // Nome con autocomplete dai nomi di spese già presenti.
@@ -102,7 +109,7 @@ fun ExpenseDialog(
                     OutlinedTextField(
                         value = name,
                         onValueChange = { name = it; nameMenuExpanded = true },
-                        label = { Text("Nome") },
+                        label = { Text(stringResource(R.string.name)) },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
                             .menuAnchor(MenuAnchorType.PrimaryEditable),
@@ -122,7 +129,7 @@ fun ExpenseDialog(
                 OutlinedTextField(
                     value = amountText,
                     onValueChange = { amountText = it },
-                    label = { Text("Importo (€)") },
+                    label = { Text(stringResource(R.string.expense_amount)) },
                     singleLine = true,
                     isError = amountText.isNotBlank() && (amount == null || amount.signum() <= 0),
                     modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
@@ -132,7 +139,7 @@ fun ExpenseDialog(
                 // il proprietario, quindi il campo sarebbe superfluo.
                 if (!isPersonal) {
                     PickerField(
-                        label = "Chi ha pagato",
+                        label = stringResource(R.string.expense_who_paid),
                         options = participants.map { it.userId to participantLabel(it) },
                         selectedId = selectedOwnerId,
                         onSelect = { selectedOwnerId = it },
@@ -141,7 +148,7 @@ fun ExpenseDialog(
 
                 if (expenseTypes.isNotEmpty()) {
                     PickerField(
-                        label = "Tipologia",
+                        label = stringResource(R.string.expense_type),
                         options = expenseTypes.map { it.id to it.name },
                         selectedId = selectedTypeId,
                         onSelect = { selectedTypeId = it },
@@ -156,7 +163,7 @@ fun ExpenseDialog(
                         value = selectedDate.toShortDate(),
                         onValueChange = {},
                         readOnly = true,
-                        label = { Text("Data") },
+                        label = { Text(stringResource(R.string.expense_date)) },
                         trailingIcon = {
                             Icon(Icons.Default.DateRange, contentDescription = null)
                         },
@@ -176,13 +183,13 @@ fun ExpenseDialog(
                 onClick = {
                     onConfirm(name, amount!!, selectedOwnerId!!, selectedDate, selectedTypeId)
                 },
-            ) { Text("Salva") }
+            ) { Text(stringResource(R.string.action_save)) }
         },
         dismissButton = {
             if (isEdit && onDelete != null) {
-                TextButton(onClick = onDelete) { Text("Elimina") }
+                TextButton(onClick = onDelete) { Text(stringResource(R.string.action_delete)) }
             } else {
-                TextButton(onClick = onDismiss) { Text("Annulla") }
+                TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
             }
         },
     )
@@ -197,10 +204,10 @@ fun ExpenseDialog(
                 TextButton(onClick = {
                     pickerState.selectedDateMillis?.let { selectedDate = Instant.ofEpochMilli(it) }
                     showDatePicker = false
-                }) { Text("OK") }
+                }) { Text(stringResource(R.string.action_ok)) }
             },
             dismissButton = {
-                TextButton(onClick = { showDatePicker = false }) { Text("Annulla") }
+                TextButton(onClick = { showDatePicker = false }) { Text(stringResource(R.string.action_cancel)) }
             },
         ) {
             DatePicker(state = pickerState)

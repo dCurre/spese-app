@@ -22,10 +22,17 @@ data class PriceListUiState(
     val products: List<Product> = emptyList(),
     val units: List<MeasurementUnit> = emptyList(),
     val query: String = "",
+    val sortAsc: Boolean = true,
     val message: String? = null,
 ) {
     val visibleProducts: List<Product>
-        get() = products.filter { query.isBlank() || it.name.contains(query, ignoreCase = true) }
+        get() {
+            val filtered = products.filter {
+                query.isBlank() || it.name.contains(query, ignoreCase = true)
+            }
+            val base = compareBy<Product> { it.name.lowercase() }
+            return filtered.sortedWith(if (sortAsc) base else base.reversed())
+        }
 }
 
 @HiltViewModel
@@ -61,6 +68,8 @@ class PriceListViewModel @Inject constructor(
     }
 
     fun onQueryChange(q: String) = _uiState.update { it.copy(query = q) }
+
+    fun toggleSort() = _uiState.update { it.copy(sortAsc = !it.sortAsc) }
 
     fun createProduct(name: String, brand: String?, defaultUnitId: Long?) {
         if (name.isBlank()) return

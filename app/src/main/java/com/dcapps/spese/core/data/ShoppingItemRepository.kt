@@ -11,6 +11,9 @@ import com.dcapps.spese.core.network.ApiResult
 import com.dcapps.spese.core.network.SpeseApi
 import com.dcapps.spese.core.network.apiCall
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -25,6 +28,24 @@ class ShoppingItemRepository @Inject constructor(
 
     suspend fun update(id: Long, body: UpdateShoppingItemRequest): ApiResult<Unit> =
         apiCall(json) { api.updateShoppingItem(id, body); Unit }
+
+    /**
+     * Aggiorna nome, quantità e categoria inviando `category_id` SEMPRE esplicito (anche null),
+     * così lo spostamento in "nessuna categoria" funziona nonostante explicitNulls=false.
+     */
+    suspend fun updateWithCategory(
+        id: Long,
+        name: String,
+        quantity: Int,
+        categoryId: Long?,
+    ): ApiResult<Unit> = apiCall(json) {
+        val body = buildJsonObject {
+            put("name", JsonPrimitive(name))
+            put("quantity", JsonPrimitive(quantity))
+            put("category_id", if (categoryId != null) JsonPrimitive(categoryId) else JsonNull)
+        }
+        api.updateShoppingItemRaw(id, body); Unit
+    }
 
     suspend fun delete(id: Long): ApiResult<Unit> =
         apiCall(json) { api.deleteShoppingItem(id); Unit }
@@ -43,6 +64,19 @@ class ShoppingItemRepository @Inject constructor(
 
     suspend fun updateCategory(id: Long, body: UpdateShoppingCategoryRequest): ApiResult<Unit> =
         apiCall(json) { api.updateShoppingCategory(id, body); Unit }
+
+    /** Aggiorna nome e categoria padre inviando `parent_id` SEMPRE esplicito (anche null = radice). */
+    suspend fun updateCategoryWithParent(
+        id: Long,
+        name: String,
+        parentId: Long?,
+    ): ApiResult<Unit> = apiCall(json) {
+        val body = buildJsonObject {
+            put("name", JsonPrimitive(name))
+            put("parent_id", if (parentId != null) JsonPrimitive(parentId) else JsonNull)
+        }
+        api.updateShoppingCategoryRaw(id, body); Unit
+    }
 
     suspend fun deleteCategory(id: Long): ApiResult<Unit> =
         apiCall(json) { api.deleteShoppingCategory(id); Unit }

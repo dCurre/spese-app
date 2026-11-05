@@ -146,17 +146,11 @@ class ChecklistDetailViewModel @Inject constructor(
         }
     }
 
-    /** Modifica nome, quantità e categoria di un articolo. */
+    /** Modifica nome, quantità e categoria di un articolo (category_id inviato esplicito). */
     fun updateItem(item: ShoppingItem, name: String, quantity: Int, categoryId: Long?) {
         viewModelScope.launch {
-            itemRepository.update(
-                item.id,
-                UpdateShoppingItemRequest(
-                    name = name.trim(),
-                    quantity = quantity,
-                    categoryId = categoryId,
-                ),
-            )
+            val r = itemRepository.updateWithCategory(item.id, name.trim(), quantity, categoryId)
+            if (r is ApiResult.Error) _uiState.update { it.copy(message = r.message) }
             load()
         }
     }
@@ -178,12 +172,27 @@ class ChecklistDetailViewModel @Inject constructor(
         }
     }
 
-    fun renameCategory(category: ShoppingCategory, name: String) {
+    /** Modifica nome e categoria padre. parentId null = categoria principale (radice). */
+    fun updateCategory(category: ShoppingCategory, name: String, parentId: Long?) {
         if (name.isBlank()) return
         viewModelScope.launch {
-            itemRepository.updateCategory(category.id, UpdateShoppingCategoryRequest(name = name.trim()))
+            val r = itemRepository.updateCategoryWithParent(category.id, name.trim(), parentId)
+            if (r is ApiResult.Error) _uiState.update { it.copy(message = r.message) }
             load()
         }
+    }
+
+    /** Tutti i discendenti (ricorsivi) di una categoria, per impedire cicli nello spostamento. */
+    fun descendantIds(categoryId: Long): Set<Long> {
+        val list = _uiState.value.list ?: return emptySet()
+        fun find(cats: List<ShoppingCategory>): ShoppingCategory? {
+            cats.forEach { c -> if (c.id == categoryId) return c; find(c.children)?.let { return it } }
+            return null
+        }
+        val target = find(list.categories) ?: return emptySet()
+        fun collect(c: ShoppingCategory): List<Long> =
+            listOf(c.id) + c.children.flatMap { collect(it) }
+        return collect(target).toSet()
     }
 
     fun deleteCategory(category: ShoppingCategory) {

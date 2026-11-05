@@ -17,7 +17,9 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.dcapps.spese.R
 import com.dcapps.spese.core.update.UpdateInfo
 
 /**
@@ -36,11 +38,11 @@ fun UpdateDialog(
 
     AlertDialog(
         onDismissRequest = { if (!state.downloading) onDismiss() },
-        title = { Text("Aggiornamento disponibile") },
+        title = { Text(stringResource(R.string.update_title)) },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState())) {
                 Text(
-                    "È disponibile la versione ${info.version}.",
+                    stringResource(R.string.update_available, info.version),
                     style = MaterialTheme.typography.bodyMedium,
                 )
                 if (info.changelog.isNotBlank()) {
@@ -55,7 +57,7 @@ fun UpdateDialog(
                 when {
                     state.downloading -> {
                         Text(
-                            "Download in corso… ${state.progress}%",
+                            stringResource(R.string.update_downloading, state.progress),
                             style = MaterialTheme.typography.bodySmall,
                             modifier = Modifier.padding(top = 12.dp),
                         )
@@ -88,12 +90,17 @@ fun UpdateDialog(
                             context.startActivity(intent)
                         }
                     },
-                ) { Text(if (canInstall) "Aggiorna" else "Consenti installazione") }
+                ) {
+                    Text(
+                        if (canInstall) stringResource(R.string.update_action)
+                        else stringResource(R.string.update_allow_install),
+                    )
+                }
             }
         },
         dismissButton = {
             if (!state.downloading) {
-                TextButton(onClick = onDismiss) { Text("Più tardi") }
+                TextButton(onClick = onDismiss) { Text(stringResource(R.string.update_later)) }
             }
         },
     )

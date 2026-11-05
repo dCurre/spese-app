@@ -13,9 +13,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import com.dcapps.spese.R
 
 /**
  * Schermata di login. Unico metodo reale: "Continua con Google" (come la webapp).
@@ -36,11 +38,11 @@ fun SignInScreen(
         verticalArrangement = Arrangement.Center,
     ) {
         Text(
-            text = "Spese",
+            text = stringResource(R.string.app_name),
             style = MaterialTheme.typography.displaySmall,
         )
         Text(
-            text = "Gestisci spese condivise e liste della spesa",
+            text = stringResource(R.string.signin_tagline),
             style = MaterialTheme.typography.bodyMedium,
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(top = 8.dp, bottom = 48.dp),
@@ -53,7 +55,7 @@ fun SignInScreen(
                 onClick = { onGoogleSignIn(context) },
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Text("Continua con Google")
+                Text(stringResource(R.string.signin_google))
             }
         }
 

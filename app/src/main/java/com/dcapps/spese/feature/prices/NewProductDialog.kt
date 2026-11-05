@@ -19,7 +19,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.dcapps.spese.R
 import com.dcapps.spese.core.model.MeasurementUnit
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -37,20 +39,25 @@ fun NewProductDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(if (product == null) "Nuovo prodotto" else "Modifica prodotto") },
+        title = {
+            Text(
+                if (product == null) stringResource(R.string.prices_new_product)
+                else stringResource(R.string.product_edit_title),
+            )
+        },
         text = {
             Column {
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
-                    label = { Text("Nome") },
+                    label = { Text(stringResource(R.string.name)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
                 OutlinedTextField(
                     value = brand,
                     onValueChange = { brand = it },
-                    label = { Text("Marca (opzionale)") },
+                    label = { Text(stringResource(R.string.product_brand)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                 )
@@ -65,7 +72,7 @@ fun NewProductDialog(
                             value = selected?.let { "${it.name} (${it.symbol})" } ?: "",
                             onValueChange = {},
                             readOnly = true,
-                            label = { Text("Unità di misura") },
+                            label = { Text(stringResource(R.string.product_unit)) },
                             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                             modifier = Modifier.fillMaxWidth().menuAnchor(MenuAnchorType.PrimaryNotEditable),
                         )
@@ -83,9 +90,12 @@ fun NewProductDialog(
         },
         confirmButton = {
             TextButton(enabled = name.isNotBlank(), onClick = { onConfirm(name, brand, unitId) }) {
-                Text(if (product == null) "Crea" else "Salva")
+                Text(
+                    if (product == null) stringResource(R.string.action_create)
+                    else stringResource(R.string.action_save),
+                )
             }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Annulla") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
     )
 }

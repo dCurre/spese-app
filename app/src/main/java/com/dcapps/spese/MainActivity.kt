@@ -44,6 +44,18 @@ private fun SpeseApp(viewModel: AuthViewModel = hiltViewModel()) {
         else -> ThemePreference.AUTO
     }
 
+    // Applica la lingua salvata sul backend quando l'utente è disponibile (es. dopo il login o
+    // il restore di sessione). Si aggiorna solo se diversa da quella corrente, per evitare
+    // ricreazioni inutili dell'Activity.
+    val savedLanguage = user?.languagePreference
+    androidx.compose.runtime.LaunchedEffect(savedLanguage) {
+        if (!savedLanguage.isNullOrBlank() &&
+            savedLanguage != com.dcapps.spese.core.locale.LocaleManager.currentLanguage()
+        ) {
+            com.dcapps.spese.core.locale.LocaleManager.setLanguage(savedLanguage)
+        }
+    }
+
     SpeseTheme(preference = preference) {
         when {
             state.isRestoring -> Scaffold(Modifier.fillMaxSize()) { p ->

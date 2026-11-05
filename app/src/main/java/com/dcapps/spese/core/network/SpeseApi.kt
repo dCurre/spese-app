@@ -241,6 +241,17 @@ interface SpeseApi {
         @Body body: UpdateShoppingItemRequest,
     ): MessageResponse
 
+    /**
+     * Variante con body JSON costruito a mano: serve per inviare `category_id: null`
+     * esplicito (lo spostamento in "nessuna categoria"), che con explicitNulls=false
+     * un data class ometterebbe.
+     */
+    @PUT("api/shopping-items/{id}")
+    suspend fun updateShoppingItemRaw(
+        @Path("id") id: Long,
+        @Body body: kotlinx.serialization.json.JsonObject,
+    ): MessageResponse
+
     @DELETE("api/shopping-items/{id}")
     suspend fun deleteShoppingItem(@Path("id") id: Long): MessageResponse
 
@@ -267,6 +278,13 @@ interface SpeseApi {
     suspend fun updateShoppingCategory(
         @Path("id") id: Long,
         @Body body: UpdateShoppingCategoryRequest,
+    ): MessageResponse
+
+    /** Variante raw per inviare `parent_id: null` esplicito (categoria → radice). */
+    @PUT("api/shopping-categories/{id}")
+    suspend fun updateShoppingCategoryRaw(
+        @Path("id") id: Long,
+        @Body body: kotlinx.serialization.json.JsonObject,
     ): MessageResponse
 
     @DELETE("api/shopping-categories/{id}")

@@ -32,10 +32,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.dcapps.spese.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -64,26 +66,26 @@ fun PriceDetailScreen(
         snackbarHost = { androidx.compose.material3.SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
-                title = { Text(state.product?.name ?: "Prodotto") },
+                title = { Text(state.product?.name ?: stringResource(R.string.product_detail_fallback)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Indietro")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.action_back))
                     }
                 },
                 actions = {
                     IconButton(onClick = { menuExpanded = true }) {
-                        Icon(Icons.Default.MoreVert, contentDescription = "Altre azioni")
+                        Icon(Icons.Default.MoreVert, contentDescription = stringResource(R.string.detail_more_actions))
                     }
                     androidx.compose.material3.DropdownMenu(
                         expanded = menuExpanded,
                         onDismissRequest = { menuExpanded = false },
                     ) {
                         androidx.compose.material3.DropdownMenuItem(
-                            text = { Text("Modifica prodotto") },
+                            text = { Text(stringResource(R.string.product_edit_title)) },
                             onClick = { menuExpanded = false; showEditProduct = true },
                         )
                         androidx.compose.material3.DropdownMenuItem(
-                            text = { Text("Elimina prodotto") },
+                            text = { Text(stringResource(R.string.product_delete_title)) },
                             onClick = { menuExpanded = false; showDeleteProduct = true },
                         )
                     }
@@ -92,7 +94,7 @@ fun PriceDetailScreen(
         },
         floatingActionButton = {
             FloatingActionButton(onClick = { showAddPurchase = true }) {
-                Icon(Icons.Default.Add, contentDescription = "Nuovo acquisto")
+                Icon(Icons.Default.Add, contentDescription = stringResource(R.string.purchase_new_title))
             }
         },
     ) { innerPadding ->
@@ -112,7 +114,7 @@ fun PriceDetailScreen(
                     item {
                         Card(Modifier.fillMaxWidth()) {
                             Column(Modifier.padding(16.dp)) {
-                                Text("Andamento prezzo", style = MaterialTheme.typography.titleMedium)
+                                Text(stringResource(R.string.product_price_trend), style = MaterialTheme.typography.titleMedium)
                                 Row(
                                     Modifier.padding(top = 8.dp),
                                     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -121,7 +123,7 @@ fun PriceDetailScreen(
                                         FilterChip(
                                             selected = state.granularity == g,
                                             onClick = { viewModel.setGranularity(g) },
-                                            label = { Text(g.label) },
+                                            label = { Text(stringResource(granularityLabelRes(g))) },
                                         )
                                     }
                                 }
@@ -135,7 +137,7 @@ fun PriceDetailScreen(
 
                     item {
                         Text(
-                            "Acquisti",
+                            stringResource(R.string.product_purchases),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.SemiBold,
                             modifier = Modifier.padding(top = 8.dp),
@@ -145,7 +147,7 @@ fun PriceDetailScreen(
                     if (state.purchases.isEmpty()) {
                         item {
                             Text(
-                                "Nessun acquisto registrato.",
+                                stringResource(R.string.product_no_purchases),
                                 style = MaterialTheme.typography.bodyMedium,
                             )
                         }
@@ -174,7 +176,7 @@ fun PriceDetailScreen(
                                     style = MaterialTheme.typography.bodyMedium,
                                 )
                                 IconButton(onClick = { purchaseToDelete = p }) {
-                                    Icon(Icons.Default.Delete, contentDescription = "Elimina acquisto")
+                                    Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.product_delete_purchase))
                                 }
                             }
                         }
@@ -215,8 +217,8 @@ fun PriceDetailScreen(
 
     purchaseToDelete?.let { p ->
         com.dcapps.spese.ui.components.ConfirmDialog(
-            title = "Elimina acquisto",
-            message = "Vuoi eliminare questo acquisto?",
+            title = stringResource(R.string.product_delete_purchase),
+            message = stringResource(R.string.product_delete_purchase_message),
             onConfirm = { viewModel.deletePurchase(p) },
             onDismiss = { purchaseToDelete = null },
         )
@@ -238,8 +240,8 @@ fun PriceDetailScreen(
 
     if (showDeleteProduct) {
         com.dcapps.spese.ui.components.ConfirmDialog(
-            title = "Elimina prodotto",
-            message = "Vuoi eliminare \"${state.product?.name ?: ""}\" e tutti i suoi acquisti?",
+            title = stringResource(R.string.product_delete_title),
+            message = stringResource(R.string.product_delete_message, state.product?.name ?: ""),
             onConfirm = { viewModel.deleteProduct() },
             onDismiss = { showDeleteProduct = false },
         )
@@ -260,17 +262,24 @@ private fun ProductStatsCard(purchases: List<com.dcapps.spese.core.model.Purchas
     androidx.compose.material3.Card(androidx.compose.ui.Modifier.fillMaxWidth()) {
         androidx.compose.foundation.layout.Column(androidx.compose.ui.Modifier.padding(16.dp)) {
             androidx.compose.material3.Text(
-                "Statistiche",
+                stringResource(R.string.profile_stats),
                 style = androidx.compose.material3.MaterialTheme.typography.titleMedium,
             )
-            StatLine("Prezzo minimo", "%.2f €/u".format(minPrice) + (minP?.store?.let { " · $it" } ?: ""))
-            StatLine("Ultimo prezzo", "%.2f €/u".format(lastPrice))
+            StatLine(stringResource(R.string.product_stats_min_price), "%.2f €/u".format(minPrice) + (minP?.store?.let { " · $it" } ?: ""))
+            StatLine(stringResource(R.string.product_stats_last_price), "%.2f €/u".format(lastPrice))
             StatLine(
-                "Variazione sul minimo",
-                if (variationPct <= 0.0) "al minimo storico" else "+%.0f%%".format(variationPct),
+                stringResource(R.string.product_stats_variation),
+                if (variationPct <= 0.0) stringResource(R.string.product_stats_at_minimum) else "+%.0f%%".format(variationPct),
             )
         }
     }
+}
+
+@androidx.annotation.StringRes
+private fun granularityLabelRes(g: Granularity): Int = when (g) {
+    Granularity.DAY -> R.string.granularity_day
+    Granularity.MONTH -> R.string.granularity_month
+    Granularity.YEAR -> R.string.granularity_year
 }
 
 @androidx.compose.runtime.Composable

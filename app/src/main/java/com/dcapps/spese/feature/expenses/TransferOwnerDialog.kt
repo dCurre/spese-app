@@ -16,7 +16,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.dcapps.spese.R
 import com.dcapps.spese.core.model.ExpensesListParticipant
 
 /**
@@ -35,11 +37,11 @@ fun TransferOwnerDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Trasferisci proprietà") },
+        title = { Text(stringResource(R.string.detail_transfer_owner)) },
         text = {
             if (candidates.isEmpty()) {
                 Text(
-                    "Nessun partecipante idoneo. Aggiungi prima un utente registrato alla lista.",
+                    stringResource(R.string.transfer_empty),
                     style = MaterialTheme.typography.bodyMedium,
                 )
             } else {
@@ -69,8 +71,8 @@ fun TransferOwnerDialog(
             TextButton(
                 enabled = selected != null,
                 onClick = { selected?.let(onConfirm) },
-            ) { Text("Trasferisci") }
+            ) { Text(stringResource(R.string.transfer_confirm)) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Annulla") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
     )
 }

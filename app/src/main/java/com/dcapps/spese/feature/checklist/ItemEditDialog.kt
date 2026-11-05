@@ -19,7 +19,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.dcapps.spese.R
 import com.dcapps.spese.core.model.ShoppingCategory
 import com.dcapps.spese.core.model.ShoppingItem
 
@@ -42,20 +44,20 @@ fun ItemEditDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Modifica articolo") },
+        title = { Text(stringResource(R.string.item_edit_title)) },
         text = {
             Column {
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
-                    label = { Text("Nome") },
+                    label = { Text(stringResource(R.string.name)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
                 OutlinedTextField(
                     value = qtyText,
                     onValueChange = { qtyText = it.filter { c -> c.isDigit() } },
-                    label = { Text("Quantità") },
+                    label = { Text(stringResource(R.string.item_quantity)) },
                     singleLine = true,
                     isError = qtyText.isNotBlank() && (qty == null || qty <= 0),
                     modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
@@ -69,11 +71,11 @@ fun ItemEditDialog(
         },
         confirmButton = {
             TextButton(enabled = valid, onClick = { onConfirm(name, qty ?: 1, categoryId) }) {
-                Text("Salva")
+                Text(stringResource(R.string.action_save))
             }
         },
         dismissButton = {
-            TextButton(onClick = onDelete) { Text("Elimina") }
+            TextButton(onClick = onDelete) { Text(stringResource(R.string.action_delete)) }
         },
     )
 }
@@ -86,9 +88,14 @@ private fun CategoryPicker(
     onSelect: (Long?) -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
-    val options = listOf<Pair<Long?, String>>(null to "(Nessuna categoria)") +
-        categories.map { it.id to it.name }
-    val selectedLabel = options.firstOrNull { it.first == selectedId }?.second ?: "(Nessuna categoria)"
+    val noCategoryLabel = stringResource(R.string.item_no_category)
+    // Etichetta corrente (include la categoria attuale), ma nel menu NON ripetiamo
+    // l'opzione già selezionata.
+    val currentLabel = categories.firstOrNull { it.id == selectedId }?.name ?: noCategoryLabel
+    val options = buildList<Pair<Long?, String>> {
+        if (selectedId != null) add(null to noCategoryLabel)
+        categories.filter { it.id != selectedId }.forEach { add(it.id to it.name) }
+    }
 
     ExposedDropdownMenuBox(
         expanded = expanded,
@@ -96,10 +103,10 @@ private fun CategoryPicker(
         modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
     ) {
         OutlinedTextField(
-            value = selectedLabel,
+            value = currentLabel,
             onValueChange = {},
             readOnly = true,
-            label = { Text("Categoria") },
+            label = { Text(stringResource(R.string.item_category)) },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
             modifier = Modifier.fillMaxWidth().menuAnchor(MenuAnchorType.PrimaryNotEditable),
         )

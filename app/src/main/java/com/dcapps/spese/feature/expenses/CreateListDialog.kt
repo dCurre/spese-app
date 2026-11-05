@@ -17,7 +17,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.dcapps.spese.R
 
 @Composable
 fun CreateListDialog(
@@ -29,28 +31,28 @@ fun CreateListDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Nuova lista") },
+        title = { Text(stringResource(R.string.lists_new)) },
         text = {
             Column {
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
-                    label = { Text("Nome") },
+                    label = { Text(stringResource(R.string.name)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
-                TypeOption("Condivisa", selected = shared) { shared = true }
-                TypeOption("Personale", selected = !shared) { shared = false }
+                TypeOption(stringResource(R.string.lists_type_shared), selected = shared) { shared = true }
+                TypeOption(stringResource(R.string.lists_type_personal), selected = !shared) { shared = false }
             }
         },
         confirmButton = {
             TextButton(
                 onClick = { onCreate(name, shared) },
                 enabled = name.isNotBlank(),
-            ) { Text("Crea") }
+            ) { Text(stringResource(R.string.action_create)) }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Annulla") }
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
         },
     )
 }

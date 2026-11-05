@@ -34,12 +34,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.dcapps.spese.R
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.dcapps.spese.BuildConfig
 import com.dcapps.spese.core.model.ExpensesList
 import com.dcapps.spese.ui.components.ConfirmDialog
 import com.dcapps.spese.ui.components.ErrorSnackbarEffect
@@ -58,11 +58,11 @@ fun ExpensesListScreen(
     ErrorSnackbarEffect(state.message, snackbarHostState, viewModel::clearMessage)
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text("Le mie liste") }) },
+        topBar = { TopAppBar(title = { Text(stringResource(R.string.lists_title)) }) },
         snackbarHost = { SnackbarHost(snackbarHostState) },
         floatingActionButton = {
             FloatingActionButton(onClick = { showCreateDialog = true }) {
-                Icon(Icons.Default.Add, contentDescription = "Nuova lista")
+                Icon(Icons.Default.Add, contentDescription = stringResource(R.string.lists_new))
             }
         },
     ) { innerPadding ->
@@ -78,6 +78,7 @@ fun ExpensesListScreen(
                 else -> ListContent(
                     state = state,
                     onQueryChange = viewModel::onQueryChange,
+                    onSortChange = viewModel::onSortChange,
                     onTogglePaid = viewModel::togglePaidListsShown,
                     onOpenList = onOpenList,
                     onDeleteList = { listToDelete = it },
@@ -88,8 +89,8 @@ fun ExpensesListScreen(
 
     listToDelete?.let { list ->
         ConfirmDialog(
-            title = "Elimina lista",
-            message = "Vuoi eliminare \"${list.name}\" e tutte le sue spese?",
+            title = stringResource(R.string.lists_delete_title),
+            message = stringResource(R.string.lists_delete_message, list.name),
             onConfirm = { viewModel.deleteList(list) },
             onDismiss = { listToDelete = null },
         )
@@ -110,6 +111,7 @@ fun ExpensesListScreen(
 private fun ListContent(
     state: ExpensesListUiState,
     onQueryChange: (String) -> Unit,
+    onSortChange: (ListSort) -> Unit,
     onTogglePaid: () -> Unit,
     onOpenList: (ExpensesList) -> Unit,
     onDeleteList: (ExpensesList) -> Unit,
@@ -124,16 +126,27 @@ private fun ListContent(
                 value = state.query,
                 onValueChange = onQueryChange,
                 modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("Cerca lista") },
+                placeholder = { Text(stringResource(R.string.lists_search)) },
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                 singleLine = true,
+            )
+        }
+        item {
+            com.dcapps.spese.ui.components.SortBar(
+                options = listOf(
+                    com.dcapps.spese.ui.components.SortOption(ListSort.DATE, stringResource(R.string.sort_date)),
+                    com.dcapps.spese.ui.components.SortOption(ListSort.NAME, stringResource(R.string.sort_name)),
+                ),
+                selectedKey = state.sort,
+                ascending = state.sortAsc,
+                onSelect = onSortChange,
             )
         }
 
         if (state.activeLists.isEmpty() && state.paidLists.isEmpty()) {
             item {
                 Text(
-                    "Nessuna lista. Creane una con il +.",
+                    stringResource(R.string.lists_empty),
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.padding(top = 24.dp),
                 )
@@ -141,7 +154,7 @@ private fun ListContent(
         }
 
         if (state.activeLists.isNotEmpty()) {
-            item { SectionHeader("Attive") }
+            item { SectionHeader(stringResource(R.string.lists_section_active)) }
             items(state.activeLists, key = { it.id }) { list ->
                 ListCard(list, onOpenList, onDeleteList)
             }
@@ -154,9 +167,12 @@ private fun ListContent(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
-                    SectionHeader("Saldate")
+                    SectionHeader(stringResource(R.string.lists_section_paid))
                     TextButton(onClick = onTogglePaid) {
-                        Text(if (state.paidListsShown) "Nascondi" else "Mostra")
+                        Text(
+                            if (state.paidListsShown) stringResource(R.string.lists_hide)
+                            else stringResource(R.string.lists_show),
+                        )
                     }
                 }
             }
@@ -165,18 +181,6 @@ private fun ListContent(
                     ListCard(list, onOpenList, onDeleteList)
                 }
             }
-        }
-
-        item {
-            Text(
-                text = "v${BuildConfig.VERSION_NAME}",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 16.dp),
-            )
         }
     }
 }
@@ -208,15 +212,22 @@ private fun ListCard(
         ) {
             Column(Modifier.weight(1f)) {
                 Text(list.name, style = MaterialTheme.typography.titleMedium)
-                val subtitle = buildString {
-                    append(if (list.type == com.dcapps.spese.core.model.ListType.SHARED) "Condivisa" else "Personale")
-                    list.participantsCount?.let { append(" · $it partecipanti") }
-                    list.expensesCount?.let { append(" · $it spese") }
+                val typeLabel =
+                    if (list.type == com.dcapps.spese.core.model.ListType.SHARED)
+                        stringResource(R.string.lists_type_shared)
+                    else stringResource(R.string.lists_type_personal)
+                val participantsLabel = list.participantsCount?.let {
+                    stringResource(R.string.lists_participants, it)
                 }
+                val expensesLabel = list.expensesCount?.let {
+                    stringResource(R.string.lists_expenses_count, it)
+                }
+                val subtitle = listOfNotNull(typeLabel, participantsLabel, expensesLabel)
+                    .joinToString(" · ")
                 Text(subtitle, style = MaterialTheme.typography.bodySmall)
             }
             IconButton(onClick = { onDeleteList(list) }) {
-                Icon(Icons.Default.Delete, contentDescription = "Elimina")
+                Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.action_delete))
             }
         }
     }
@@ -231,7 +242,7 @@ private fun ErrorState(message: String, onRetry: () -> Unit) {
     ) {
         Text(message, style = MaterialTheme.typography.bodyMedium)
         TextButton(onClick = onRetry, modifier = Modifier.padding(top = 8.dp)) {
-            Text("Riprova")
+            Text(stringResource(R.string.action_retry))
         }
     }
 }

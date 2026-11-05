@@ -28,7 +28,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.dcapps.spese.R
 import com.dcapps.spese.core.model.ExpensesListParticipant
 import com.dcapps.spese.core.model.User
 
@@ -51,7 +53,7 @@ fun ParticipantsDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Partecipanti") },
+        title = { Text(stringResource(R.string.detail_participants)) },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState())) {
                 // Elenco partecipanti attuali.
@@ -61,16 +63,18 @@ fun ParticipantsDialog(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
+                        val guestSuffix = stringResource(R.string.participants_guest_suffix)
+                        val ownerSuffix = stringResource(R.string.participants_owner_suffix)
                         val label = buildString {
                             append(participantLabel(p))
-                            if (p.isGuest) append(" (ospite)")
-                            if (p.userId == ownerId) append(" · proprietario")
+                            if (p.isGuest) append(" $guestSuffix")
+                            if (p.userId == ownerId) append(" · $ownerSuffix")
                         }
                         Text(label, style = MaterialTheme.typography.bodyMedium)
                         // Il proprietario non si può rimuovere.
                         if (p.userId != ownerId) {
                             IconButton(onClick = { onRemove(p) }) {
-                                Icon(Icons.Default.Close, contentDescription = "Rimuovi")
+                                Icon(Icons.Default.Close, contentDescription = stringResource(R.string.participants_remove))
                             }
                         }
                     }
@@ -80,7 +84,7 @@ fun ParticipantsDialog(
 
                 // Aggiungi utente registrato.
                 if (availableUsers.isNotEmpty()) {
-                    Text("Aggiungi utente", style = MaterialTheme.typography.labelLarge)
+                    Text(stringResource(R.string.participants_add_user), style = MaterialTheme.typography.labelLarge)
                     availableUsers.forEach { u ->
                         Row(
                             Modifier.fillMaxWidth().padding(vertical = 2.dp),
@@ -90,7 +94,7 @@ fun ParticipantsDialog(
                             Text(u.displayName, style = MaterialTheme.typography.bodyMedium)
                             AssistChip(
                                 onClick = { onAddUser(u.id) },
-                                label = { Text("Aggiungi") },
+                                label = { Text(stringResource(R.string.action_add)) },
                                 leadingIcon = {
                                     Icon(Icons.Default.PersonAdd, contentDescription = null)
                                 },
@@ -101,7 +105,7 @@ fun ParticipantsDialog(
                 }
 
                 // Aggiungi ospite.
-                Text("Aggiungi ospite", style = MaterialTheme.typography.labelLarge)
+                Text(stringResource(R.string.participants_add_guest), style = MaterialTheme.typography.labelLarge)
                 Row(
                     Modifier.fillMaxWidth().padding(top = 4.dp),
                     verticalAlignment = Alignment.CenterVertically,
@@ -109,17 +113,17 @@ fun ParticipantsDialog(
                     OutlinedTextField(
                         value = guestName,
                         onValueChange = { guestName = it },
-                        placeholder = { Text("Nome ospite") },
+                        placeholder = { Text(stringResource(R.string.participants_guest_name)) },
                         singleLine = true,
                         modifier = Modifier.weight(1f),
                     )
                     TextButton(
                         enabled = guestName.isNotBlank(),
                         onClick = { onAddGuest(guestName); guestName = "" },
-                    ) { Text("Crea") }
+                    ) { Text(stringResource(R.string.action_create)) }
                 }
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("Chiudi") } },
+        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_close)) } },
     )
 }

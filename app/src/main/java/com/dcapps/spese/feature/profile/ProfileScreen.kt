@@ -45,6 +45,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import com.dcapps.spese.R
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -74,7 +76,7 @@ fun ProfileScreen(
     )
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text("Profilo") }) },
+        topBar = { TopAppBar(title = { Text(stringResource(R.string.profile_title)) }) },
         snackbarHost = { androidx.compose.material3.SnackbarHost(snackbarHostState) },
     ) { innerPadding ->
         Column(
@@ -91,7 +93,7 @@ fun ProfileScreen(
                 if (!img.isNullOrBlank()) {
                     AsyncImage(
                         model = img,
-                        contentDescription = "Avatar",
+                        contentDescription = stringResource(R.string.profile_avatar),
                         contentScale = ContentScale.Crop,
                         modifier = Modifier
                             .size(96.dp)
@@ -112,7 +114,7 @@ fun ProfileScreen(
                 } else {
                     Icon(
                         Icons.Default.Edit,
-                        contentDescription = "Cambia avatar",
+                        contentDescription = stringResource(R.string.profile_change_avatar),
                         modifier = Modifier
                             .size(28.dp)
                             .clip(CircleShape)
@@ -136,7 +138,7 @@ fun ProfileScreen(
                     fontWeight = FontWeight.SemiBold,
                 )
                 IconButton(onClick = { showEditName = true }) {
-                    Icon(Icons.Default.Edit, contentDescription = "Modifica nome", modifier = Modifier.size(18.dp))
+                    Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.profile_edit_name), modifier = Modifier.size(18.dp))
                 }
             }
             // Email con azione di copia.
@@ -151,7 +153,7 @@ fun ProfileScreen(
                 }) {
                     Icon(
                         Icons.Default.ContentCopy,
-                        contentDescription = "Copia email",
+                        contentDescription = stringResource(R.string.profile_copy_email),
                         modifier = Modifier.size(16.dp),
                     )
                 }
@@ -167,7 +169,7 @@ fun ProfileScreen(
                     items(history) { url ->
                         AsyncImage(
                             model = url,
-                            contentDescription = "Foto precedente",
+                            contentDescription = stringResource(R.string.profile_previous_photo),
                             contentScale = ContentScale.Crop,
                             modifier = Modifier
                                 .size(48.dp)
@@ -183,16 +185,34 @@ fun ProfileScreen(
             // Tema
             Card(Modifier.fillMaxWidth().padding(top = 20.dp)) {
                 Column(Modifier.padding(16.dp)) {
-                    Text("Tema", style = MaterialTheme.typography.titleMedium)
+                    Text(stringResource(R.string.profile_theme), style = MaterialTheme.typography.titleMedium)
                     androidx.compose.foundation.layout.FlowRow(
                         Modifier.fillMaxWidth().padding(top = 8.dp),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         val current = user?.themePreference ?: "auto"
-                        ThemeChip("Chiaro", "light", current, viewModel::setTheme)
-                        ThemeChip("Scuro", "dark", current, viewModel::setTheme)
-                        ThemeChip("Legacy", "legacy", current, viewModel::setTheme)
-                        ThemeChip("Auto", "auto", current, viewModel::setTheme)
+                        ThemeChip(stringResource(R.string.profile_theme_light), "light", current, viewModel::setTheme)
+                        ThemeChip(stringResource(R.string.profile_theme_dark), "dark", current, viewModel::setTheme)
+                        ThemeChip(stringResource(R.string.profile_theme_legacy), "legacy", current, viewModel::setTheme)
+                        ThemeChip(stringResource(R.string.profile_theme_auto), "auto", current, viewModel::setTheme)
+                    }
+                }
+            }
+
+            // Lingua
+            Card(Modifier.fillMaxWidth().padding(top = 12.dp)) {
+                Column(Modifier.padding(16.dp)) {
+                    Text(stringResource(R.string.profile_language), style = MaterialTheme.typography.titleMedium)
+                    androidx.compose.foundation.layout.FlowRow(
+                        Modifier.fillMaxWidth().padding(top = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        // La lingua selezionata: preferisci quella salvata sull'utente, altrimenti
+                        // quella attualmente applicata all'app.
+                        val currentLang = user?.languagePreference?.takeIf { it.isNotBlank() }
+                            ?: com.dcapps.spese.core.locale.LocaleManager.currentLanguage()
+                        LanguageChip(stringResource(R.string.profile_language_it), "it", currentLang, viewModel::setLanguage)
+                        LanguageChip(stringResource(R.string.profile_language_en), "en", currentLang, viewModel::setLanguage)
                     }
                 }
             }
@@ -200,13 +220,13 @@ fun ProfileScreen(
             // Statistiche
             Card(Modifier.fillMaxWidth().padding(top = 12.dp)) {
                 Column(Modifier.padding(16.dp)) {
-                    Text("Statistiche", style = MaterialTheme.typography.titleMedium)
+                    Text(stringResource(R.string.profile_stats), style = MaterialTheme.typography.titleMedium)
                     if (!state.statsLoaded) {
                         CircularProgressIndicator(Modifier.size(20.dp).padding(top = 8.dp))
                     } else {
-                        StatRow("Liste possedute", state.stats.listsOwned)
-                        StatRow("Partecipazioni", state.stats.listsParticipating)
-                        StatRow("Spese totali", state.stats.expenses)
+                        StatRow(stringResource(R.string.profile_stats_owned), state.stats.listsOwned)
+                        StatRow(stringResource(R.string.profile_stats_participating), state.stats.listsParticipating)
+                        StatRow(stringResource(R.string.profile_stats_expenses), state.stats.expenses)
                     }
                 }
             }
@@ -221,7 +241,10 @@ fun ProfileScreen(
                 enabled = !updateState.checking,
                 modifier = Modifier.fillMaxWidth().padding(top = 20.dp),
             ) {
-                Text(if (updateState.checking) "Controllo…" else "Controlla aggiornamenti")
+                Text(
+                    if (updateState.checking) stringResource(R.string.profile_checking)
+                    else stringResource(R.string.profile_check_updates),
+                )
             }
 
             val role = user?.role
@@ -230,7 +253,7 @@ fun ProfileScreen(
                     onClick = onOpenAdmin,
                     modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
                 ) {
-                    Text("Amministrazione")
+                    Text(stringResource(R.string.profile_admin))
                 }
             }
 
@@ -238,7 +261,7 @@ fun ProfileScreen(
                 onClick = onOpenAbout,
                 modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
             ) {
-                Text("Informazioni")
+                Text(stringResource(R.string.profile_about))
             }
 
             OutlinedButton(
@@ -246,7 +269,7 @@ fun ProfileScreen(
                 modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
             ) {
                 Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = null, modifier = Modifier.size(18.dp))
-                Text("Esci", modifier = Modifier.padding(start = 8.dp))
+                Text(stringResource(R.string.profile_logout), modifier = Modifier.padding(start = 8.dp))
             }
 
             // Mostra anche il popup di aggiornamento se disponibile (dal controllo manuale).
@@ -284,20 +307,20 @@ private fun EditNameDialog(
     var surname by remember { mutableStateOf(initialSurname) }
     androidx.compose.material3.AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Modifica nome") },
+        title = { Text(stringResource(R.string.profile_edit_name)) },
         text = {
             Column {
                 androidx.compose.material3.OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
-                    label = { Text("Nome") },
+                    label = { Text(stringResource(R.string.name)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
                 androidx.compose.material3.OutlinedTextField(
                     value = surname,
                     onValueChange = { surname = it },
-                    label = { Text("Cognome") },
+                    label = { Text(stringResource(R.string.profile_surname)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                 )
@@ -307,10 +330,10 @@ private fun EditNameDialog(
             androidx.compose.material3.TextButton(
                 enabled = name.isNotBlank(),
                 onClick = { onConfirm(name, surname) },
-            ) { Text("Salva") }
+            ) { Text(stringResource(R.string.action_save)) }
         },
         dismissButton = {
-            androidx.compose.material3.TextButton(onClick = onDismiss) { Text("Annulla") }
+            androidx.compose.material3.TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
         },
     )
 }
@@ -321,6 +344,16 @@ private fun ThemeChip(label: String, value: String, current: String, onSelect: (
     FilterChip(
         selected = current == value,
         onClick = { onSelect(value) },
+        label = { Text(label) },
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun LanguageChip(label: String, tag: String, current: String, onSelect: (String) -> Unit) {
+    FilterChip(
+        selected = current == tag,
+        onClick = { onSelect(tag) },
         label = { Text(label) },
     )
 }

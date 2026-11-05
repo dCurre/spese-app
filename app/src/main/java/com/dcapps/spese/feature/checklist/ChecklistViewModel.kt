@@ -1,7 +1,9 @@
 package com.dcapps.spese.feature.checklist
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.dcapps.spese.R
 import com.dcapps.spese.core.auth.SessionManager
 import com.dcapps.spese.core.data.ShoppingRepository
 import com.dcapps.spese.core.model.CreateShoppingListRequest
@@ -11,12 +13,15 @@ import com.dcapps.spese.core.network.ApiResult
 import com.dcapps.spese.core.realtime.RealtimeService
 import com.dcapps.spese.core.realtime.RealtimeTable
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+
+enum class ChecklistSort { DATE, NAME }
 
 data class ChecklistUiState(
     val isLoading: Boolean = true,
@@ -25,11 +30,14 @@ data class ChecklistUiState(
     val active: List<ShoppingList> = emptyList(),
     val completed: List<ShoppingList> = emptyList(),
     val query: String = "",
+    val sort: ChecklistSort = ChecklistSort.DATE,
+    val sortAsc: Boolean = false,
     val message: String? = null,
 )
 
 @HiltViewModel
 class ChecklistViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val shoppingRepository: ShoppingRepository,
     private val realtimeService: RealtimeService,
     private val session: SessionManager,
@@ -50,7 +58,7 @@ class ChecklistViewModel @Inject constructor(
     fun load() {
         val userId = session.currentUser.value?.id
         if (userId == null) {
-            _uiState.update { it.copy(isLoading = false, error = "Utente non disponibile") }
+            _uiState.update { it.copy(isLoading = false, error = context.getString(R.string.vm_user_unavailable)) }
             return
         }
         _uiState.update { it.copy(isLoading = true, error = null) }
@@ -69,6 +77,13 @@ class ChecklistViewModel @Inject constructor(
 
     fun onQueryChange(q: String) {
         _uiState.update { it.copy(query = q) }
+        recompute()
+    }
+
+    fun onSortChange(sort: ChecklistSort) {
+        _uiState.update {
+            if (it.sort == sort) it.copy(sortAsc = !it.sortAsc) else it.copy(sort = sort, sortAsc = false)
+        }
         recompute()
     }
 
@@ -110,12 +125,18 @@ class ChecklistViewModel @Inject constructor(
 
     private fun recompute() {
         val q = _uiState.value.query
+        val s = _uiState.value
         val filtered = allLists.filter { q.isBlank() || it.name.contains(q, ignoreCase = true) }
+        val base: Comparator<ShoppingList> = when (s.sort) {
+            ChecklistSort.DATE -> compareBy { it.createdAt }
+            ChecklistSort.NAME -> compareBy { it.name.lowercase() }
+        }
+        val sorted = filtered.sortedWith(if (s.sortAsc) base else base.reversed())
         _uiState.update {
             it.copy(
-                starred = filtered.filter { l -> l.starred },
-                active = filtered.filter { l -> !l.completed && !l.starred },
-                completed = filtered.filter { l -> l.completed && !l.starred },
+                starred = sorted.filter { l -> l.starred },
+                active = sorted.filter { l -> !l.completed && !l.starred },
+                completed = sorted.filter { l -> l.completed && !l.starred },
             )
         }
     }
