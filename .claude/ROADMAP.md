@@ -19,12 +19,6 @@ da fare: aggiornare qui (spuntare / rimuovere quando completato).
   coerenza visiva, spaziature, tipografia, palette/tema, card e liste. Da pianificare in dettaglio
   quando ci si arriva.
 
-## Nuove richieste (da pianificare)
-
-- [ ] **Toolbar laterale a scomparsa (navigation drawer).** Spostare i bottoni oggi nel profilo
-  utente — "Informazioni" (about), "Amministrazione" (admin), "Controlla aggiornamenti" — in un
-  drawer laterale a scomparsa.
-
 ## Fuori scope / escluse
 
 - Notifiche push → richiederebbero modifiche al backend (intoccabile).

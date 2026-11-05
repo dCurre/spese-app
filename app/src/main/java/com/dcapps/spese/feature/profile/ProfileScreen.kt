@@ -22,6 +22,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -56,10 +57,8 @@ import coil.compose.AsyncImage
 @OptIn(ExperimentalMaterial3Api::class, androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 fun ProfileScreen(
-    onOpenAdmin: () -> Unit = {},
-    onOpenAbout: () -> Unit = {},
+    onOpenDrawer: () -> Unit = {},
     viewModel: ProfileViewModel = hiltViewModel(),
-    updateViewModel: com.dcapps.spese.feature.update.UpdateViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val user by viewModel.currentUser.collectAsStateWithLifecycle()
@@ -76,7 +75,16 @@ fun ProfileScreen(
     )
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text(stringResource(R.string.profile_title)) }) },
+        topBar = {
+            TopAppBar(
+                title = { Text(stringResource(R.string.profile_title)) },
+                navigationIcon = {
+                    IconButton(onClick = onOpenDrawer) {
+                        Icon(Icons.Default.Menu, contentDescription = stringResource(R.string.drawer_open))
+                    }
+                },
+            )
+        },
         snackbarHost = { androidx.compose.material3.SnackbarHost(snackbarHostState) },
     ) { innerPadding ->
         Column(
@@ -231,57 +239,15 @@ fun ProfileScreen(
                 }
             }
 
-            // Controllo aggiornamenti manuale.
-            val updateState by updateViewModel.uiState.collectAsStateWithLifecycle()
-            com.dcapps.spese.ui.components.MessageSnackbarEffect(
-                updateState.checkMessage, snackbarHostState, updateViewModel::clearCheckMessage,
-            )
-            OutlinedButton(
-                onClick = { updateViewModel.checkForUpdateManual() },
-                enabled = !updateState.checking,
-                modifier = Modifier.fillMaxWidth().padding(top = 20.dp),
-            ) {
-                Text(
-                    if (updateState.checking) stringResource(R.string.profile_checking)
-                    else stringResource(R.string.profile_check_updates),
-                )
-            }
-
-            val role = user?.role
-            if (role == "admin" || role == "superadmin") {
-                OutlinedButton(
-                    onClick = onOpenAdmin,
-                    modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
-                ) {
-                    Text(stringResource(R.string.profile_admin))
-                }
-            }
-
-            OutlinedButton(
-                onClick = onOpenAbout,
-                modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
-            ) {
-                Text(stringResource(R.string.profile_about))
-            }
+            // Informazioni / Amministrazione / Controlla aggiornamenti sono ora nel menu laterale
+            // (drawer), gestito da SpeseNavHost.
 
             OutlinedButton(
                 onClick = { viewModel.signOut(context) },
-                modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                modifier = Modifier.fillMaxWidth().padding(top = 20.dp),
             ) {
                 Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = null, modifier = Modifier.size(18.dp))
                 Text(stringResource(R.string.profile_logout), modifier = Modifier.padding(start = 8.dp))
-            }
-
-            // Mostra anche il popup di aggiornamento se disponibile (dal controllo manuale).
-            val info = updateState.info
-            if (updateState.showDialog && info != null) {
-                com.dcapps.spese.feature.update.UpdateDialog(
-                    state = updateState,
-                    info = info,
-                    canInstall = updateViewModel.canInstall(),
-                    onUpdate = updateViewModel::onUpdateClick,
-                    onDismiss = updateViewModel::dismiss,
-                )
             }
         }
     }

@@ -10,13 +10,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -48,6 +47,7 @@ import com.dcapps.spese.ui.components.ErrorSnackbarEffect
 @Composable
 fun ExpensesListScreen(
     onOpenList: (ExpensesList) -> Unit,
+    onOpenDrawer: () -> Unit = {},
     viewModel: ExpensesListViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -57,14 +57,23 @@ fun ExpensesListScreen(
 
     ErrorSnackbarEffect(state.message, snackbarHostState, viewModel::clearMessage)
 
+    // Il "+" centrale della bottom bar apre il dialog di creazione di questa schermata.
+    com.dcapps.spese.navigation.OnCreateRequested(com.dcapps.spese.navigation.Routes.EXPENSES_LIST) {
+        showCreateDialog = true
+    }
+
     Scaffold(
-        topBar = { TopAppBar(title = { Text(stringResource(R.string.lists_title)) }) },
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        floatingActionButton = {
-            SmallFloatingActionButton(onClick = { showCreateDialog = true }) {
-                Icon(Icons.Default.Add, contentDescription = stringResource(R.string.lists_new))
-            }
+        topBar = {
+            TopAppBar(
+                title = { Text(stringResource(R.string.lists_title)) },
+                navigationIcon = {
+                    IconButton(onClick = onOpenDrawer) {
+                        Icon(Icons.Default.Menu, contentDescription = stringResource(R.string.drawer_open))
+                    }
+                },
+            )
         },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { innerPadding ->
         androidx.compose.material3.pulltorefresh.PullToRefreshBox(
             isRefreshing = state.isLoading,
@@ -118,9 +127,7 @@ private fun ListContent(
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(
-            start = 16.dp, top = 16.dp, end = 16.dp, bottom = 88.dp,
-        ),
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         item {

@@ -8,13 +8,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -39,6 +39,7 @@ import com.dcapps.spese.core.model.Product
 @Composable
 fun PriceListScreen(
     onOpenProduct: (Product) -> Unit,
+    onOpenDrawer: () -> Unit = {},
     viewModel: PriceListViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -48,14 +49,22 @@ fun PriceListScreen(
         state.message, snackbarHostState, viewModel::clearMessage,
     )
 
+    com.dcapps.spese.navigation.OnCreateRequested(com.dcapps.spese.navigation.Routes.PRICES) {
+        showCreate = true
+    }
+
     Scaffold(
-        topBar = { TopAppBar(title = { Text(stringResource(R.string.prices_title)) }) },
-        snackbarHost = { androidx.compose.material3.SnackbarHost(snackbarHostState) },
-        floatingActionButton = {
-            SmallFloatingActionButton(onClick = { showCreate = true }) {
-                Icon(Icons.Default.Add, contentDescription = stringResource(R.string.prices_new_product))
-            }
+        topBar = {
+            TopAppBar(
+                title = { Text(stringResource(R.string.prices_title)) },
+                navigationIcon = {
+                    IconButton(onClick = onOpenDrawer) {
+                        Icon(Icons.Default.Menu, contentDescription = stringResource(R.string.drawer_open))
+                    }
+                },
+            )
         },
+        snackbarHost = { androidx.compose.material3.SnackbarHost(snackbarHostState) },
     ) { innerPadding ->
         androidx.compose.material3.pulltorefresh.PullToRefreshBox(
             isRefreshing = state.isLoading,
@@ -69,9 +78,7 @@ fun PriceListScreen(
                 }
                 else -> LazyColumn(
                     Modifier.fillMaxSize(),
-                    contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                        start = 16.dp, top = 16.dp, end = 16.dp, bottom = 88.dp,
-                    ),
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
                     verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp),
                 ) {
                     item {
