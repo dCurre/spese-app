@@ -1,0 +1,100 @@
+#!/usr/bin/env bash
+#
+# pre-push — bump incrementale AUTOMATICO di VERSION a ogni push.
+#
+# Perché: la versione deve aumentare a ogni push SENZA doversene ricordare e SENZA
+# farla gestire al CI. Questo hook scatta a qualsiasi `git push`.
+#
+# Come funziona (un solo `git push` da parte tua):
+#   1. Capisce quali commit stanno per essere pushati.
+#   2. Se tra quei commit VERSION è già cambiata → non ribumpa (niente doppio bump).
+#   3. Altrimenti incrementa la patch di VERSION e fa `--amend` sull'ultimo commit,
+#      così la versione viaggia NELLO STESSO commit del codice (nessun commit extra).
+#   4. git ha già "congelato" l'hash del vecchio HEAD per QUESTO push: quindi l'hook
+#      ABORTISCE il push corrente (il vecchio commit senza bump non deve partire) e
+#      rilancia LUI un `git push` del nuovo HEAD. Risultato: a GitHub arriva UN SOLO
+#      push → UNA SOLA build. Tu digiti `git push` una volta sola.
+#
+# Attivazione (una tantum dopo un clone):
+#   git config core.hooksPath scripts/hooks
+#
+# stdin: <local ref> <local sha> <remote ref> <remote sha>  (una riga per ref)
+
+set -euo pipefail
+
+# Evita ricorsione infinita quando l'hook rilancia il push.
+if [ "${SPESE_SHIP_REPUSH:-}" = "1" ]; then
+  exit 0
+fi
+
+remote_name="$1"   # es. origin
+# remote_url="$2"  # non usato
+
+cd "$(git rev-parse --show-toplevel)"
+
+VERSION_FILE="VERSION"
+[ -f "$VERSION_FILE" ] || exit 0   # nessun VERSION da gestire
+
+# Leggi dallo stdin il ref locale che si sta pushando (prende il primo branch valido).
+local_sha=""
+remote_sha=""
+local_ref=""
+remote_ref=""
+while read -r lref lsha rref rsha; do
+  # Salta cancellazioni di branch (local_sha tutto zeri).
+  if [ "$lsha" = "0000000000000000000000000000000000000000" ]; then
+    continue
+  fi
+  local_ref="$lref"
+  local_sha="$lsha"
+  remote_ref="$rref"
+  remote_sha="$rsha"
+  break
+done
+
+# Niente da pushare (es. push di soli tag) → non bumpare.
+[ -n "$local_sha" ] || exit 0
+
+# Determina il range dei commit che stanno per essere pushati.
+zero="0000000000000000000000000000000000000000"
+if [ "$remote_sha" = "$zero" ]; then
+  # Branch nuovo sul remoto: considera i commit non presenti su nessun altro ref del remoto.
+  range_spec=$(git rev-list "$local_sha" --not --remotes="$remote_name" 2>/dev/null || git rev-list "$local_sha" -n 50)
+else
+  range_spec=$(git rev-list "${remote_sha}..${local_sha}")
+fi
+
+# Nessun commit nuovo da pushare → niente bump.
+[ -n "$range_spec" ] || exit 0
+
+# VERSION è già stata toccata in uno dei commit in push? → già bumpata, non rifarlo.
+if [ "$remote_sha" = "$zero" ]; then
+  changed=$(git log "$local_sha" --not --remotes="$remote_name" --name-only --pretty=format: 2>/dev/null | grep -Fx "$VERSION_FILE" || true)
+else
+  changed=$(git log "${remote_sha}..${local_sha}" --name-only --pretty=format: | grep -Fx "$VERSION_FILE" || true)
+fi
+if [ -n "$changed" ]; then
+  # VERSION già inclusa nei commit da pushare: lascia proseguire il push così com'è.
+  exit 0
+fi
+
+# --- Bump patch di VERSION ---
+CURRENT=$(tr -d '[:space:]' < "$VERSION_FILE")
+IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT"
+MAJOR=${MAJOR:-0}; MINOR=${MINOR:-0}; PATCH=${PATCH:-0}
+NEW_VERSION="${MAJOR}.${MINOR}.$((PATCH + 1))"
+
+printf '%s' "$NEW_VERSION" > "$VERSION_FILE"
+git add "$VERSION_FILE"
+git commit --amend --no-edit --quiet
+
+echo "pre-push: VERSION ${CURRENT} -> ${NEW_VERSION} (inclusa nell'ultimo commit)." >&2
+echo "pre-push: rilancio il push del commit aggiornato..." >&2
+
+# Aborta QUESTO push (spingerebbe il vecchio commit) e spingi il nuovo HEAD verso lo
+# STESSO ref di destinazione remoto. Il flag evita che l'hook rientri in loop.
+SPESE_SHIP_REPUSH=1 git push "$remote_name" "HEAD:${remote_ref}"
+
+# Fallisci il push originale: il lavoro è già stato fatto dal push qui sopra.
+echo "pre-push: push completato dall'hook (versione bumpata). Il push originale è stato annullato apposta." >&2
+exit 1
