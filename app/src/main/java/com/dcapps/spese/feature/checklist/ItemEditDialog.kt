@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import com.dcapps.spese.R
 import com.dcapps.spese.core.model.ShoppingCategory
 import com.dcapps.spese.core.model.ShoppingItem
+import com.dcapps.spese.ui.components.ReadOnlyPickerField
 import com.dcapps.spese.ui.components.SpeseDialog
 import com.dcapps.spese.ui.theme.SpeseTheme
 
@@ -77,8 +78,13 @@ fun ItemEditDialog(
                 isError = qtyText.isNotBlank() && (qty == null || qty <= 0),
                 modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
             )
-            CategoryPicker(
-                categories = categories,
+            val noCategoryLabel = stringResource(R.string.item_no_category)
+            ReadOnlyPickerField(
+                label = stringResource(R.string.item_category),
+                options = buildList<Pair<Long?, String>> {
+                    add(null to noCategoryLabel)
+                    categories.forEach { add(it.id to it.name) }
+                },
                 selectedId = categoryId,
                 onSelect = { categoryId = it },
             )
@@ -89,43 +95,3 @@ fun ItemEditDialog(
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun CategoryPicker(
-    categories: List<ShoppingCategory>,
-    selectedId: Long?,
-    onSelect: (Long?) -> Unit,
-) {
-    var expanded by remember { mutableStateOf(false) }
-    val noCategoryLabel = stringResource(R.string.item_no_category)
-    // Etichetta corrente (include la categoria attuale), ma nel menu NON ripetiamo
-    // l'opzione già selezionata.
-    val currentLabel = categories.firstOrNull { it.id == selectedId }?.name ?: noCategoryLabel
-    val options = buildList<Pair<Long?, String>> {
-        if (selectedId != null) add(null to noCategoryLabel)
-        categories.filter { it.id != selectedId }.forEach { add(it.id to it.name) }
-    }
-
-    ExposedDropdownMenuBox(
-        expanded = expanded,
-        onExpandedChange = { expanded = it },
-        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-    ) {
-        OutlinedTextField(
-            value = currentLabel,
-            onValueChange = {},
-            readOnly = true,
-            label = { Text(stringResource(R.string.item_category)) },
-            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-            modifier = Modifier.fillMaxWidth().menuAnchor(MenuAnchorType.PrimaryNotEditable),
-        )
-        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            options.forEach { (id, text) ->
-                DropdownMenuItem(
-                    text = { Text(text) },
-                    onClick = { onSelect(id); expanded = false },
-                )
-            }
-        }
-    }
-}

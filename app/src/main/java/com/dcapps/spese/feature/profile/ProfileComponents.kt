@@ -25,6 +25,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.dcapps.spese.R
+import com.dcapps.spese.ui.components.SpeseDialog
 
 /** Riga di una lista impostazioni: icona + titolo (+ sottotitolo) + freccia, cliccabile. */
 @Composable
@@ -91,7 +92,7 @@ fun EditNameDialog(
 ) {
     var name by remember { mutableStateOf(initialName) }
     var surname by remember { mutableStateOf(initialSurname) }
-    com.dcapps.spese.ui.components.SpeseDialog(
+    SpeseDialog(
         title = stringResource(R.string.profile_edit_name),
         onDismiss = onDismiss,
         content = {

@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dcapps.spese.R
+import com.dcapps.spese.ui.components.SpeseTopAppBar
 import com.dcapps.spese.ui.theme.SpeseTheme
 
 /** Statistiche utente: liste possedute, partecipazioni, spese totali. */
@@ -46,7 +47,7 @@ fun ProfileStatsScreen(
 
     Scaffold(
         topBar = {
-            com.dcapps.spese.ui.components.SpeseTopAppBar(
+            SpeseTopAppBar(
                 title = stringResource(R.string.profile_stats),
                 navigationIcon = {
                     IconButton(onClick = onBack) {

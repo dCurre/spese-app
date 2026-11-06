@@ -11,15 +11,18 @@ da fare: aggiornare qui (spuntare / rimuovere quando completato).
   ID DB-autoincrement (serve temp-id→id come nel batch-save), nessun endpoint di sync.
   Domande aperte: modificare offline o solo consultare? quanto è reale l'editing concorrente?
 
-- [ ] **Test automatici (unit).** Nessuno al momento. Target di valore: diff del batch-save
-  checklist, serializer (BigDecimal/Instant), `SemVer`, parsing import (Samsung Notes), statistiche
-  prodotto. Agganciarli al CI così un push che rompe la logica non diventa release.
+- [ ] **Test automatici (unit) — ampliare.** Fatti: `SemVer`, `BigDecimalSerializer`,
+  `InstantSerializer` (in `app/src/test`). Restano da coprire: diff del batch-save checklist,
+  parsing import (Samsung Notes), statistiche prodotto. Agganciare l'esecuzione al CI così un push
+  che rompe la logica non diventa release.
 
-- [ ] **Analisi codice duplicato → componenti unici.** Censire i pattern ripetuti nelle UI e
-  centralizzarli in componenti condivisi (come fatto per le modali con `SpeseDialog` e per la
-  top bar con `SpeseTopAppBar`). Candidati da verificare: righe lista (row + divisore ricorrono in
-  più schermate), barre ricerca+sort, FAB dei detail, picker categoria/unità, menu overflow.
-  Obiettivo: un punto solo da mantenere per ogni pattern.
+- [ ] **Refactor boilerplate ViewModel (mutazioni).** Il pattern `viewModelScope.launch { when
+  (repo.xxx()) { Success -> load(); Error -> message } }` è ripetuto 15+ volte in 8 VM. Estrarre
+  un helper/BaseViewModel, ma prima standardizzare i campi `message`/`error`/`isLoading` degli
+  UiState (oggi ogni VM ha il proprio data class). Rischio medio: da fare in sessione dedicata.
+- [ ] **Row-elenco a slot (ListRow condiviso).** Lo scaffold riga-elenco (Row clickable + Column
+  nome/sottotitolo + trailing) ricorre in ChecklistScreen/ExpensesListScreen/PriceListScreen con
+  trailing diversi (star, badge, chevron). Estraibile come componente a slot. Rischio medio.
 
 - [ ] **Restyling estetico dell'app — rifiniture rimaste.** Base fatta (stile "Ledger verde":
   temi light/dark/legacy, liste a righe, colori semantici consolidati in token). Restano eventuali

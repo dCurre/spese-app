@@ -27,6 +27,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.dcapps.spese.R
 import com.dcapps.spese.core.model.Purchase
+import com.dcapps.spese.ui.components.AutocompleteField
+import com.dcapps.spese.ui.components.DateField
 import com.dcapps.spese.ui.components.SpeseDialog
 import java.time.Instant
 import java.time.LocalDate
@@ -51,7 +53,6 @@ fun NewPurchaseDialog(
     var qtyText by remember { mutableStateOf(purchase?.quantity?.toString() ?: "1") }
     var store by remember { mutableStateOf(purchase?.store ?: "") }
     var notes by remember { mutableStateOf(purchase?.notes ?: "") }
-    var storeMenuExpanded by remember { mutableStateOf(false) }
     // Data dell'acquisto (yyyy-MM-dd): in modifica quella esistente, altrimenti oggi.
     val isoFmt = remember { DateTimeFormatter.ofPattern("yyyy-MM-dd") }
     var purchaseDate by remember {
@@ -60,7 +61,6 @@ fun NewPurchaseDialog(
                 ?: LocalDate.now(),
         )
     }
-    var showDatePicker by remember { mutableStateOf(false) }
 
     // L'unità è quella dell'acquisto (in modifica) o quella del prodotto.
     val unitId = purchase?.unitId ?: productUnitId
@@ -106,50 +106,22 @@ fun NewPurchaseDialog(
                     )
                 }
                 // Negozio con autocomplete dai negozi già usati.
-                val matches = storeSuggestions.filter {
-                    store.isNotBlank() && it.contains(store, ignoreCase = true) &&
-                        !it.equals(store, ignoreCase = true)
-                }.take(5)
-                androidx.compose.material3.ExposedDropdownMenuBox(
-                    expanded = storeMenuExpanded && matches.isNotEmpty(),
-                    onExpandedChange = { storeMenuExpanded = it },
+                AutocompleteField(
+                    value = store,
+                    onValueChange = { store = it },
+                    suggestions = storeSuggestions,
+                    label = stringResource(R.string.purchase_store),
                     modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                ) {
-                    OutlinedTextField(
-                        value = store,
-                        onValueChange = { store = it; storeMenuExpanded = true },
-                        label = { Text(stringResource(R.string.purchase_store)) },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
-                            .menuAnchor(androidx.compose.material3.MenuAnchorType.PrimaryEditable),
-                    )
-                    androidx.compose.material3.DropdownMenu(
-                        expanded = storeMenuExpanded && matches.isNotEmpty(),
-                        onDismissRequest = { storeMenuExpanded = false },
-                    ) {
-                        matches.forEach { s ->
-                            androidx.compose.material3.DropdownMenuItem(
-                                text = { Text(s) },
-                                onClick = { store = s; storeMenuExpanded = false },
-                            )
-                        }
-                    }
-                }
-                // Data acquisto: in sola lettura, apre il date picker al tocco (un Box trasparente
-                // sopra il campo intercetta il click, come nel dialog spesa).
-                Box(Modifier.fillMaxWidth().padding(top = 8.dp)) {
-                    OutlinedTextField(
-                        value = purchaseDate.format(isoFmt),
-                        onValueChange = {},
-                        readOnly = true,
-                        label = { Text(stringResource(R.string.expense_date)) },
-                        trailingIcon = { Icon(Icons.Default.DateRange, contentDescription = null) },
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                    Box(
-                        Modifier.matchParentSize().clickable { showDatePicker = true },
-                    )
-                }
+                )
+                DateField(
+                    label = stringResource(R.string.expense_date),
+                    displayText = purchaseDate.format(isoFmt),
+                    selectedUtcMillis = purchaseDate.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli(),
+                    onDateSelected = {
+                        purchaseDate = Instant.ofEpochMilli(it).atZone(ZoneOffset.UTC).toLocalDate()
+                    },
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                )
                 OutlinedTextField(
                     value = notes,
                     onValueChange = { notes = it },
@@ -162,26 +134,4 @@ fun NewPurchaseDialog(
         onConfirm = { onConfirm(price!!, qty!!, unitId!!, purchaseDate.format(isoFmt), store, notes) },
         confirmEnabled = valid,
     )
-
-    if (showDatePicker) {
-        val pickerState = rememberDatePickerState(
-            initialSelectedDateMillis = purchaseDate.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli(),
-        )
-        DatePickerDialog(
-            onDismissRequest = { showDatePicker = false },
-            confirmButton = {
-                TextButton(onClick = {
-                    pickerState.selectedDateMillis?.let {
-                        purchaseDate = Instant.ofEpochMilli(it).atZone(ZoneOffset.UTC).toLocalDate()
-                    }
-                    showDatePicker = false
-                }) { Text(stringResource(R.string.action_ok)) }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDatePicker = false }) { Text(stringResource(R.string.action_cancel)) }
-            },
-        ) {
-            DatePicker(state = pickerState)
-        }
-    }
 }

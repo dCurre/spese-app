@@ -74,8 +74,8 @@ fun FeedbackDialog(
                 )
             }
         },
-        confirmText = if (state.sending) stringResource(R.string.feedback_sending)
-            else stringResource(R.string.feedback_send),
+        confirmText = if (state.sending) stringResource(R.string.action_sending)
+            else stringResource(R.string.action_send),
         onConfirm = viewModel::send,
         confirmEnabled = !state.sending && !state.notConfigured && state.description.isNotBlank(),
     )

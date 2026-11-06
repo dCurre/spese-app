@@ -90,8 +90,8 @@ fun BugReportDialog(
                 }
             }
         },
-        confirmText = if (state.sending) stringResource(R.string.bug_sending)
-            else stringResource(R.string.bug_send),
+        confirmText = if (state.sending) stringResource(R.string.action_sending)
+            else stringResource(R.string.action_send),
         onConfirm = viewModel::send,
         confirmEnabled = !state.sending && !state.notConfigured,
         // "No grazie" scarta anche il crash salvato: dismiss custom ma neutro come l'annulla.

@@ -41,6 +41,17 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dcapps.spese.R
 import com.dcapps.spese.core.model.ShoppingList
 import com.dcapps.spese.feature.expenses.CreateListDialog
+import com.dcapps.spese.ui.components.ConfirmDialog
+import com.dcapps.spese.ui.components.ErrorSnackbarEffect
+import com.dcapps.spese.ui.components.ErrorState
+import com.dcapps.spese.ui.components.RowDivider
+import com.dcapps.spese.ui.components.SortBar
+import com.dcapps.spese.ui.components.SortOption
+import com.dcapps.spese.ui.components.SpeseBadge
+import com.dcapps.spese.ui.components.SpeseSearchField
+import com.dcapps.spese.ui.components.SpeseTopAppBar
+import com.dcapps.spese.ui.components.SwipeToDeleteRow
+import com.dcapps.spese.ui.theme.SpeseTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -51,7 +62,7 @@ fun ChecklistScreen(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     var showCreate by remember { mutableStateOf(false) }
     val snackbarHostState = remember { androidx.compose.material3.SnackbarHostState() }
-    com.dcapps.spese.ui.components.ErrorSnackbarEffect(
+    ErrorSnackbarEffect(
         state.message, snackbarHostState, viewModel::clearMessage,
     )
 
@@ -60,7 +71,7 @@ fun ChecklistScreen(
     }
 
     Scaffold(
-        topBar = { com.dcapps.spese.ui.components.SpeseTopAppBar(title = stringResource(R.string.checklist_title)) },
+        topBar = { SpeseTopAppBar(title = stringResource(R.string.checklist_title)) },
         snackbarHost = { androidx.compose.material3.SnackbarHost(snackbarHostState) },
     ) { innerPadding ->
         androidx.compose.material3.pulltorefresh.PullToRefreshBox(
@@ -69,13 +80,10 @@ fun ChecklistScreen(
             modifier = Modifier.fillMaxSize().padding(innerPadding),
         ) {
             when {
-                state.error != null -> Column(
-                    Modifier.align(Alignment.Center),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Text(state.error!!)
-                    TextButton(onClick = { viewModel.load(showLoading = true) }) { Text(stringResource(R.string.action_retry)) }
-                }
+                state.error != null -> ErrorState(
+                    message = state.error!!,
+                    onRetry = { viewModel.load(showLoading = true) },
+                )
                 else -> ChecklistContent(state, viewModel, onOpenList)
             }
         }
@@ -108,21 +116,17 @@ private fun ChecklistContent(
         contentPadding = androidx.compose.foundation.layout.PaddingValues(top = 8.dp, bottom = 88.dp),
     ) {
         item {
-            OutlinedTextField(
-                value = state.query,
-                onValueChange = viewModel::onQueryChange,
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
-                placeholder = { Text(stringResource(R.string.lists_search)) },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                shape = androidx.compose.foundation.shape.RoundedCornerShape(24.dp),
-                singleLine = true,
+            SpeseSearchField(
+                query = state.query,
+                onQueryChange = viewModel::onQueryChange,
+                placeholder = stringResource(R.string.lists_search),
             )
         }
         item {
-            com.dcapps.spese.ui.components.SortBar(
+            SortBar(
                 options = listOf(
-                    com.dcapps.spese.ui.components.SortOption(ChecklistSort.DATE, stringResource(R.string.sort_date)),
-                    com.dcapps.spese.ui.components.SortOption(ChecklistSort.NAME, stringResource(R.string.sort_name)),
+                    SortOption(ChecklistSort.DATE, stringResource(R.string.sort_date)),
+                    SortOption(ChecklistSort.NAME, stringResource(R.string.sort_name)),
                 ),
                 selectedKey = state.sort,
                 ascending = state.sortAsc,
@@ -147,7 +151,7 @@ private fun ChecklistContent(
     }
 
     listToDelete?.let { list ->
-        com.dcapps.spese.ui.components.ConfirmDialog(
+        ConfirmDialog(
             title = stringResource(R.string.checklist_delete_title),
             message = stringResource(R.string.checklist_delete_message, list.name),
             onConfirm = { viewModel.delete(list) },
@@ -180,10 +184,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.section(
             onStar = { viewModel.toggleStarred(list) },
             onRequestDelete = { onRequestDelete(list) },
         )
-        androidx.compose.material3.HorizontalDivider(
-            Modifier.padding(horizontal = 16.dp),
-            color = com.dcapps.spese.ui.theme.SpeseTheme.colors.divider,
-        )
+        RowDivider()
     }
 }
 
@@ -198,7 +199,7 @@ private fun SwipeableChecklistRow(
     onStar: () -> Unit,
     onRequestDelete: () -> Unit,
 ) {
-    com.dcapps.spese.ui.components.SwipeToDeleteRow(onRequestDelete = onRequestDelete) {
+    SwipeToDeleteRow(onRequestDelete = onRequestDelete) {
         ChecklistRow(list, onOpenList, onStar = onStar)
     }
 }
@@ -228,10 +229,10 @@ private fun ChecklistRow(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                com.dcapps.spese.ui.components.SpeseBadge(
+                SpeseBadge(
                     text = if (isShared) stringResource(R.string.lists_type_shared)
                         else stringResource(R.string.lists_type_personal),
-                    color = if (isShared) com.dcapps.spese.ui.theme.SpeseTheme.colors.accent
+                    color = if (isShared) SpeseTheme.colors.accent
                         else MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 countLabel?.let {
@@ -241,9 +242,9 @@ private fun ChecklistRow(
         }
         IconButton(onClick = onStar) {
             if (list.starred) {
-                Icon(Icons.Default.Star, contentDescription = stringResource(R.string.checklist_star_remove), tint = com.dcapps.spese.ui.theme.SpeseTheme.colors.accent)
+                Icon(Icons.Default.Star, contentDescription = stringResource(R.string.checklist_star_remove), tint = SpeseTheme.colors.accent)
             } else {
-                Icon(Icons.Outlined.StarBorder, contentDescription = stringResource(R.string.checklist_star_add), tint = com.dcapps.spese.ui.theme.SpeseTheme.colors.accent)
+                Icon(Icons.Outlined.StarBorder, contentDescription = stringResource(R.string.checklist_star_add), tint = SpeseTheme.colors.accent)
             }
         }
     }

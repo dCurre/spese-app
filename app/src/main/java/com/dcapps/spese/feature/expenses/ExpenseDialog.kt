@@ -37,6 +37,9 @@ import com.dcapps.spese.core.model.Expense
 import com.dcapps.spese.core.model.ExpenseType
 import com.dcapps.spese.core.model.ExpensesListParticipant
 import com.dcapps.spese.core.util.toShortDate
+import com.dcapps.spese.ui.components.AutocompleteField
+import com.dcapps.spese.ui.components.DateField
+import com.dcapps.spese.ui.components.ReadOnlyPickerField
 import com.dcapps.spese.ui.components.SpeseDialog
 import com.dcapps.spese.ui.theme.SpeseTheme
 import java.math.BigDecimal
@@ -65,7 +68,6 @@ fun ExpenseDialog(
 ) {
     val isEdit = expense != null && !forceCreate
     var name by remember { mutableStateOf(expense?.name ?: "") }
-    var nameMenuExpanded by remember { mutableStateOf(false) }
     var amountText by remember {
         mutableStateOf(expense?.amount?.takeIf { it.signum() != 0 }?.toPlainString() ?: "")
     }
@@ -82,7 +84,6 @@ fun ExpenseDialog(
     var selectedDate by remember {
         mutableStateOf(expense?.expenseDate ?: Instant.now())
     }
-    var showDatePicker by remember { mutableStateOf(false) }
 
     val amount = amountText.replace(",", ".").toBigDecimalOrNull()
     val valid = name.isNotBlank() &&
@@ -108,35 +109,12 @@ fun ExpenseDialog(
         content = {
             Column(Modifier.verticalScroll(rememberScrollState())) {
                 // Nome con autocomplete dai nomi di spese già presenti.
-                val nameMatches = nameSuggestions.filter {
-                    name.isNotBlank() && it.contains(name, ignoreCase = true) &&
-                        !it.equals(name, ignoreCase = true)
-                }.distinct().take(5)
-                ExposedDropdownMenuBox(
-                    expanded = nameMenuExpanded && nameMatches.isNotEmpty(),
-                    onExpandedChange = { nameMenuExpanded = it },
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    OutlinedTextField(
-                        value = name,
-                        onValueChange = { name = it; nameMenuExpanded = true },
-                        label = { Text(stringResource(R.string.name)) },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
-                            .menuAnchor(MenuAnchorType.PrimaryEditable),
-                    )
-                    DropdownMenu(
-                        expanded = nameMenuExpanded && nameMatches.isNotEmpty(),
-                        onDismissRequest = { nameMenuExpanded = false },
-                    ) {
-                        nameMatches.forEach { s ->
-                            DropdownMenuItem(
-                                text = { Text(s) },
-                                onClick = { name = s; nameMenuExpanded = false },
-                            )
-                        }
-                    }
-                }
+                AutocompleteField(
+                    value = name,
+                    onValueChange = { name = it },
+                    suggestions = nameSuggestions,
+                    label = stringResource(R.string.name),
+                )
                 OutlinedTextField(
                     value = amountText,
                     onValueChange = { amountText = it },
@@ -149,7 +127,7 @@ fun ExpenseDialog(
                 // "Chi ha pagato" solo per le liste condivise: in quelle personali è sempre
                 // il proprietario, quindi il campo sarebbe superfluo.
                 if (!isPersonal) {
-                    PickerField(
+                    ReadOnlyPickerField(
                         label = stringResource(R.string.expense_who_paid),
                         options = participants.map { it.userId to participantLabel(it) },
                         selectedId = selectedOwnerId,
@@ -158,7 +136,7 @@ fun ExpenseDialog(
                 }
 
                 if (expenseTypes.isNotEmpty()) {
-                    PickerField(
+                    ReadOnlyPickerField(
                         label = stringResource(R.string.expense_type),
                         options = expenseTypes.map { it.id to it.name },
                         selectedId = selectedTypeId,
@@ -166,90 +144,19 @@ fun ExpenseDialog(
                     )
                 }
 
-                // Campo data: in sola lettura, apre il date picker al tocco.
-                // Il click arriva da un Box trasparente sovrapposto (un TextField readOnly
-                // non emette eventi di click sul corpo).
-                Box(Modifier.fillMaxWidth().padding(top = 8.dp)) {
-                    OutlinedTextField(
-                        value = selectedDate.toShortDate(),
-                        onValueChange = {},
-                        readOnly = true,
-                        label = { Text(stringResource(R.string.expense_date)) },
-                        trailingIcon = {
-                            Icon(Icons.Default.DateRange, contentDescription = null)
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                    Box(
-                        Modifier
-                            .matchParentSize()
-                            .clickable { showDatePicker = true },
-                    )
-                }
+                DateField(
+                    label = stringResource(R.string.expense_date),
+                    displayText = selectedDate.toShortDate(),
+                    selectedUtcMillis = selectedDate.toEpochMilli(),
+                    onDateSelected = { selectedDate = Instant.ofEpochMilli(it) },
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                )
             }
         },
         confirmText = stringResource(R.string.action_save),
         onConfirm = { onConfirm(name, amount!!, selectedOwnerId!!, selectedDate, selectedTypeId) },
         confirmEnabled = valid,
     )
-
-    if (showDatePicker) {
-        val pickerState = rememberDatePickerState(
-            initialSelectedDateMillis = selectedDate.toEpochMilli(),
-        )
-        DatePickerDialog(
-            onDismissRequest = { showDatePicker = false },
-            confirmButton = {
-                TextButton(onClick = {
-                    pickerState.selectedDateMillis?.let { selectedDate = Instant.ofEpochMilli(it) }
-                    showDatePicker = false
-                }) { Text(stringResource(R.string.action_ok)) }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDatePicker = false }) { Text(stringResource(R.string.action_cancel)) }
-            },
-        ) {
-            DatePicker(state = pickerState)
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun PickerField(
-    label: String,
-    options: List<Pair<Long, String>>,
-    selectedId: Long?,
-    onSelect: (Long) -> Unit,
-) {
-    var expanded by remember { mutableStateOf(false) }
-    val selectedLabel = options.firstOrNull { it.first == selectedId }?.second ?: ""
-
-    ExposedDropdownMenuBox(
-        expanded = expanded,
-        onExpandedChange = { expanded = it },
-        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-    ) {
-        OutlinedTextField(
-            value = selectedLabel,
-            onValueChange = {},
-            readOnly = true,
-            label = { Text(label) },
-            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-            modifier = Modifier.fillMaxWidth().menuAnchor(MenuAnchorType.PrimaryNotEditable),
-        )
-        DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false },
-        ) {
-            options.forEach { (id, text) ->
-                DropdownMenuItem(
-                    text = { Text(text) },
-                    onClick = { onSelect(id); expanded = false },
-                )
-            }
-        }
-    }
 }
 
 internal fun participantLabel(p: ExpensesListParticipant): String =

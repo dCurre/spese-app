@@ -41,6 +41,11 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dcapps.spese.R
 import com.dcapps.spese.ui.components.ConfirmDialog
+import com.dcapps.spese.ui.components.ErrorSnackbarEffect
+import com.dcapps.spese.ui.components.ReadOnlyPickerField
+import com.dcapps.spese.ui.components.SpeseDialog
+import com.dcapps.spese.ui.components.SpeseTopAppBar
+import com.dcapps.spese.ui.theme.SpeseTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -51,14 +56,14 @@ fun AdminScreen(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     var tab by remember { mutableIntStateOf(0) }
     val snackbarHostState = remember { androidx.compose.material3.SnackbarHostState() }
-    com.dcapps.spese.ui.components.ErrorSnackbarEffect(
+    ErrorSnackbarEffect(
         state.message, snackbarHostState, viewModel::clearMessage,
     )
 
     Scaffold(
         snackbarHost = { androidx.compose.material3.SnackbarHost(snackbarHostState) },
         topBar = {
-            com.dcapps.spese.ui.components.SpeseTopAppBar(
+            SpeseTopAppBar(
                 title = stringResource(R.string.profile_admin),
                 navigationIcon = {
                     IconButton(onClick = onBack) {
@@ -144,7 +149,7 @@ private fun NameSection(
                             Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.action_edit))
                         }
                         IconButton(onClick = { toDelete = id to name }) {
-                            Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.action_delete), tint = com.dcapps.spese.ui.theme.SpeseTheme.colors.danger)
+                            Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.action_delete), tint = SpeseTheme.colors.danger)
                         }
                     } else {
                         Text(stringResource(R.string.admin_protected), style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(end = 16.dp))
@@ -182,7 +187,7 @@ private fun NameDialog(
     onConfirm: (String) -> Unit,
 ) {
     var value by remember { mutableStateOf(initial) }
-    com.dcapps.spese.ui.components.SpeseDialog(
+    SpeseDialog(
         title = title,
         onDismiss = onDismiss,
         content = {
@@ -228,7 +233,7 @@ private fun UnitSection(viewModel: AdminViewModel, state: AdminUiState) {
                     }
                     if (!u.protected) {
                         IconButton(onClick = { viewModel.deleteUnit(u.id) }) {
-                            Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.action_delete), tint = com.dcapps.spese.ui.theme.SpeseTheme.colors.danger)
+                            Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.action_delete), tint = SpeseTheme.colors.danger)
                         }
                     } else {
                         Text(stringResource(R.string.admin_protected), style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(end = 16.dp))
@@ -257,7 +262,7 @@ private fun UnitDialog(
     var symbol by remember { mutableStateOf("") }
     var category by remember { mutableStateOf("peso") }
 
-    com.dcapps.spese.ui.components.SpeseDialog(
+    SpeseDialog(
         title = stringResource(R.string.admin_new_unit),
         onDismiss = onDismiss,
         content = {
@@ -300,7 +305,6 @@ private fun UsersSection(viewModel: AdminViewModel, state: AdminUiState) {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun RolePicker(
     roles: List<com.dcapps.spese.core.model.UserRole>,
@@ -308,32 +312,13 @@ private fun RolePicker(
     onSelect: (Long) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var expanded by remember { mutableStateOf(false) }
-    val currentLabel = currentRoleName ?: stringResource(R.string.admin_no_role)
-
-    androidx.compose.material3.ExposedDropdownMenuBox(
-        expanded = expanded,
-        onExpandedChange = { expanded = it },
+    // Il ruolo corrente è noto per nome: risalgo all'id per la selezione.
+    val selectedId = roles.firstOrNull { it.name == currentRoleName }?.id
+    ReadOnlyPickerField(
+        label = stringResource(R.string.admin_role),
+        options = roles.map { it.id to it.name },
+        selectedId = selectedId,
+        onSelect = onSelect,
         modifier = modifier,
-    ) {
-        OutlinedTextField(
-            value = currentLabel,
-            onValueChange = {},
-            readOnly = true,
-            label = { Text(stringResource(R.string.admin_role)) },
-            trailingIcon = {
-                androidx.compose.material3.ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
-            },
-            modifier = Modifier.fillMaxWidth()
-                .menuAnchor(androidx.compose.material3.MenuAnchorType.PrimaryNotEditable),
-        )
-        androidx.compose.material3.DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            roles.forEach { role ->
-                androidx.compose.material3.DropdownMenuItem(
-                    text = { Text(role.name) },
-                    onClick = { onSelect(role.id); expanded = false },
-                )
-            }
-        }
-    }
+    )
 }

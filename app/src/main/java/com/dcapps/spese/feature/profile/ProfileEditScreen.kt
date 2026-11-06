@@ -49,6 +49,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.dcapps.spese.R
+import com.dcapps.spese.ui.components.ErrorSnackbarEffect
+import com.dcapps.spese.ui.components.SpeseTopAppBar
 
 /** Dettaglio profilo / account: avatar (modificabile), nome, email, modifica nome, logout. */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -67,13 +69,13 @@ fun ProfileEditScreen(
     ) { uri -> if (uri != null) viewModel.uploadAvatar(context, uri) }
 
     val snackbarHostState = remember { androidx.compose.material3.SnackbarHostState() }
-    com.dcapps.spese.ui.components.ErrorSnackbarEffect(
+    ErrorSnackbarEffect(
         state.message, snackbarHostState, viewModel::clearMessage,
     )
 
     Scaffold(
         topBar = {
-            com.dcapps.spese.ui.components.SpeseTopAppBar(
+            SpeseTopAppBar(
                 title = stringResource(R.string.profile_account),
                 navigationIcon = {
                     IconButton(onClick = onBack) {

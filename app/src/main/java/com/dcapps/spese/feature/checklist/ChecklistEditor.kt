@@ -31,6 +31,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.dcapps.spese.R
+import com.dcapps.spese.ui.theme.SpeseTheme
 
 /**
  * Editor della checklist in modalità modifica: tutte le modifiche sono locali ([onEdit])
@@ -76,7 +77,7 @@ fun ChecklistEditor(
                     singleLine = true,
                 )
                 IconButton(onClick = { onEdit { it.removeCategory(cat.id) } }) {
-                    Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.editor_delete_category), tint = com.dcapps.spese.ui.theme.SpeseTheme.colors.danger)
+                    Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.editor_delete_category), tint = SpeseTheme.colors.danger)
                 }
             }
         }
@@ -145,7 +146,7 @@ private fun EditItemRow(
                 singleLine = true,
             )
             IconButton(onClick = onDelete) {
-                Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.editor_delete_item), tint = com.dcapps.spese.ui.theme.SpeseTheme.colors.danger)
+                Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.editor_delete_item), tint = SpeseTheme.colors.danger)
             }
         }
         CategoryDropdown(

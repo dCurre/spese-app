@@ -35,6 +35,14 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dcapps.spese.R
 import com.dcapps.spese.core.model.Product
+import com.dcapps.spese.ui.components.ErrorSnackbarEffect
+import com.dcapps.spese.ui.components.ErrorState
+import com.dcapps.spese.ui.components.RowDivider
+import com.dcapps.spese.ui.components.SortBar
+import com.dcapps.spese.ui.components.SortOption
+import com.dcapps.spese.ui.components.SpeseFilterChip
+import com.dcapps.spese.ui.components.SpeseSearchField
+import com.dcapps.spese.ui.components.SpeseTopAppBar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -45,7 +53,7 @@ fun PriceListScreen(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     var showCreate by remember { mutableStateOf(false) }
     val snackbarHostState = remember { androidx.compose.material3.SnackbarHostState() }
-    com.dcapps.spese.ui.components.ErrorSnackbarEffect(
+    ErrorSnackbarEffect(
         state.message, snackbarHostState, viewModel::clearMessage,
     )
 
@@ -54,7 +62,7 @@ fun PriceListScreen(
     }
 
     Scaffold(
-        topBar = { com.dcapps.spese.ui.components.SpeseTopAppBar(title = stringResource(R.string.prices_title)) },
+        topBar = { SpeseTopAppBar(title = stringResource(R.string.prices_title)) },
         snackbarHost = { androidx.compose.material3.SnackbarHost(snackbarHostState) },
     ) { innerPadding ->
         androidx.compose.material3.pulltorefresh.PullToRefreshBox(
@@ -63,30 +71,26 @@ fun PriceListScreen(
             modifier = Modifier.fillMaxSize().padding(innerPadding),
         ) {
             when {
-                state.error != null -> Column(Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(state.error!!)
-                    TextButton(onClick = { viewModel.load(showLoading = true) }) { Text(stringResource(R.string.action_retry)) }
-                }
+                state.error != null -> ErrorState(
+                    message = state.error!!,
+                    onRetry = { viewModel.load(showLoading = true) },
+                )
                 else -> LazyColumn(
                     Modifier.fillMaxSize(),
                     contentPadding = androidx.compose.foundation.layout.PaddingValues(top = 8.dp, bottom = 88.dp),
                 ) {
                     item {
-                        OutlinedTextField(
-                            value = state.query,
-                            onValueChange = viewModel::onQueryChange,
-                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
-                            placeholder = { Text(stringResource(R.string.prices_search)) },
-                            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                            shape = androidx.compose.foundation.shape.RoundedCornerShape(24.dp),
-                            singleLine = true,
+                        SpeseSearchField(
+                            query = state.query,
+                            onQueryChange = viewModel::onQueryChange,
+                            placeholder = stringResource(R.string.prices_search),
                         )
                     }
                     item {
-                        com.dcapps.spese.ui.components.SortBar(
+                        SortBar(
                             options = listOf(
-                                com.dcapps.spese.ui.components.SortOption(ProductSort.NAME, stringResource(R.string.sort_name)),
-                                com.dcapps.spese.ui.components.SortOption(ProductSort.BRAND, stringResource(R.string.sort_brand)),
+                                SortOption(ProductSort.NAME, stringResource(R.string.sort_name)),
+                                SortOption(ProductSort.BRAND, stringResource(R.string.sort_brand)),
                             ),
                             selectedKey = state.sort,
                             ascending = state.sortAsc,
@@ -104,24 +108,16 @@ fun PriceListScreen(
                                     .padding(horizontal = 16.dp, vertical = 4.dp),
                                 horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp),
                             ) {
-                                androidx.compose.material3.FilterChip(
+                                SpeseFilterChip(
                                     selected = state.brandFilter == null,
                                     onClick = { viewModel.onBrandFilterChange(null) },
-                                    label = { Text(stringResource(R.string.prices_brand_all)) },
-                                    colors = androidx.compose.material3.FilterChipDefaults.filterChipColors(
-                                        selectedContainerColor = MaterialTheme.colorScheme.primary,
-                                        selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
-                                    ),
+                                    label = stringResource(R.string.prices_brand_all),
                                 )
                                 state.availableBrands.forEach { brand ->
-                                    androidx.compose.material3.FilterChip(
+                                    SpeseFilterChip(
                                         selected = state.brandFilter == brand,
                                         onClick = { viewModel.onBrandFilterChange(brand) },
-                                        label = { Text(brand) },
-                                        colors = androidx.compose.material3.FilterChipDefaults.filterChipColors(
-                                            selectedContainerColor = MaterialTheme.colorScheme.primary,
-                                            selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
-                                        ),
+                                        label = brand,
                                     )
                                 }
                             }
@@ -160,10 +156,7 @@ fun PriceListScreen(
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
-                        androidx.compose.material3.HorizontalDivider(
-                            Modifier.padding(horizontal = 16.dp),
-                            color = com.dcapps.spese.ui.theme.SpeseTheme.colors.divider,
-                        )
+                        RowDivider()
                     }
                 }
             }

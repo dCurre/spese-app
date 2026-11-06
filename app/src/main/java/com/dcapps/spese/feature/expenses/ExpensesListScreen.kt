@@ -2,6 +2,8 @@ package com.dcapps.spese.feature.expenses
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import com.dcapps.spese.ui.components.ErrorState
+import com.dcapps.spese.ui.components.RowDivider
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -39,6 +41,14 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dcapps.spese.core.model.ExpensesList
 import com.dcapps.spese.ui.components.ConfirmDialog
 import com.dcapps.spese.ui.components.ErrorSnackbarEffect
+import com.dcapps.spese.ui.components.LoadingIndicator
+import com.dcapps.spese.ui.components.SortBar
+import com.dcapps.spese.ui.components.SortOption
+import com.dcapps.spese.ui.components.SpeseBadge
+import com.dcapps.spese.ui.components.SpeseSearchField
+import com.dcapps.spese.ui.components.SpeseTopAppBar
+import com.dcapps.spese.ui.components.SwipeToDeleteRow
+import com.dcapps.spese.ui.theme.SpeseTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -59,7 +69,7 @@ fun ExpensesListScreen(
     }
 
     Scaffold(
-        topBar = { com.dcapps.spese.ui.components.SpeseTopAppBar(title = stringResource(R.string.lists_title)) },
+        topBar = { SpeseTopAppBar(title = stringResource(R.string.lists_title)) },
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { innerPadding ->
         androidx.compose.material3.pulltorefresh.PullToRefreshBox(
@@ -69,7 +79,7 @@ fun ExpensesListScreen(
         ) {
             when {
                 state.isLoading && state.activeLists.isEmpty() && state.paidLists.isEmpty() ->
-                    com.dcapps.spese.ui.components.LoadingIndicator()
+                    LoadingIndicator()
                 state.error != null -> ErrorState(state.error!!, onRetry = viewModel::load)
                 else -> ListContent(
                     state = state,
@@ -117,21 +127,17 @@ private fun ListContent(
         contentPadding = androidx.compose.foundation.layout.PaddingValues(top = 8.dp, bottom = 88.dp),
     ) {
         item {
-            OutlinedTextField(
-                value = state.query,
-                onValueChange = onQueryChange,
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
-                placeholder = { Text(stringResource(R.string.lists_search)) },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                shape = androidx.compose.foundation.shape.RoundedCornerShape(24.dp),
-                singleLine = true,
+            SpeseSearchField(
+                query = state.query,
+                onQueryChange = onQueryChange,
+                placeholder = stringResource(R.string.lists_search),
             )
         }
         item {
-            com.dcapps.spese.ui.components.SortBar(
+            SortBar(
                 options = listOf(
-                    com.dcapps.spese.ui.components.SortOption(ListSort.DATE, stringResource(R.string.sort_date)),
-                    com.dcapps.spese.ui.components.SortOption(ListSort.NAME, stringResource(R.string.sort_name)),
+                    SortOption(ListSort.DATE, stringResource(R.string.sort_date)),
+                    SortOption(ListSort.NAME, stringResource(R.string.sort_name)),
                 ),
                 selectedKey = state.sort,
                 ascending = state.sortAsc,
@@ -153,7 +159,7 @@ private fun ListContent(
         if (state.activeLists.isNotEmpty()) {
             item { SectionHeader(stringResource(R.string.lists_section_active)) }
             items(state.activeLists, key = { it.id }) { list ->
-                com.dcapps.spese.ui.components.SwipeToDeleteRow(onRequestDelete = { onDeleteList(list) }) {
+                SwipeToDeleteRow(onRequestDelete = { onDeleteList(list) }) {
                     ListRow(list, onOpenList)
                 }
                 RowDivider()
@@ -178,7 +184,7 @@ private fun ListContent(
             }
             if (state.paidListsShown) {
                 items(state.paidLists, key = { it.id }) { list ->
-                    com.dcapps.spese.ui.components.SwipeToDeleteRow(onRequestDelete = { onDeleteList(list) }) {
+                    SwipeToDeleteRow(onRequestDelete = { onDeleteList(list) }) {
                         ListRow(list, onOpenList)
                     }
                     RowDivider()
@@ -199,13 +205,6 @@ private fun SectionHeader(text: String) {
     )
 }
 
-@Composable
-private fun RowDivider() {
-    androidx.compose.material3.HorizontalDivider(
-        Modifier.padding(horizontal = 16.dp),
-        color = com.dcapps.spese.ui.theme.SpeseTheme.colors.divider,
-    )
-}
 
 @Composable
 private fun ListRow(
@@ -236,10 +235,10 @@ private fun ListRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 // Tipo lista come badge colorato (Condivisa = accent, Personale = neutro).
-                com.dcapps.spese.ui.components.SpeseBadge(
+                SpeseBadge(
                     text = if (isShared) stringResource(R.string.lists_type_shared)
                         else stringResource(R.string.lists_type_personal),
-                    color = if (isShared) com.dcapps.spese.ui.theme.SpeseTheme.colors.accent
+                    color = if (isShared) SpeseTheme.colors.accent
                         else MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 if (subtitle.isNotBlank()) {
@@ -250,16 +249,3 @@ private fun ListRow(
     }
 }
 
-@Composable
-private fun ErrorState(message: String, onRetry: () -> Unit) {
-    Column(
-        modifier = Modifier.fillMaxSize().padding(32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-    ) {
-        Text(message, style = MaterialTheme.typography.bodyMedium)
-        TextButton(onClick = onRetry, modifier = Modifier.padding(top = 8.dp)) {
-            Text(stringResource(R.string.action_retry))
-        }
-    }
-}

@@ -24,13 +24,14 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.dcapps.spese.BuildConfig
 import com.dcapps.spese.R
+import com.dcapps.spese.ui.components.SpeseTopAppBar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AboutScreen(onBack: () -> Unit) {
     Scaffold(
         topBar = {
-            com.dcapps.spese.ui.components.SpeseTopAppBar(
+            SpeseTopAppBar(
                 title = stringResource(R.string.profile_about),
                 navigationIcon = {
                     IconButton(onClick = onBack) {

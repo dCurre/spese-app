@@ -41,6 +41,7 @@ import com.dcapps.spese.core.model.BalanceEntry
 import com.dcapps.spese.core.model.BalanceTotal
 import com.dcapps.spese.core.model.Expense
 import com.dcapps.spese.core.util.toEuro
+import com.dcapps.spese.ui.theme.SpeseTheme
 import com.dcapps.spese.ui.theme.categoricalColor
 import java.math.BigDecimal
 import java.math.RoundingMode
@@ -75,7 +76,7 @@ fun BalanceSection(
             containerColor = MaterialTheme.colorScheme.surface,
         ),
         elevation = androidx.compose.material3.CardDefaults.cardElevation(defaultElevation = 0.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, com.dcapps.spese.ui.theme.SpeseTheme.colors.divider),
+        border = androidx.compose.foundation.BorderStroke(1.dp, SpeseTheme.colors.divider),
     ) {
         Column(Modifier.padding(16.dp)) {
             Text(stringResource(R.string.balance_title), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
@@ -145,7 +146,7 @@ fun BalanceSection(
                             d.toPay.toBigDecimal().setScale(2, RoundingMode.HALF_UP).toEuro(),
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.SemiBold,
-                            color = com.dcapps.spese.ui.theme.SpeseTheme.colors.debit,
+                            color = SpeseTheme.colors.debit,
                         )
                     }
                 }

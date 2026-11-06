@@ -20,6 +20,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.dcapps.spese.R
 import com.dcapps.spese.core.model.MeasurementUnit
+import com.dcapps.spese.ui.components.ReadOnlyPickerField
 import com.dcapps.spese.ui.components.SpeseDialog
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -33,7 +34,6 @@ fun NewProductDialog(
     var name by remember { mutableStateOf(product?.name ?: "") }
     var brand by remember { mutableStateOf(product?.brand ?: "") }
     var unitId by remember { mutableStateOf(product?.defaultUnitId ?: units.firstOrNull()?.id) }
-    var expanded by remember { mutableStateOf(false) }
 
     SpeseDialog(
         title = if (product == null) stringResource(R.string.prices_new_product)
@@ -55,29 +55,12 @@ fun NewProductDialog(
                 modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
             )
             if (units.isNotEmpty()) {
-                val selected = units.firstOrNull { it.id == unitId }
-                ExposedDropdownMenuBox(
-                    expanded = expanded,
-                    onExpandedChange = { expanded = it },
-                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                ) {
-                    OutlinedTextField(
-                        value = selected?.let { "${it.name} (${it.symbol})" } ?: "",
-                        onValueChange = {},
-                        readOnly = true,
-                        label = { Text(stringResource(R.string.product_unit)) },
-                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                        modifier = Modifier.fillMaxWidth().menuAnchor(MenuAnchorType.PrimaryNotEditable),
-                    )
-                    DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                        units.forEach { u ->
-                            DropdownMenuItem(
-                                text = { Text("${u.name} (${u.symbol})") },
-                                onClick = { unitId = u.id; expanded = false },
-                            )
-                        }
-                    }
-                }
+                ReadOnlyPickerField(
+                    label = stringResource(R.string.product_unit),
+                    options = units.map { it.id to "${it.name} (${it.symbol})" },
+                    selectedId = unitId,
+                    onSelect = { unitId = it },
+                )
             }
         },
         confirmText = if (product == null) stringResource(R.string.action_create)

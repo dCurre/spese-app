@@ -45,6 +45,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.dcapps.spese.R
+import com.dcapps.spese.ui.components.SpeseTopAppBar
+import com.dcapps.spese.ui.theme.SpeseTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -67,7 +69,7 @@ fun ProfileScreen(
     }
 
     Scaffold(
-        topBar = { com.dcapps.spese.ui.components.SpeseTopAppBar(title = stringResource(R.string.profile_title)) },
+        topBar = { SpeseTopAppBar(title = stringResource(R.string.profile_title)) },
     ) { innerPadding ->
         Column(
             modifier = Modifier
@@ -177,6 +179,6 @@ fun ProfileScreen(
 @Composable
 private fun ProfileGroupDivider() {
     androidx.compose.material3.HorizontalDivider(
-        color = com.dcapps.spese.ui.theme.SpeseTheme.colors.divider,
+        color = SpeseTheme.colors.divider,
     )
 }

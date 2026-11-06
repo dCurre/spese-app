@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dcapps.spese.R
+import com.dcapps.spese.ui.components.SpeseTopAppBar
 import com.dcapps.spese.ui.theme.SpeseTheme
 
 /** Impostazioni: selettori lingua e tema. */
@@ -41,7 +42,7 @@ fun ProfileSettingsScreen(
 
     Scaffold(
         topBar = {
-            com.dcapps.spese.ui.components.SpeseTopAppBar(
+            SpeseTopAppBar(
                 title = stringResource(R.string.profile_settings),
                 navigationIcon = {
                     IconButton(onClick = onBack) {

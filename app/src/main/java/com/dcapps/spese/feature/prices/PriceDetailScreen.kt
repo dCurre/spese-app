@@ -39,6 +39,13 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dcapps.spese.R
+import com.dcapps.spese.ui.components.ConfirmDialog
+import com.dcapps.spese.ui.components.ErrorSnackbarEffect
+import com.dcapps.spese.ui.components.OverflowMenu
+import com.dcapps.spese.ui.components.RowDivider
+import com.dcapps.spese.ui.components.SpeseFilterChip
+import com.dcapps.spese.ui.components.SpeseTopAppBar
+import com.dcapps.spese.ui.theme.SpeseTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -52,9 +59,8 @@ fun PriceDetailScreen(
     var purchaseToDelete by remember { mutableStateOf<com.dcapps.spese.core.model.Purchase?>(null) }
     var showEditProduct by remember { mutableStateOf(false) }
     var showDeleteProduct by remember { mutableStateOf(false) }
-    var menuExpanded by remember { mutableStateOf(false) }
     val snackbarHostState = remember { androidx.compose.material3.SnackbarHostState() }
-    com.dcapps.spese.ui.components.ErrorSnackbarEffect(
+    ErrorSnackbarEffect(
         state.message, snackbarHostState, viewModel::clearMessage,
     )
 
@@ -66,7 +72,7 @@ fun PriceDetailScreen(
     Scaffold(
         snackbarHost = { androidx.compose.material3.SnackbarHost(snackbarHostState) },
         topBar = {
-            com.dcapps.spese.ui.components.SpeseTopAppBar(
+            SpeseTopAppBar(
                 title = state.product?.name ?: stringResource(R.string.product_detail_fallback),
                 onTitleEdit = { showEditProduct = true },
                 titleEditLabel = stringResource(R.string.product_edit_title),
@@ -76,16 +82,10 @@ fun PriceDetailScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { menuExpanded = true }) {
-                        Icon(Icons.Default.MoreVert, contentDescription = stringResource(R.string.detail_more_actions))
-                    }
-                    androidx.compose.material3.DropdownMenu(
-                        expanded = menuExpanded,
-                        onDismissRequest = { menuExpanded = false },
-                    ) {
+                    OverflowMenu { dismiss ->
                         androidx.compose.material3.DropdownMenuItem(
                             text = { Text(stringResource(R.string.product_delete_title)) },
-                            onClick = { menuExpanded = false; showDeleteProduct = true },
+                            onClick = { dismiss(); showDeleteProduct = true },
                         )
                     }
                 },
@@ -127,14 +127,10 @@ fun PriceDetailScreen(
                                     verticalAlignment = Alignment.CenterVertically,
                                 ) {
                                     Granularity.entries.forEach { g ->
-                                        FilterChip(
+                                        SpeseFilterChip(
                                             selected = state.granularity == g,
                                             onClick = { viewModel.setGranularity(g) },
-                                            label = { Text(stringResource(granularityLabelRes(g))) },
-                                            colors = androidx.compose.material3.FilterChipDefaults.filterChipColors(
-                                                selectedContainerColor = MaterialTheme.colorScheme.primary,
-                                                selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
-                                            ),
+                                            label = stringResource(granularityLabelRes(g)),
                                         )
                                     }
                                     // Loading locale del grafico: non fa sparire la schermata.
@@ -196,16 +192,13 @@ fun PriceDetailScreen(
                                 "%.2f €/%s".format(p.unitPrice, unitSym),
                                 style = MaterialTheme.typography.bodyMedium,
                                 fontWeight = FontWeight.Bold,
-                                color = com.dcapps.spese.ui.theme.SpeseTheme.colors.credit,
+                                color = SpeseTheme.colors.credit,
                             )
                             IconButton(onClick = { purchaseToDelete = p }) {
-                                Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.product_delete_purchase), tint = com.dcapps.spese.ui.theme.SpeseTheme.colors.danger)
+                                Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.product_delete_purchase), tint = SpeseTheme.colors.danger)
                             }
                         }
-                        androidx.compose.material3.HorizontalDivider(
-                            Modifier.padding(horizontal = 16.dp),
-                            color = com.dcapps.spese.ui.theme.SpeseTheme.colors.divider,
-                        )
+                        RowDivider()
                     }
                 }
             }
@@ -242,7 +235,7 @@ fun PriceDetailScreen(
     }
 
     purchaseToDelete?.let { p ->
-        com.dcapps.spese.ui.components.ConfirmDialog(
+        ConfirmDialog(
             title = stringResource(R.string.product_delete_purchase),
             message = stringResource(R.string.product_delete_purchase_message),
             onConfirm = { viewModel.deletePurchase(p) },
@@ -265,7 +258,7 @@ fun PriceDetailScreen(
     }
 
     if (showDeleteProduct) {
-        com.dcapps.spese.ui.components.ConfirmDialog(
+        ConfirmDialog(
             title = stringResource(R.string.product_delete_title),
             message = stringResource(R.string.product_delete_message, state.product?.name ?: ""),
             onConfirm = { viewModel.deleteProduct() },

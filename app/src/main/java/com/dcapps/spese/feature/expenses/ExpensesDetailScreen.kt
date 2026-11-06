@@ -45,6 +45,16 @@ import com.dcapps.spese.R
 import com.dcapps.spese.core.model.Expense
 import com.dcapps.spese.core.util.toEuro
 import com.dcapps.spese.core.util.toShortDate
+import com.dcapps.spese.ui.components.ConfirmDialog
+import com.dcapps.spese.ui.components.ErrorSnackbarEffect
+import com.dcapps.spese.ui.components.OverflowMenu
+import com.dcapps.spese.ui.components.RowDivider
+import com.dcapps.spese.ui.components.SortBar
+import com.dcapps.spese.ui.components.SortOption
+import com.dcapps.spese.ui.components.SpeseDialog
+import com.dcapps.spese.ui.components.SpeseSearchField
+import com.dcapps.spese.ui.components.SpeseTopAppBar
+import com.dcapps.spese.ui.theme.SpeseTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -64,7 +74,7 @@ fun ExpensesDetailScreen(
     val isShared = state.list?.type == com.dcapps.spese.core.model.ListType.SHARED
     val snackbarHostState = remember { androidx.compose.material3.SnackbarHostState() }
 
-    com.dcapps.spese.ui.components.ErrorSnackbarEffect(
+    ErrorSnackbarEffect(
         state.message, snackbarHostState, viewModel::clearMessage,
     )
 
@@ -76,7 +86,7 @@ fun ExpensesDetailScreen(
     Scaffold(
         snackbarHost = { androidx.compose.material3.SnackbarHost(snackbarHostState) },
         topBar = {
-            com.dcapps.spese.ui.components.SpeseTopAppBar(
+            SpeseTopAppBar(
                 title = state.list?.name ?: stringResource(R.string.detail_list_fallback),
                 onTitleEdit = { showRename = true },
                 navigationIcon = {
@@ -152,7 +162,7 @@ fun ExpensesDetailScreen(
     }
 
     expenseToDelete?.let { exp ->
-        com.dcapps.spese.ui.components.ConfirmDialog(
+        ConfirmDialog(
             title = stringResource(R.string.detail_delete_expense_title),
             message = stringResource(R.string.detail_delete_expense_message, exp.name),
             onConfirm = { viewModel.deleteExpense(exp) },
@@ -197,7 +207,7 @@ private fun RenameListDialog(
     onConfirm: (String) -> Unit,
 ) {
     var name by remember { mutableStateOf(currentName) }
-    com.dcapps.spese.ui.components.SpeseDialog(
+    SpeseDialog(
         title = stringResource(R.string.detail_rename_list),
         onDismiss = onDismiss,
         content = {
@@ -241,25 +251,18 @@ private fun ExpensesListMenu(
     // nulla da mostrare (la rinomina è passata alla matita accanto al titolo).
     if (!isShared) return
 
-    var expanded by remember { mutableStateOf(false) }
-    IconButton(onClick = { expanded = true }) {
-        Icon(Icons.Default.MoreVert, contentDescription = stringResource(R.string.detail_more_actions))
-    }
-    androidx.compose.material3.DropdownMenu(
-        expanded = expanded,
-        onDismissRequest = { expanded = false },
-    ) {
+    OverflowMenu { dismiss ->
         androidx.compose.material3.DropdownMenuItem(
             text = { Text(stringResource(R.string.detail_share)) },
-            onClick = { expanded = false; onShare() },
+            onClick = { dismiss(); onShare() },
         )
         androidx.compose.material3.DropdownMenuItem(
             text = { Text(stringResource(R.string.detail_participants)) },
-            onClick = { expanded = false; onParticipants() },
+            onClick = { dismiss(); onParticipants() },
         )
         androidx.compose.material3.DropdownMenuItem(
             text = { Text(stringResource(R.string.detail_transfer_owner)) },
-            onClick = { expanded = false; onTransfer() },
+            onClick = { dismiss(); onTransfer() },
         )
     }
 }
@@ -318,22 +321,18 @@ private fun DetailContent(
         }
 
         item {
-            OutlinedTextField(
-                value = state.query,
-                onValueChange = onQueryChange,
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
-                placeholder = { Text(stringResource(R.string.detail_search_expense)) },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                shape = androidx.compose.foundation.shape.RoundedCornerShape(24.dp),
-                singleLine = true,
+            SpeseSearchField(
+                query = state.query,
+                onQueryChange = onQueryChange,
+                placeholder = stringResource(R.string.detail_search_expense),
             )
         }
         item {
-            com.dcapps.spese.ui.components.SortBar(
+            SortBar(
                 options = listOf(
-                    com.dcapps.spese.ui.components.SortOption(ExpenseSort.DATE, stringResource(R.string.sort_date)),
-                    com.dcapps.spese.ui.components.SortOption(ExpenseSort.NAME, stringResource(R.string.sort_name)),
-                    com.dcapps.spese.ui.components.SortOption(ExpenseSort.AMOUNT, stringResource(R.string.sort_amount)),
+                    SortOption(ExpenseSort.DATE, stringResource(R.string.sort_date)),
+                    SortOption(ExpenseSort.NAME, stringResource(R.string.sort_name)),
+                    SortOption(ExpenseSort.AMOUNT, stringResource(R.string.sort_amount)),
                 ),
                 selectedKey = state.sort,
                 ascending = state.sortAsc,
@@ -354,15 +353,12 @@ private fun DetailContent(
 
         itemsIndexed(state.visibleExpenses, key = { _, it -> it.id }) { index, expense ->
             if (index == 0) {
-                androidx.compose.material3.HorizontalDivider(
-                    Modifier.padding(horizontal = 16.dp),
-                    color = com.dcapps.spese.ui.theme.SpeseTheme.colors.divider,
-                )
+                RowDivider()
             }
             ExpenseRow(expense, onEdit, onRepeat)
             androidx.compose.material3.HorizontalDivider(
                 Modifier.padding(horizontal = 16.dp),
-                color = com.dcapps.spese.ui.theme.SpeseTheme.colors.divider,
+                color = SpeseTheme.colors.divider,
             )
         }
     }
@@ -411,7 +407,7 @@ private fun ExpenseRow(
             expense.amount.toEuro(),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
-            color = com.dcapps.spese.ui.theme.SpeseTheme.colors.debit,
+            color = SpeseTheme.colors.debit,
         )
         IconButton(onClick = { onRepeat(expense) }) {
             Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.detail_repeat_expense))

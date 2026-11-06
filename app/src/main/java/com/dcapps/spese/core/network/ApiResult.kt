@@ -34,14 +34,18 @@ suspend fun <T> apiCall(json: Json, block: suspend () -> T): ApiResult<T> =
             code = e.code(),
             cause = e,
         ).also {
-            com.dcapps.spese.core.bugreport.ErrorReporterHolder.instance?.record(
-                message = it.message,
-                cause = e,
-                httpMethod = request?.method,
-                url = request?.url?.encodedPath,
-                httpCode = e.code(),
-                serverBody = rawBody,
-            )
+            // Gli errori applicativi ATTESI (permessi / validazione) sono risposte legittime del
+            // backend, non bug: mostrali all'utente ma NON segnalarli come crash-report.
+            if (!isExpectedAppError(e.code())) {
+                com.dcapps.spese.core.bugreport.ErrorReporterHolder.instance?.record(
+                    message = it.message,
+                    cause = e,
+                    httpMethod = request?.method,
+                    url = request?.url?.encodedPath,
+                    httpCode = e.code(),
+                    serverBody = rawBody,
+                )
+            }
         }
     } catch (e: IOException) {
         ApiResult.Error(
@@ -56,6 +60,15 @@ private fun ApiResult.Error.report() {
     com.dcapps.spese.core.bugreport.ErrorReporterHolder.instance
         ?.record(message, cause)
 }
+
+/**
+ * Codici HTTP che rappresentano errori applicativi ATTESI (dipendono da permessi/input
+ * dell'utente, non da un bug): vanno mostrati all'utente ma non segnalati come crash-report.
+ *  - 400 bad request / 422 validazione
+ *  - 403 permessi insufficienti (es. cambio ruolo non autorizzato)
+ *  - 409 conflitto
+ */
+private fun isExpectedAppError(code: Int): Boolean = code in setOf(400, 403, 409, 422)
 
 /** Estrae il messaggio dal corpo `{"error": ...}` già letto; [rawBody] può essere null. */
 private fun parseErrorMessage(json: Json, rawBody: String?): String? {
