@@ -28,6 +28,8 @@ fun MessageSnackbarEffect(
             val result = snackbarHostState.showSnackbar(
                 message = message,
                 actionLabel = if (onReport != null) reportLabel else null,
+                // Mostra la "X" per chiudere il toast in anticipo (oltre all'eventuale "Segnala").
+                withDismissAction = true,
                 duration = SnackbarDuration.Long,
             )
             if (result == SnackbarResult.ActionPerformed) onReport?.invoke()

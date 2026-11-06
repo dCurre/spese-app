@@ -40,13 +40,39 @@ fun LineChart(
     unitSymbol: String,
     modifier: Modifier = Modifier,
 ) {
-    if (points.size < 2) {
+    // Nessun dato: messaggio. Un solo punto: non si può tracciare una linea, ma mostriamo
+    // comunque il periodo e il prezzo di quell'unico dato (più utile del messaggio secco).
+    if (points.isEmpty()) {
         Box(modifier.fillMaxWidth().height(160.dp), contentAlignment = Alignment.Center) {
             Text(
                 stringResource(R.string.chart_insufficient_data),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+        }
+        return
+    }
+    if (points.size == 1) {
+        val only = points.first()
+        Box(modifier.fillMaxWidth().height(160.dp), contentAlignment = Alignment.Center) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    stringResource(
+                        R.string.chart_point_tooltip,
+                        only.period,
+                        "%.2f".format(only.avgUnitPrice),
+                        unitSymbol,
+                    ),
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Text(
+                    stringResource(R.string.chart_need_more_points),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 4.dp),
+                )
+            }
         }
         return
     }
@@ -79,12 +105,13 @@ fun LineChart(
         )
 
         Row(Modifier.fillMaxWidth()) {
-            // Asse Y: etichette max (in alto) e min (in basso).
+            // Asse Y: etichette max (alto), valore intermedio e min (basso).
             Column(
                 modifier = Modifier.height(160.dp).padding(end = 6.dp),
                 verticalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceBetween,
             ) {
                 Text("%.2f".format(max), style = MaterialTheme.typography.labelSmall, color = axisColor)
+                Text("%.2f".format((max + min) / 2f), style = MaterialTheme.typography.labelSmall, color = axisColor)
                 Text("%.2f".format(min), style = MaterialTheme.typography.labelSmall, color = axisColor)
             }
 
@@ -118,13 +145,16 @@ fun LineChart(
                     return Offset(x, y)
                 }
 
-                // Linea di base.
-                drawLine(
-                    color = axisColor.copy(alpha = 0.3f),
-                    start = Offset(padding, padding + h),
-                    end = Offset(padding + w, padding + h),
-                    strokeWidth = 1.dp.toPx(),
-                )
+                // Griglia orizzontale: alto (max), metà, basso (min) — allineata alle etichette Y.
+                listOf(0f, 0.5f, 1f).forEach { frac ->
+                    val y = padding + h * frac
+                    drawLine(
+                        color = axisColor.copy(alpha = if (frac == 1f) 0.3f else 0.15f),
+                        start = Offset(padding, y),
+                        end = Offset(padding + w, y),
+                        strokeWidth = 1.dp.toPx(),
+                    )
+                }
 
                 val path = Path()
                 values.indices.forEach { i ->
@@ -144,12 +174,15 @@ fun LineChart(
             }
         }
 
-        // Asse X: primo e ultimo periodo.
+        // Asse X: primo, centrale (se ci sono abbastanza punti) e ultimo periodo.
         Row(
             Modifier.fillMaxWidth().padding(start = 36.dp, top = 4.dp),
             horizontalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceBetween,
         ) {
             Text(points.first().period, style = MaterialTheme.typography.labelSmall, color = axisColor)
+            if (points.size >= 3) {
+                Text(points[points.size / 2].period, style = MaterialTheme.typography.labelSmall, color = axisColor)
+            }
             Text(points.last().period, style = MaterialTheme.typography.labelSmall, color = axisColor)
         }
     }

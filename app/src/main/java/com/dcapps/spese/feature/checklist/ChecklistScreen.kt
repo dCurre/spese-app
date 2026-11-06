@@ -13,6 +13,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ListAlt
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
@@ -235,8 +236,13 @@ private fun ChecklistRow(
                     color = if (isShared) SpeseTheme.colors.accent
                         else MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+                // Conteggio articoli (spuntati/totale) con icona, invece del solo testo.
                 countLabel?.let {
-                    Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    com.dcapps.spese.ui.components.IconCount(
+                        icon = Icons.AutoMirrored.Filled.ListAlt,
+                        text = it,
+                        contentDescription = stringResource(R.string.checklist_items_cd),
+                    )
                 }
             }
         }

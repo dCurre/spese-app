@@ -9,6 +9,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.Icon
@@ -47,6 +48,7 @@ fun NewPurchaseDialog(
     purchase: Purchase? = null,
     storeSuggestions: List<String> = emptyList(),
     onDismiss: () -> Unit,
+    onDelete: (() -> Unit)? = null,
     onConfirm: (price: Double, quantity: Double, unitId: Long, purchasedAt: String, store: String?, notes: String?) -> Unit,
 ) {
     var priceText by remember { mutableStateOf(purchase?.price?.toString() ?: "") }
@@ -74,6 +76,18 @@ fun NewPurchaseDialog(
         title = if (purchase == null) stringResource(R.string.purchase_new_title)
             else stringResource(R.string.purchase_edit_title),
         onDismiss = onDismiss,
+        // In modifica l'elimina è un cestino (danger) accanto al titolo (coerente con gli altri).
+        titleAction = if (onDelete != null) {
+            {
+                androidx.compose.material3.IconButton(onClick = onDelete) {
+                    Icon(
+                        Icons.Default.Delete,
+                        contentDescription = stringResource(R.string.product_delete_purchase),
+                        tint = com.dcapps.spese.ui.theme.SpeseTheme.colors.danger,
+                    )
+                }
+            }
+        } else null,
         content = {
             Column(Modifier.verticalScroll(rememberScrollState())) {
                 OutlinedTextField(

@@ -55,7 +55,7 @@ object Routes {
     const val CHECKLIST = "checklist"
     const val CHECKLIST_DETAIL = "checklist/{listId}"
     const val PRICES = "prices"
-    const val PRICE_DETAIL = "prices/{productId}"
+    const val PRICE_DETAIL = "prices/{productId}?name={name}"
     const val PROFILE = "profile"
     const val PROFILE_EDIT = "profile/edit"
     const val PROFILE_SETTINGS = "profile/settings"
@@ -64,7 +64,8 @@ object Routes {
     const val ABOUT = "about"
     fun expensesDetail(listId: Long) = "expenses/$listId"
     fun checklistDetail(listId: Long) = "checklist/$listId"
-    fun priceDetail(productId: Long) = "prices/$productId"
+    fun priceDetail(productId: Long, name: String = "") =
+        "prices/$productId?name=${android.net.Uri.encode(name)}"
 }
 
 private data class TopLevel(
@@ -169,12 +170,15 @@ fun SpeseNavHost(
             }
             composable(Routes.PRICES) {
                 PriceListScreen(
-                    onOpenProduct = { product -> navController.navigate(Routes.priceDetail(product.id)) },
+                    onOpenProduct = { product -> navController.navigate(Routes.priceDetail(product.id, product.name)) },
                 )
             }
             composable(
                 route = Routes.PRICE_DETAIL,
-                arguments = listOf(navArgument("productId") { type = NavType.LongType }),
+                arguments = listOf(
+                    navArgument("productId") { type = NavType.LongType },
+                    navArgument("name") { type = NavType.StringType; defaultValue = "" },
+                ),
             ) {
                 PriceDetailScreen(onBack = { navController.popBackStack() })
             }
@@ -210,7 +214,7 @@ fun SpeseNavHost(
     // Popup di aggiornamento se il controllo manuale trova una versione nuova.
     val info = updateState.info
     if (updateState.showDialog && info != null) {
-        com.dcapps.spese.feature.update.UpdateDialog(
+        com.dcapps.spese.feature.update.UpdateScreen(
             state = updateState,
             info = info,
             canInstall = updateViewModel.canInstall(),

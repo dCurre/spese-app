@@ -75,8 +75,9 @@
     <string name="lists_delete_message">Delete \"%1$s\" and all its expenses?</string>
     <string name="lists_type_shared">Shared</string>
     <string name="lists_type_personal">Personal</string>
-    <string name="lists_participants">%1$d participants</string>
-    <string name="lists_expenses_count">%1$d expenses</string>
+    <string name="lists_participants_cd">Participants</string>
+    <string name="lists_expenses_cd">Expenses</string>
+    <string name="checklist_items_cd">Items</string>
 
     <!-- Expense list detail -->
     <string name="detail_list_fallback">List</string>
@@ -101,6 +102,7 @@
     <string name="product_delete_message">Delete \"%1$s\" and all its purchases?</string>
     <string name="product_price_trend">Price trend</string>
     <string name="chart_insufficient_data">Not enough data for the chart</string>
+    <string name="chart_need_more_points">Add more purchases to see the trend</string>
     <string name="chart_unit_price">Unit price (€)</string>
     <string name="chart_point_tooltip">%1$s · %2$s €/%3$s</string>
     <string name="product_purchases">Purchases</string>
@@ -110,7 +112,7 @@
     <string name="product_stats_min_price">Lowest price</string>
     <string name="product_stats_last_price">Last price</string>
     <string name="product_stats_variation">Change vs lowest</string>
-    <string name="product_stats_at_minimum">at all-time low</string>
+    <string name="product_stats_at_minimum">all-time low</string>
     <string name="granularity_day">Day</string>
     <string name="granularity_month">Month</string>
     <string name="granularity_year">Year</string>
@@ -273,7 +275,8 @@
     <string name="prices_title">Price history</string>
     <string name="prices_new_product">New product</string>
     <string name="prices_search">Search product</string>
-    <string name="prices_brand_all">All</string>
+    <string name="prices_filter_brand">Filter by brand</string>
+    <string name="filters_clear">Clear filters</string>
     <string name="prices_empty">No products. Create one with +.</string>
     <string name="prices_unit">unit: %1$s</string>
 </resources>

@@ -1,5 +1,6 @@
 package com.dcapps.spese.feature.prices
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -73,7 +74,8 @@ fun PriceDetailScreen(
         snackbarHost = { androidx.compose.material3.SnackbarHost(snackbarHostState) },
         topBar = {
             SpeseTopAppBar(
-                title = state.product?.name ?: stringResource(R.string.product_detail_fallback),
+                title = state.product?.name ?: state.placeholderName
+                    ?: stringResource(R.string.product_detail_fallback),
                 onTitleEdit = { showEditProduct = true },
                 titleEditLabel = stringResource(R.string.product_edit_title),
                 navigationIcon = {
@@ -171,31 +173,31 @@ fun PriceDetailScreen(
                     }
 
                     items(state.purchases, key = { it.id }) { p ->
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { editingPurchase = p }
-                                .padding(horizontal = 16.dp, vertical = 10.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Column(Modifier.weight(1f)) {
+                        com.dcapps.spese.ui.components.SwipeToDeleteRow(onRequestDelete = { purchaseToDelete = p }) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(MaterialTheme.colorScheme.background)
+                                    .clickable { editingPurchase = p }
+                                    .padding(horizontal = 16.dp, vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Column(Modifier.weight(1f)) {
+                                    Text(
+                                        "%.2f € · %.3g %s".format(p.price, p.quantity, p.unitSymbol ?: ""),
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.SemiBold,
+                                    )
+                                    val sub = listOfNotNull(p.purchasedAt, p.store).joinToString(" · ")
+                                    Text(sub, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                                val unitSym = p.unitSymbol ?: state.product?.defaultUnitSymbol ?: "u"
                                 Text(
-                                    "%.2f € · %.3g %s".format(p.price, p.quantity, p.unitSymbol ?: ""),
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.SemiBold,
+                                    "%.2f €/%s".format(p.unitPrice, unitSym),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = SpeseTheme.colors.credit,
                                 )
-                                val sub = listOfNotNull(p.purchasedAt, p.store).joinToString(" · ")
-                                Text(sub, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            }
-                            val unitSym = p.unitSymbol ?: state.product?.defaultUnitSymbol ?: "u"
-                            Text(
-                                "%.2f €/%s".format(p.unitPrice, unitSym),
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = SpeseTheme.colors.credit,
-                            )
-                            IconButton(onClick = { purchaseToDelete = p }) {
-                                Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.product_delete_purchase), tint = SpeseTheme.colors.danger)
                             }
                         }
                         RowDivider()
@@ -227,6 +229,7 @@ fun PriceDetailScreen(
             purchase = p,
             storeSuggestions = storeSuggestions,
             onDismiss = { editingPurchase = null },
+            onDelete = { editingPurchase = null; purchaseToDelete = p },
             onConfirm = { price, qty, unitId, date, store, notes ->
                 viewModel.updatePurchase(p.id, price, qty, unitId, date, store, notes)
                 editingPurchase = null
@@ -281,19 +284,20 @@ private fun ProductStatsCard(
     val minPrice = minP?.unitPrice ?: 0.0
     val variationPct = if (minPrice > 0) ((lastPrice - minPrice) / minPrice * 100) else 0.0
 
-    androidx.compose.material3.Card(androidx.compose.ui.Modifier.fillMaxWidth()) {
-        androidx.compose.foundation.layout.Column(androidx.compose.ui.Modifier.padding(16.dp)) {
-            androidx.compose.material3.Text(
-                stringResource(R.string.profile_stats),
-                style = androidx.compose.material3.MaterialTheme.typography.titleMedium,
-            )
-            StatLine(stringResource(R.string.product_stats_min_price), "%.2f €/%s".format(minPrice, unitSymbol) + (minP?.store?.let { " · $it" } ?: ""))
-            StatLine(stringResource(R.string.product_stats_last_price), "%.2f €/%s".format(lastPrice, unitSymbol))
-            StatLine(
-                stringResource(R.string.product_stats_variation),
-                if (variationPct <= 0.0) stringResource(R.string.product_stats_at_minimum) else "+%.0f%%".format(variationPct),
-            )
-        }
+    // Niente card: titolo "Statistiche" evidente + righe su sfondo, coerente con la sezione acquisti.
+    androidx.compose.foundation.layout.Column(androidx.compose.ui.Modifier.fillMaxWidth()) {
+        androidx.compose.material3.Text(
+            stringResource(R.string.profile_stats),
+            style = androidx.compose.material3.MaterialTheme.typography.titleLarge,
+            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+            modifier = androidx.compose.ui.Modifier.padding(bottom = 4.dp),
+        )
+        StatLine(stringResource(R.string.product_stats_min_price), "%.2f €/%s".format(minPrice, unitSymbol) + (minP?.store?.let { " · $it" } ?: ""))
+        StatLine(stringResource(R.string.product_stats_last_price), "%.2f €/%s".format(lastPrice, unitSymbol))
+        StatLine(
+            stringResource(R.string.product_stats_variation),
+            if (variationPct <= 0.0) stringResource(R.string.product_stats_at_minimum) else "+%.0f%%".format(variationPct),
+        )
     }
 }
 

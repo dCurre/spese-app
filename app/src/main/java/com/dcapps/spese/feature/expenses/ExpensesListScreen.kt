@@ -14,6 +14,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Group
+import androidx.compose.material.icons.filled.ReceiptLong
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -222,17 +224,10 @@ private fun ListRow(
         Column(Modifier.weight(1f)) {
             Text(list.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
             val isShared = list.type == com.dcapps.spese.core.model.ListType.SHARED
-            val participantsLabel = list.participantsCount?.let {
-                stringResource(R.string.lists_participants, it)
-            }
-            val expensesLabel = list.expensesCount?.let {
-                stringResource(R.string.lists_expenses_count, it)
-            }
-            val subtitle = listOfNotNull(participantsLabel, expensesLabel).joinToString(" · ")
             Row(
                 modifier = Modifier.padding(top = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 // Tipo lista come badge colorato (Condivisa = accent, Personale = neutro).
                 SpeseBadge(
@@ -241,8 +236,20 @@ private fun ListRow(
                     color = if (isShared) SpeseTheme.colors.accent
                         else MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                if (subtitle.isNotBlank()) {
-                    Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                // Partecipanti e numero spese come icona + conteggio (meno verboso del testo).
+                list.participantsCount?.let {
+                    com.dcapps.spese.ui.components.IconCount(
+                        icon = Icons.Default.Group,
+                        text = "$it",
+                        contentDescription = stringResource(R.string.lists_participants_cd),
+                    )
+                }
+                list.expensesCount?.let {
+                    com.dcapps.spese.ui.components.IconCount(
+                        icon = Icons.Default.ReceiptLong,
+                        text = "$it",
+                        contentDescription = stringResource(R.string.lists_expenses_cd),
+                    )
                 }
             }
         }

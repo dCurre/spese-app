@@ -28,6 +28,8 @@ enum class Granularity(val wire: String, val label: String) {
 
 data class PriceDetailUiState(
     val isLoading: Boolean = true,
+    // Nome mostrato nel titolo durante il caricamento (arriva dall'elenco via navigazione).
+    val placeholderName: String? = null,
     // Loading del solo grafico (cambio granularità): non fa sparire l'intera schermata.
     val historyLoading: Boolean = false,
     val error: String? = null,
@@ -50,7 +52,12 @@ class PriceDetailViewModel @Inject constructor(
 
     val productId: Long = checkNotNull(savedStateHandle["productId"])
 
-    private val _uiState = MutableStateFlow(PriceDetailUiState())
+    // Nome passato dall'elenco: usato come titolo durante il caricamento, prima che arrivi il
+    // prodotto completo dal backend.
+    private val placeholderName: String? =
+        (savedStateHandle.get<String>("name"))?.takeIf { it.isNotBlank() }
+
+    private val _uiState = MutableStateFlow(PriceDetailUiState(placeholderName = placeholderName))
     val uiState: StateFlow<PriceDetailUiState> = _uiState.asStateFlow()
 
     init {

@@ -75,8 +75,9 @@
     <string name="lists_delete_message">Vuoi eliminare \"%1$s\" e tutte le sue spese?</string>
     <string name="lists_type_shared">Condivisa</string>
     <string name="lists_type_personal">Personale</string>
-    <string name="lists_participants">%1$d partecipanti</string>
-    <string name="lists_expenses_count">%1$d spese</string>
+    <string name="lists_participants_cd">Partecipanti</string>
+    <string name="lists_expenses_cd">Spese</string>
+    <string name="checklist_items_cd">Articoli</string>
 
     <!-- Dettaglio lista spese -->
     <string name="detail_list_fallback">Lista</string>
@@ -101,6 +102,7 @@
     <string name="product_delete_message">Vuoi eliminare \"%1$s\" e tutti i suoi acquisti?</string>
     <string name="product_price_trend">Andamento prezzo</string>
     <string name="chart_insufficient_data">Dati insufficienti per il grafico</string>
+    <string name="chart_need_more_points">Aggiungi altri acquisti per vedere l\'andamento</string>
     <string name="chart_unit_price">Prezzo unitario (€)</string>
     <string name="chart_point_tooltip">%1$s · %2$s €/%3$s</string>
     <string name="product_purchases">Acquisti</string>
@@ -110,7 +112,7 @@
     <string name="product_stats_min_price">Prezzo minimo</string>
     <string name="product_stats_last_price">Ultimo prezzo</string>
     <string name="product_stats_variation">Variazione sul minimo</string>
-    <string name="product_stats_at_minimum">al minimo storico</string>
+    <string name="product_stats_at_minimum">minimo storico</string>
     <string name="granularity_day">Giorno</string>
     <string name="granularity_month">Mese</string>
     <string name="granularity_year">Anno</string>
@@ -273,7 +275,8 @@
     <string name="prices_title">Storico prezzi</string>
     <string name="prices_new_product">Nuovo prodotto</string>
     <string name="prices_search">Cerca prodotto</string>
-    <string name="prices_brand_all">Tutte</string>
+    <string name="prices_filter_brand">Filtra per marca</string>
+    <string name="filters_clear">Pulisci filtri</string>
     <string name="prices_empty">Nessun prodotto. Creane uno con il +.</string>
     <string name="prices_unit">unità: %1$s</string>
 </resources>

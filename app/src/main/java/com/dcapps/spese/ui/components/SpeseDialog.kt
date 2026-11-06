@@ -74,7 +74,13 @@ fun SpeseDialog(
         dismissButton = {
             when {
                 dismissButton != null -> dismissButton()
-                else -> TextButton(onClick = onDismiss) { Text(dismissText) }
+                // Annulla/dismiss NEUTRO (grigio), non verde: il verde è riservato alla conferma.
+                else -> TextButton(
+                    onClick = onDismiss,
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    ),
+                ) { Text(dismissText) }
             }
         },
         // Bordo più contrastato dei default Material (migliora leggibilità del contorno modale).

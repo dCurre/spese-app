@@ -6,22 +6,29 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.CreateNewFolder
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.DoneAll
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.RemoveDone
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.UnfoldLess
 import androidx.compose.material.icons.filled.UnfoldMore
+import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
@@ -112,6 +119,26 @@ fun ChecklistDetailScreen(
                 },
                 actions = {
                     if (editState == null) {
+                        // Spunta/despunta tutto (solo se ci sono articoli).
+                        if (state.hasItems) {
+                            IconButton(onClick = { viewModel.checkAll(!state.allItemsChecked) }) {
+                                Icon(
+                                    imageVector = if (state.allItemsChecked) Icons.Default.RemoveDone
+                                        else Icons.Default.DoneAll,
+                                    contentDescription = stringResource(
+                                        if (state.allItemsChecked) R.string.cd_menu_uncheck_all
+                                        else R.string.cd_menu_check_all,
+                                    ),
+                                )
+                            }
+                        }
+                        // Aggiunta rapida categoria.
+                        IconButton(onClick = { showNewCategory = true }) {
+                            Icon(
+                                Icons.Default.CreateNewFolder,
+                                contentDescription = stringResource(R.string.editor_new_category),
+                            )
+                        }
                         // Toggle unico comprimi/espandi tutto (solo se ci sono categorie).
                         if (state.hasCategories) {
                             IconButton(onClick = { viewModel.toggleCollapseAll() }) {
@@ -125,10 +152,21 @@ fun ChecklistDetailScreen(
                                 )
                             }
                         }
+                        // Preferito (stella), staccata dal menu con un piccolo spazio.
+                        IconButton(onClick = { viewModel.toggleStarred() }) {
+                            Icon(
+                                imageVector = if (state.starred) Icons.Default.Star else Icons.Outlined.StarBorder,
+                                contentDescription = stringResource(
+                                    if (state.starred) R.string.checklist_star_remove
+                                    else R.string.checklist_star_add,
+                                ),
+                                tint = SpeseTheme.colors.accent,
+                            )
+                        }
+                        Spacer(Modifier.width(4.dp))
                         val exportChooserTitle = stringResource(R.string.cd_export_chooser)
                         ChecklistOverflowMenu(
                             viewModel,
-                            onNewCategory = { showNewCategory = true },
                             onExport = {
                                 val text = viewModel.buildExportText()
                                 val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
@@ -367,24 +405,11 @@ private fun LaunchedShare(token: String, onShared: () -> Unit) {
 @Composable
 private fun ChecklistOverflowMenu(
     viewModel: ChecklistDetailViewModel,
-    onNewCategory: () -> Unit,
     onExport: () -> Unit,
     onImport: () -> Unit,
     onDelete: () -> Unit,
 ) {
     OverflowMenu { dismiss ->
-        DropdownMenuItem(
-            text = { Text(stringResource(R.string.editor_new_category)) },
-            onClick = { dismiss(); onNewCategory() },
-        )
-        DropdownMenuItem(
-            text = { Text(stringResource(R.string.cd_menu_check_all)) },
-            onClick = { dismiss(); viewModel.checkAll(true) },
-        )
-        DropdownMenuItem(
-            text = { Text(stringResource(R.string.cd_menu_uncheck_all)) },
-            onClick = { dismiss(); viewModel.checkAll(false) },
-        )
         DropdownMenuItem(
             text = { Text(stringResource(R.string.detail_share)) },
             onClick = { dismiss(); viewModel.generateInviteToken() },

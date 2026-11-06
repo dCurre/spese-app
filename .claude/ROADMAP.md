@@ -10,6 +10,12 @@ da fare: aggiornare qui (spuntare / rimuovere quando completato).
   (cache-first + refresh), (2) coda di scritture con WorkManager, last-write-wins. Vincoli backend:
   ID DB-autoincrement (serve temp-id→id come nel batch-save), nessun endpoint di sync.
   Domande aperte: modificare offline o solo consultare? quanto è reale l'editing concorrente?
+  - **Login offline (parte da fare per prima, blocca l'uso offline):** oggi
+    `AuthManager.restoreSession()` riconosce l'utente da Firebase (che funziona offline) ma poi
+    chiama `userRepository.getByEmail()` sul backend; se la rete manca la chiamata fallisce e
+    l'utente viene rimandato al login. Fix mirato: persistere l'ultimo `User` loggato
+    (DataStore/Prefs) e, quando Firebase ha già la sessione e il backend è irraggiungibile *per
+    rete* (non per errore applicativo), entrare con l'utente cachato invece di bloccare.
 
 - [ ] **Test automatici (unit) — ampliare.** Fatti: `SemVer`, `BigDecimalSerializer`,
   `InstantSerializer` (in `app/src/test`). Restano da coprire: diff del batch-save checklist,
@@ -32,13 +38,16 @@ da fare: aggiornare qui (spuntare / rimuovere quando completato).
 
 ## UI / UX — rifiniture
 
+- [ ] **Conteggio prezzi per prodotto nell'elenco.** Mostrare quanti prezzi registrati per ogni
+  prodotto nell'elenco (con icona). **Bloccato dal backend:** `GET /api/products` non restituisce
+  il conteggio e il backend è intoccabile. Da fare solo se il backend verrà esteso.
 - [ ] **Contrasto dei bordi** delle label nelle modali — da verificare sull'APK dopo
   l'introduzione di `SpeseDialog` (shape/elevation/surface); se serve, usare `dialogBorder()`
   già predisposto in `SpeseDialog.kt`.
 - [ ] **Sezione partecipanti** — oggi è una modale, ripensarla.
-- [ ] **Azione "Elimina" nei dialog di modifica** — da gestire meglio. Ora in ItemEditDialog /
-  ExpenseDialog / CategoryEditDialog è un cestino (danger) accanto al titolo; decidere un pattern
-  definitivo e coerente per l'elimina dentro tutte le modali di modifica.
+- [ ] **Azione "Elimina" nei dialog di modifica** — pattern finale da definire. Ora in
+  ItemEditDialog / ExpenseDialog / CategoryEditDialog / NewPurchaseDialog è un cestino (danger)
+  accanto al titolo: decidere se è il pattern definitivo per tutte le modali di modifica.
 
 ## Fuori scope / escluse
 

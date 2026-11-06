@@ -27,8 +27,8 @@ data class PriceListUiState(
     val query: String = "",
     val sort: ProductSort = ProductSort.NAME,
     val sortAsc: Boolean = true,
-    // Filtro per marca: null = tutte le marche.
-    val brandFilter: String? = null,
+    // Filtro per marca: insieme di marche selezionate; vuoto = tutte le marche.
+    val brandFilter: Set<String> = emptySet(),
     val message: String? = null,
 ) {
     /** Marche presenti tra i prodotti (per il selettore filtro), ordinate alfabeticamente. */
@@ -39,9 +39,15 @@ data class PriceListUiState(
 
     val visibleProducts: List<Product>
         get() {
-            val filtered = products.filter {
-                (query.isBlank() || it.name.contains(query, ignoreCase = true)) &&
-                    (brandFilter == null || it.brand.equals(brandFilter, ignoreCase = true))
+            val q = query.trim()
+            val filtered = products.filter { p ->
+                // La ricerca copre nome E marca.
+                val matchesQuery = q.isBlank() ||
+                    p.name.contains(q, ignoreCase = true) ||
+                    (p.brand?.contains(q, ignoreCase = true) == true)
+                // Filtro marca: nessuna marca selezionata = tutte.
+                val matchesBrand = brandFilter.isEmpty() || p.brand in brandFilter
+                matchesQuery && matchesBrand
             }
             val base: Comparator<Product> = when (sort) {
                 ProductSort.NAME -> compareBy { it.name.lowercase() }
@@ -96,8 +102,8 @@ class PriceListViewModel @Inject constructor(
         if (it.sort == sort) it.copy(sortAsc = !it.sortAsc) else it.copy(sort = sort, sortAsc = true)
     }
 
-    /** Imposta il filtro per marca (null = tutte). */
-    fun onBrandFilterChange(brand: String?) = _uiState.update { it.copy(brandFilter = brand) }
+    /** Imposta le marche selezionate (insieme vuoto = tutte). */
+    fun setBrandFilter(brands: Set<String>) = _uiState.update { it.copy(brandFilter = brands) }
 
     fun createProduct(name: String, brand: String?, defaultUnitId: Long?) {
         if (name.isBlank()) return
@@ -107,6 +113,15 @@ class PriceListViewModel @Inject constructor(
             )
             when (result) {
                 is ApiResult.Success -> load()
+                is ApiResult.Error -> _uiState.update { it.copy(message = result.message) }
+            }
+        }
+    }
+
+    fun deleteProduct(product: Product) {
+        viewModelScope.launch {
+            when (val result = priceRepository.deleteProduct(product.id)) {
+                is ApiResult.Success -> load(showLoading = false)
                 is ApiResult.Error -> _uiState.update { it.copy(message = result.message) }
             }
         }

@@ -20,7 +20,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dcapps.spese.feature.auth.AuthViewModel
 import com.dcapps.spese.feature.bugreport.BugReportGateViewModel
 import com.dcapps.spese.feature.auth.SignInScreen
-import com.dcapps.spese.feature.update.UpdateDialog
+import com.dcapps.spese.feature.update.UpdateScreen
 import com.dcapps.spese.feature.update.UpdateViewModel
 import com.dcapps.spese.navigation.SpeseNavHost
 import com.dcapps.spese.ui.theme.SpeseTheme
@@ -163,7 +163,7 @@ private fun UpdateGate(updateViewModel: UpdateViewModel = hiltViewModel()) {
 
     val info = updateState.info
     if (updateState.showDialog && info != null) {
-        UpdateDialog(
+        UpdateScreen(
             state = updateState,
             info = info,
             canInstall = updateViewModel.canInstall(),

@@ -1,7 +1,7 @@
 package com.dcapps.spese.feature.prices
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -12,6 +12,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -40,7 +41,6 @@ import com.dcapps.spese.ui.components.ErrorState
 import com.dcapps.spese.ui.components.RowDivider
 import com.dcapps.spese.ui.components.SortBar
 import com.dcapps.spese.ui.components.SortOption
-import com.dcapps.spese.ui.components.SpeseFilterChip
 import com.dcapps.spese.ui.components.SpeseSearchField
 import com.dcapps.spese.ui.components.SpeseTopAppBar
 
@@ -52,6 +52,7 @@ fun PriceListScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     var showCreate by remember { mutableStateOf(false) }
+    var productToDelete by remember { mutableStateOf<Product?>(null) }
     val snackbarHostState = remember { androidx.compose.material3.SnackbarHostState() }
     ErrorSnackbarEffect(
         state.message, snackbarHostState, viewModel::clearMessage,
@@ -87,39 +88,27 @@ fun PriceListScreen(
                         )
                     }
                     item {
-                        SortBar(
-                            options = listOf(
-                                SortOption(ProductSort.NAME, stringResource(R.string.sort_name)),
-                                SortOption(ProductSort.BRAND, stringResource(R.string.sort_brand)),
-                            ),
-                            selectedKey = state.sort,
-                            ascending = state.sortAsc,
-                            onSelect = { viewModel.onSortChange(it) },
-                            modifier = Modifier.padding(horizontal = 16.dp),
-                        )
-                    }
-                    // Filtro per marca (solo se ci sono marche): "Tutte" + un chip per marca.
-                    if (state.availableBrands.isNotEmpty()) {
-                        item {
-                            androidx.compose.foundation.layout.Row(
-                                Modifier
-                                    .fillMaxWidth()
-                                    .horizontalScroll(androidx.compose.foundation.rememberScrollState())
-                                    .padding(horizontal = 16.dp, vertical = 4.dp),
-                                horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp),
-                            ) {
-                                SpeseFilterChip(
-                                    selected = state.brandFilter == null,
-                                    onClick = { viewModel.onBrandFilterChange(null) },
-                                    label = stringResource(R.string.prices_brand_all),
+                        // Ordinamento + bottone filtro marca affiancati.
+                        Row(
+                            Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            SortBar(
+                                options = listOf(
+                                    SortOption(ProductSort.NAME, stringResource(R.string.sort_name)),
+                                    SortOption(ProductSort.BRAND, stringResource(R.string.sort_brand)),
+                                ),
+                                selectedKey = state.sort,
+                                ascending = state.sortAsc,
+                                onSelect = { viewModel.onSortChange(it) },
+                                modifier = Modifier.weight(1f),
+                            )
+                            if (state.availableBrands.isNotEmpty()) {
+                                BrandFilterButton(
+                                    brands = state.availableBrands,
+                                    selected = state.brandFilter,
+                                    onApply = { viewModel.setBrandFilter(it) },
                                 )
-                                state.availableBrands.forEach { brand ->
-                                    SpeseFilterChip(
-                                        selected = state.brandFilter == brand,
-                                        onClick = { viewModel.onBrandFilterChange(brand) },
-                                        label = brand,
-                                    )
-                                }
                             }
                         }
                     }
@@ -133,28 +122,31 @@ fun PriceListScreen(
                         }
                     }
                     items(state.visibleProducts, key = { it.id }) { product ->
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { onOpenProduct(product) }
-                                .padding(horizontal = 16.dp, vertical = 12.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Column(Modifier.weight(1f)) {
-                                Text(product.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                                val subtitle = listOfNotNull(
-                                    product.brand?.takeIf { it.isNotBlank() },
-                                    product.defaultUnitSymbol?.let { stringResource(R.string.prices_unit, it) },
-                                ).joinToString(" · ")
-                                if (subtitle.isNotBlank()) {
-                                    Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        com.dcapps.spese.ui.components.SwipeToDeleteRow(onRequestDelete = { productToDelete = product }) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(MaterialTheme.colorScheme.background)
+                                    .clickable { onOpenProduct(product) }
+                                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Column(Modifier.weight(1f)) {
+                                    Text(product.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                                    val subtitle = listOfNotNull(
+                                        product.brand?.takeIf { it.isNotBlank() },
+                                        product.defaultUnitSymbol?.let { stringResource(R.string.prices_unit, it) },
+                                    ).joinToString(" · ")
+                                    if (subtitle.isNotBlank()) {
+                                        Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    }
                                 }
+                                Icon(
+                                    Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
                             }
-                            Icon(
-                                Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
                         }
                         RowDivider()
                     }
@@ -172,5 +164,85 @@ fun PriceListScreen(
                 showCreate = false
             },
         )
+    }
+
+    productToDelete?.let { product ->
+        com.dcapps.spese.ui.components.ConfirmDialog(
+            title = stringResource(R.string.product_delete_title),
+            message = stringResource(R.string.product_delete_message, product.name),
+            onConfirm = { viewModel.deleteProduct(product) },
+            onDismiss = { productToDelete = null },
+        )
+    }
+}
+
+/**
+ * Bottone con icona filtro che apre una dropdown di marche a selezione multipla. Le modifiche
+ * si applicano solo al "Conferma"; "Pulisci filtri" azzera la selezione. Un pallino sull'icona
+ * segnala quando c'è almeno un filtro attivo.
+ */
+@Composable
+private fun BrandFilterButton(
+    brands: List<String>,
+    selected: Set<String>,
+    onApply: (Set<String>) -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    // Selezione temporanea mentre il menu è aperto (confermata solo su "Conferma").
+    var temp by remember(expanded) { mutableStateOf(selected) }
+
+    Box {
+        androidx.compose.material3.IconButton(onClick = { expanded = true }) {
+            androidx.compose.material3.BadgedBox(
+                badge = {
+                    if (selected.isNotEmpty()) {
+                        androidx.compose.material3.Badge(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                        ) { Text("${selected.size}") }
+                    }
+                },
+            ) {
+                Icon(
+                    Icons.Default.FilterList,
+                    contentDescription = stringResource(R.string.prices_filter_brand),
+                )
+            }
+        }
+        androidx.compose.material3.DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+        ) {
+            Text(
+                stringResource(R.string.prices_filter_brand),
+                style = MaterialTheme.typography.labelLarge,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+            )
+            brands.forEach { brand ->
+                androidx.compose.material3.DropdownMenuItem(
+                    text = { Text(brand) },
+                    leadingIcon = {
+                        androidx.compose.material3.Checkbox(
+                            checked = brand in temp,
+                            onCheckedChange = null,
+                        )
+                    },
+                    onClick = {
+                        temp = if (brand in temp) temp - brand else temp + brand
+                    },
+                )
+            }
+            RowDivider()
+            Row(
+                Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+                horizontalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceBetween,
+            ) {
+                TextButton(onClick = { temp = emptySet() }) {
+                    Text(stringResource(R.string.filters_clear))
+                }
+                TextButton(onClick = { onApply(temp); expanded = false }) {
+                    Text(stringResource(R.string.action_confirm))
+                }
+            }
+        }
     }
 }

@@ -61,6 +61,24 @@ data class ChecklistDetailUiState(
     val deleted: Boolean = false,
 ) {
     val isEditing: Boolean get() = editState != null
+
+    /** La checklist è nei preferiti? */
+    val starred: Boolean get() = list?.starred == true
+
+    /** Tutti gli articoli dell'albero (item radice + quelli dentro le categorie, ricorsivo). */
+    private fun allItems(): List<ShoppingItem> {
+        val l = list ?: return emptyList()
+        fun fromCats(cats: List<ShoppingCategory>): List<ShoppingItem> =
+            cats.flatMap { it.items + fromCats(it.children) }
+        return l.items + fromCats(l.categories)
+    }
+
+    /** C'è almeno un articolo (il toggle spunta/despunta ha senso solo allora). */
+    val hasItems: Boolean get() = allItems().isNotEmpty()
+
+    /** C'è almeno un articolo e sono tutti spuntati (per l'icona spunta/despunta tutto). */
+    val allItemsChecked: Boolean
+        get() = allItems().let { it.isNotEmpty() && it.all { item -> item.checked } }
 }
 
 @HiltViewModel
@@ -236,7 +254,19 @@ class ChecklistDetailViewModel @Inject constructor(
     fun checkAll(checked: Boolean) {
         viewModelScope.launch {
             itemRepository.checkAll(listId, checked)
-            load()
+            load(showLoading = false)
+        }
+    }
+
+    /** Aggiunge/toglie la checklist dai preferiti (stella). */
+    fun toggleStarred() {
+        val list = _uiState.value.list ?: return
+        viewModelScope.launch {
+            shoppingRepository.update(
+                listId,
+                com.dcapps.spese.core.model.UpdateShoppingListRequest(starred = !list.starred),
+            )
+            load(showLoading = false)
         }
     }
 
