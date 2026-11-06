@@ -16,21 +16,39 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+/** Criterio di ordinamento dell'elenco prodotti. */
+enum class ProductSort { NAME, BRAND }
+
 data class PriceListUiState(
     val isLoading: Boolean = true,
     val error: String? = null,
     val products: List<Product> = emptyList(),
     val units: List<MeasurementUnit> = emptyList(),
     val query: String = "",
+    val sort: ProductSort = ProductSort.NAME,
     val sortAsc: Boolean = true,
+    // Filtro per marca: null = tutte le marche.
+    val brandFilter: String? = null,
     val message: String? = null,
 ) {
+    /** Marche presenti tra i prodotti (per il selettore filtro), ordinate alfabeticamente. */
+    val availableBrands: List<String>
+        get() = products.mapNotNull { it.brand?.takeIf { b -> b.isNotBlank() } }
+            .distinct()
+            .sortedBy { it.lowercase() }
+
     val visibleProducts: List<Product>
         get() {
             val filtered = products.filter {
-                query.isBlank() || it.name.contains(query, ignoreCase = true)
+                (query.isBlank() || it.name.contains(query, ignoreCase = true)) &&
+                    (brandFilter == null || it.brand.equals(brandFilter, ignoreCase = true))
             }
-            val base = compareBy<Product> { it.name.lowercase() }
+            val base: Comparator<Product> = when (sort) {
+                ProductSort.NAME -> compareBy { it.name.lowercase() }
+                // Prodotti senza marca in fondo; a parità di marca, per nome.
+                ProductSort.BRAND -> compareBy<Product> { it.brand?.lowercase() ?: "￿" }
+                    .thenBy { it.name.lowercase() }
+            }
             return filtered.sortedWith(if (sortAsc) base else base.reversed())
         }
 }
@@ -45,11 +63,15 @@ class PriceListViewModel @Inject constructor(
     val uiState: StateFlow<PriceListUiState> = _uiState.asStateFlow()
 
     init {
-        load()
+        load(showLoading = true)
     }
 
-    fun load() {
-        _uiState.update { it.copy(isLoading = true, error = null) }
+    /**
+     * Carica i prodotti. [showLoading] = true mostra lo spinner (solo primo caricamento); reload
+     * dopo una mutazione usa false (reload silenzioso, niente lampeggio dell'elenco).
+     */
+    fun load(showLoading: Boolean = false) {
+        if (showLoading) _uiState.update { it.copy(isLoading = true, error = null) }
         viewModelScope.launch {
             val products = priceRepository.getProducts()
             val units = catalogRepository.getMeasurementUnits()
@@ -69,7 +91,13 @@ class PriceListViewModel @Inject constructor(
 
     fun onQueryChange(q: String) = _uiState.update { it.copy(query = q) }
 
-    fun toggleSort() = _uiState.update { it.copy(sortAsc = !it.sortAsc) }
+    /** Sceglie il criterio di ordinamento; ritoccare quello attivo inverte la direzione. */
+    fun onSortChange(sort: ProductSort) = _uiState.update {
+        if (it.sort == sort) it.copy(sortAsc = !it.sortAsc) else it.copy(sort = sort, sortAsc = true)
+    }
+
+    /** Imposta il filtro per marca (null = tutte). */
+    fun onBrandFilterChange(brand: String?) = _uiState.update { it.copy(brandFilter = brand) }
 
     fun createProduct(name: String, brand: String?, defaultUnitId: Long?) {
         if (name.isBlank()) return

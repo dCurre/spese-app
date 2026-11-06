@@ -28,6 +28,8 @@ enum class Granularity(val wire: String, val label: String) {
 
 data class PriceDetailUiState(
     val isLoading: Boolean = true,
+    // Loading del solo grafico (cambio granularità): non fa sparire l'intera schermata.
+    val historyLoading: Boolean = false,
     val error: String? = null,
     val product: Product? = null,
     val purchases: List<Purchase> = emptyList(),
@@ -55,8 +57,13 @@ class PriceDetailViewModel @Inject constructor(
         load()
     }
 
-    fun load() {
-        _uiState.update { it.copy(isLoading = true, error = null) }
+    /**
+     * Ricarica tutti i dati della schermata. [showLoading] = true mostra lo spinner a tutta
+     * pagina (primo caricamento); i reload dopo una mutazione usano false ("reload silenzioso":
+     * il contenuto resta a schermo e si aggiorna, niente lampeggio).
+     */
+    fun load(showLoading: Boolean = true) {
+        if (showLoading) _uiState.update { it.copy(isLoading = true, error = null) }
         viewModelScope.launch {
             val gran = _uiState.value.granularity.wire
             val productD = async { priceRepository.getProduct(productId) }
@@ -81,9 +88,22 @@ class PriceDetailViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Cambio granularità del grafico: ricarica SOLO lo storico (1 chiamata, non tutta la
+     * schermata) con un loading locale → la pagina non sparisce e niente over-fetch.
+     */
     fun setGranularity(g: Granularity) {
-        _uiState.update { it.copy(granularity = g) }
-        load()
+        if (g == _uiState.value.granularity) return
+        _uiState.update { it.copy(granularity = g, historyLoading = true) }
+        viewModelScope.launch {
+            val history = priceRepository.getPriceHistory(productId, g.wire)
+            _uiState.update {
+                it.copy(
+                    historyLoading = false,
+                    history = (history as? ApiResult.Success)?.data?.data ?: it.history,
+                )
+            }
+        }
     }
 
     fun addPurchase(
@@ -109,7 +129,7 @@ class PriceDetailViewModel @Inject constructor(
                 )
             )
             when (result) {
-                is ApiResult.Success -> load()
+                is ApiResult.Success -> load(showLoading = false)
                 is ApiResult.Error -> _uiState.update { it.copy(message = result.message) }
             }
         }
@@ -137,7 +157,7 @@ class PriceDetailViewModel @Inject constructor(
                 ),
             )
             when (result) {
-                is ApiResult.Success -> load()
+                is ApiResult.Success -> load(showLoading = false)
                 is ApiResult.Error -> _uiState.update { it.copy(message = result.message) }
             }
         }
@@ -156,7 +176,7 @@ class PriceDetailViewModel @Inject constructor(
                 ),
             )
             when (result) {
-                is ApiResult.Success -> load()
+                is ApiResult.Success -> load(showLoading = false)
                 is ApiResult.Error -> _uiState.update { it.copy(message = result.message) }
             }
         }
@@ -175,7 +195,7 @@ class PriceDetailViewModel @Inject constructor(
     fun deletePurchase(purchase: Purchase) {
         viewModelScope.launch {
             priceRepository.deletePurchase(purchase.id)
-            load()
+            load(showLoading = false)
         }
     }
 

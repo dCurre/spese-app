@@ -80,7 +80,7 @@ class ChecklistDetailViewModel @Inject constructor(
     private val collapsed = mutableSetOf<Long>()
 
     init {
-        load()
+        load(showLoading = true)
         viewModelScope.launch {
             realtimeService.watch(RealtimeTable.SHOPPING_ITEMS).collect { action ->
                 if (action.longField("shopping_list_id") == listId) load()
@@ -93,8 +93,13 @@ class ChecklistDetailViewModel @Inject constructor(
         }
     }
 
-    fun load() {
-        _uiState.update { it.copy(isLoading = true, error = null) }
+    /**
+     * Ricarica la lista. [showLoading] = true mostra lo spinner a tutta pagina (solo primo
+     * caricamento / retry); i reload dopo una mutazione o da realtime usano false ("reload
+     * silenzioso": il contenuto resta a schermo, niente lampeggio né doppio refresh).
+     */
+    fun load(showLoading: Boolean = false) {
+        if (showLoading) _uiState.update { it.copy(isLoading = true, error = null) }
         viewModelScope.launch {
             when (val result = shoppingRepository.getList(listId)) {
                 is ApiResult.Success -> {

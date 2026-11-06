@@ -55,6 +55,7 @@
     <!-- Sorting -->
     <string name="sort_date">Date</string>
     <string name="sort_name">Name</string>
+    <string name="sort_brand">Brand</string>
     <string name="sort_amount">Amount</string>
     <string name="sort_ascending">Ascending</string>
     <string name="sort_descending">Descending</string>
@@ -274,6 +275,7 @@
     <string name="prices_title">Price history</string>
     <string name="prices_new_product">New product</string>
     <string name="prices_search">Search product</string>
+    <string name="prices_brand_all">All</string>
     <string name="prices_empty">No products. Create one with +.</string>
     <string name="prices_unit">unit: %1$s</string>
 </resources>

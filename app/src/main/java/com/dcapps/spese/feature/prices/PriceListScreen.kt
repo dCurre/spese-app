@@ -1,6 +1,7 @@
 package com.dcapps.spese.feature.prices
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -58,13 +59,13 @@ fun PriceListScreen(
     ) { innerPadding ->
         androidx.compose.material3.pulltorefresh.PullToRefreshBox(
             isRefreshing = state.isLoading,
-            onRefresh = viewModel::load,
+            onRefresh = { viewModel.load(showLoading = true) },
             modifier = Modifier.fillMaxSize().padding(innerPadding),
         ) {
             when {
                 state.error != null -> Column(Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(state.error!!)
-                    TextButton(onClick = viewModel::load) { Text(stringResource(R.string.action_retry)) }
+                    TextButton(onClick = { viewModel.load(showLoading = true) }) { Text(stringResource(R.string.action_retry)) }
                 }
                 else -> LazyColumn(
                     Modifier.fillMaxSize(),
@@ -84,13 +85,47 @@ fun PriceListScreen(
                     item {
                         com.dcapps.spese.ui.components.SortBar(
                             options = listOf(
-                                com.dcapps.spese.ui.components.SortOption(Unit, stringResource(R.string.sort_name)),
+                                com.dcapps.spese.ui.components.SortOption(ProductSort.NAME, stringResource(R.string.sort_name)),
+                                com.dcapps.spese.ui.components.SortOption(ProductSort.BRAND, stringResource(R.string.sort_brand)),
                             ),
-                            selectedKey = Unit,
+                            selectedKey = state.sort,
                             ascending = state.sortAsc,
-                            onSelect = { viewModel.toggleSort() },
+                            onSelect = { viewModel.onSortChange(it) },
                             modifier = Modifier.padding(horizontal = 16.dp),
                         )
+                    }
+                    // Filtro per marca (solo se ci sono marche): "Tutte" + un chip per marca.
+                    if (state.availableBrands.isNotEmpty()) {
+                        item {
+                            androidx.compose.foundation.layout.Row(
+                                Modifier
+                                    .fillMaxWidth()
+                                    .horizontalScroll(androidx.compose.foundation.rememberScrollState())
+                                    .padding(horizontal = 16.dp, vertical = 4.dp),
+                                horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp),
+                            ) {
+                                androidx.compose.material3.FilterChip(
+                                    selected = state.brandFilter == null,
+                                    onClick = { viewModel.onBrandFilterChange(null) },
+                                    label = { Text(stringResource(R.string.prices_brand_all)) },
+                                    colors = androidx.compose.material3.FilterChipDefaults.filterChipColors(
+                                        selectedContainerColor = MaterialTheme.colorScheme.primary,
+                                        selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
+                                    ),
+                                )
+                                state.availableBrands.forEach { brand ->
+                                    androidx.compose.material3.FilterChip(
+                                        selected = state.brandFilter == brand,
+                                        onClick = { viewModel.onBrandFilterChange(brand) },
+                                        label = { Text(brand) },
+                                        colors = androidx.compose.material3.FilterChipDefaults.filterChipColors(
+                                            selectedContainerColor = MaterialTheme.colorScheme.primary,
+                                            selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
+                                        ),
+                                    )
+                                }
+                            }
+                        }
                     }
                     if (state.visibleProducts.isEmpty()) {
                         item {

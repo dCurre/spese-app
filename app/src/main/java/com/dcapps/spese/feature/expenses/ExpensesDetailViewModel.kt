@@ -79,7 +79,7 @@ class ExpensesDetailViewModel @Inject constructor(
     val uiState: StateFlow<ExpensesDetailUiState> = _uiState.asStateFlow()
 
     init {
-        load()
+        load(showLoading = true)
         observeRealtime()
     }
 
@@ -98,8 +98,12 @@ class ExpensesDetailViewModel @Inject constructor(
         }
     }
 
-    fun load() {
-        _uiState.update { it.copy(isLoading = true, error = null) }
+    /**
+     * Ricarica il dettaglio lista. [showLoading] = true mostra lo spinner a tutta pagina (solo
+     * primo caricamento); i reload da realtime/mutazioni strutturali usano false (niente lampeggio).
+     */
+    fun load(showLoading: Boolean = false) {
+        if (showLoading) _uiState.update { it.copy(isLoading = true, error = null) }
         viewModelScope.launch {
             val listDeferred = async { expensesRepository.getList(listId) }
             val expensesDeferred = async { expensesRepository.getExpenses(listId) }

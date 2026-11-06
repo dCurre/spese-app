@@ -65,7 +65,7 @@ fun ChecklistScreen(
     ) { innerPadding ->
         androidx.compose.material3.pulltorefresh.PullToRefreshBox(
             isRefreshing = state.isLoading,
-            onRefresh = viewModel::load,
+            onRefresh = { viewModel.load(showLoading = true) },
             modifier = Modifier.fillMaxSize().padding(innerPadding),
         ) {
             when {
@@ -74,7 +74,7 @@ fun ChecklistScreen(
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Text(state.error!!)
-                    TextButton(onClick = viewModel::load) { Text(stringResource(R.string.action_retry)) }
+                    TextButton(onClick = { viewModel.load(showLoading = true) }) { Text(stringResource(R.string.action_retry)) }
                 }
                 else -> ChecklistContent(state, viewModel, onOpenList)
             }
@@ -221,14 +221,23 @@ private fun ChecklistRow(
             Text(list.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
             val total = list.itemsCount ?: 0
             val checked = list.checkedCount ?: 0
-            val typeLabel =
-                if (list.listType == "shared") stringResource(R.string.lists_type_shared)
-                else stringResource(R.string.lists_type_personal)
-            val subtitle = buildString {
-                append(typeLabel)
-                if (total > 0) append(" · $checked/$total")
+            val isShared = list.listType == "shared"
+            val countLabel = if (total > 0) "$checked/$total" else null
+            Row(
+                modifier = Modifier.padding(top = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                com.dcapps.spese.ui.components.SpeseBadge(
+                    text = if (isShared) stringResource(R.string.lists_type_shared)
+                        else stringResource(R.string.lists_type_personal),
+                    color = if (isShared) com.dcapps.spese.ui.theme.SpeseTheme.colors.accent
+                        else MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                countLabel?.let {
+                    Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
             }
-            Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         IconButton(onClick = onStar) {
             if (list.starred) {

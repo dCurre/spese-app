@@ -51,19 +51,23 @@ class ExpensesListViewModel @Inject constructor(
     private var allLists: List<ExpensesList> = emptyList()
 
     init {
-        load()
+        load(showLoading = true)
         viewModelScope.launch {
             realtimeService.watch(RealtimeTable.EXPENSES_LISTS).collect { load() }
         }
     }
 
-    fun load() {
+    /**
+     * Carica le liste. [showLoading] = true mostra lo spinner (solo primo caricamento); reload
+     * da realtime/mutazioni usano false (reload silenzioso, niente lampeggio dell'elenco).
+     */
+    fun load(showLoading: Boolean = false) {
         val email = session.currentUser.value?.email
         if (email.isNullOrBlank()) {
             _uiState.update { it.copy(isLoading = false, error = context.getString(R.string.vm_user_unavailable)) }
             return
         }
-        _uiState.update { it.copy(isLoading = true, error = null) }
+        if (showLoading) _uiState.update { it.copy(isLoading = true, error = null) }
         viewModelScope.launch {
             when (val result = expensesRepository.getUserWithLists(email)) {
                 is ApiResult.Success -> {

@@ -420,34 +420,34 @@ private fun CategoryHeaderRow(
     onEdit: () -> Unit,
     onDelete: () -> Unit,
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(start = (8 + row.depth * 16).dp, end = 4.dp, top = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
+    TreeIndent(
+        depth = row.depth,
+        modifier = Modifier.fillMaxWidth().padding(start = 8.dp, end = 4.dp, top = 8.dp),
     ) {
-        IconButton(onClick = onToggleCollapse) {
-            Icon(
-                imageVector = if (row.collapsed) {
-                    Icons.AutoMirrored.Filled.KeyboardArrowRight
-                } else {
-                    Icons.Default.KeyboardArrowDown
-                },
-                contentDescription = if (row.collapsed) stringResource(R.string.cd_expand) else stringResource(R.string.cd_collapse),
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = onToggleCollapse) {
+                Icon(
+                    imageVector = if (row.collapsed) {
+                        Icons.AutoMirrored.Filled.KeyboardArrowRight
+                    } else {
+                        Icons.Default.KeyboardArrowDown
+                    },
+                    contentDescription = if (row.collapsed) stringResource(R.string.cd_expand) else stringResource(R.string.cd_collapse),
+                )
+            }
+            // Tap sul nome = collassa/espande (come la freccetta).
+            Text(
+                text = row.category.name,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.weight(1f).clickable { onToggleCollapse() }.padding(vertical = 8.dp),
             )
-        }
-        // Tap sul nome = collassa/espande (come la freccetta).
-        Text(
-            text = row.category.name,
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.SemiBold,
-            modifier = Modifier.weight(1f).clickable { onToggleCollapse() }.padding(vertical = 8.dp),
-        )
-        IconButton(onClick = onEdit) {
-            Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.cd_edit_category))
-        }
-        IconButton(onClick = onDelete) {
-            Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.editor_delete_category), tint = com.dcapps.spese.ui.theme.SpeseTheme.colors.danger)
+            IconButton(onClick = onEdit) {
+                Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.cd_edit_category))
+            }
+            IconButton(onClick = onDelete) {
+                Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.editor_delete_category), tint = com.dcapps.spese.ui.theme.SpeseTheme.colors.danger)
+            }
         }
     }
     HorizontalDivider(Modifier.padding(horizontal = 16.dp))
@@ -460,27 +460,31 @@ private fun ItemRow(
     onEdit: () -> Unit,
 ) {
     val item = row.item
-    Row(
+    TreeIndent(
+        depth = row.depth,
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onEdit() }
-            .padding(start = (8 + row.depth * 16).dp, end = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
+            .padding(start = 8.dp, end = 8.dp),
     ) {
-        Checkbox(checked = item.checked, onCheckedChange = { onToggle() })
-        Text(
-            text = buildString {
-                append(item.name)
-                val q = item.quantity ?: 1
-                if (q > 1) append("  ×$q")
-            },
-            style = MaterialTheme.typography.bodyLarge,
-            textDecoration = if (item.checked) TextDecoration.LineThrough else null,
-            color = if (item.checked) MaterialTheme.colorScheme.onSurfaceVariant
-            else MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.weight(1f).padding(vertical = 12.dp),
-        )
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Checkbox(checked = item.checked, onCheckedChange = { onToggle() })
+            Text(
+                text = buildString {
+                    append(item.name)
+                    val q = item.quantity ?: 1
+                    if (q > 1) append("  ×$q")
+                },
+                style = MaterialTheme.typography.bodyLarge,
+                textDecoration = if (item.checked) TextDecoration.LineThrough else null,
+                color = if (item.checked) MaterialTheme.colorScheme.onSurfaceVariant
+                else MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.weight(1f).padding(vertical = 12.dp),
+            )
+        }
     }
 }
 

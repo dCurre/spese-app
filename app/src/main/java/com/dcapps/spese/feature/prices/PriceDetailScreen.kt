@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -123,12 +124,24 @@ fun PriceDetailScreen(
                                 Row(
                                     Modifier.padding(top = 8.dp),
                                     horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
                                 ) {
                                     Granularity.entries.forEach { g ->
                                         FilterChip(
                                             selected = state.granularity == g,
                                             onClick = { viewModel.setGranularity(g) },
                                             label = { Text(stringResource(granularityLabelRes(g))) },
+                                            colors = androidx.compose.material3.FilterChipDefaults.filterChipColors(
+                                                selectedContainerColor = MaterialTheme.colorScheme.primary,
+                                                selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
+                                            ),
+                                        )
+                                    }
+                                    // Loading locale del grafico: non fa sparire la schermata.
+                                    if (state.historyLoading) {
+                                        CircularProgressIndicator(
+                                            Modifier.size(16.dp),
+                                            strokeWidth = 2.dp,
                                         )
                                     }
                                 }

@@ -37,12 +37,6 @@ da fare: aggiornare qui (spuntare / rimuovere quando completato).
   ExpenseDialog / CategoryEditDialog è un cestino (danger) accanto al titolo; decidere un pattern
   definitivo e coerente per l'elimina dentro tutte le modali di modifica.
 
-## Bug — refresh
-
-- [ ] **Refresh costante cambiando day/month/year** nel grafico di un prodotto di prices.
-- [ ] **Refresh di pagina costante** su aggiunta/modifica/cancellazione oggetti, un po' in
-  tutte le sezioni.
-
 ## Fuori scope / escluse
 
 - Notifiche push → richiederebbero modifiche al backend (intoccabile).

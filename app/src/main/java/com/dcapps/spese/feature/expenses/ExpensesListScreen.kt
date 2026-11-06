@@ -64,7 +64,7 @@ fun ExpensesListScreen(
     ) { innerPadding ->
         androidx.compose.material3.pulltorefresh.PullToRefreshBox(
             isRefreshing = state.isLoading,
-            onRefresh = viewModel::load,
+            onRefresh = { viewModel.load(showLoading = true) },
             modifier = Modifier.fillMaxSize().padding(innerPadding),
         ) {
             when {
@@ -222,19 +222,30 @@ private fun ListRow(
     ) {
         Column(Modifier.weight(1f)) {
             Text(list.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-            val typeLabel =
-                if (list.type == com.dcapps.spese.core.model.ListType.SHARED)
-                    stringResource(R.string.lists_type_shared)
-                else stringResource(R.string.lists_type_personal)
+            val isShared = list.type == com.dcapps.spese.core.model.ListType.SHARED
             val participantsLabel = list.participantsCount?.let {
                 stringResource(R.string.lists_participants, it)
             }
             val expensesLabel = list.expensesCount?.let {
                 stringResource(R.string.lists_expenses_count, it)
             }
-            val subtitle = listOfNotNull(typeLabel, participantsLabel, expensesLabel)
-                .joinToString(" · ")
-            Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            val subtitle = listOfNotNull(participantsLabel, expensesLabel).joinToString(" · ")
+            Row(
+                modifier = Modifier.padding(top = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                // Tipo lista come badge colorato (Condivisa = accent, Personale = neutro).
+                com.dcapps.spese.ui.components.SpeseBadge(
+                    text = if (isShared) stringResource(R.string.lists_type_shared)
+                        else stringResource(R.string.lists_type_personal),
+                    color = if (isShared) com.dcapps.spese.ui.theme.SpeseTheme.colors.accent
+                        else MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                if (subtitle.isNotBlank()) {
+                    Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
         }
     }
 }
