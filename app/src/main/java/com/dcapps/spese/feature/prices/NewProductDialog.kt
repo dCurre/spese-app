@@ -20,6 +20,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.dcapps.spese.R
 import com.dcapps.spese.core.model.MeasurementUnit
+import com.dcapps.spese.core.model.Product
 import com.dcapps.spese.ui.components.ReadOnlyPickerField
 import com.dcapps.spese.ui.components.SpeseDialog
 
@@ -27,7 +28,7 @@ import com.dcapps.spese.ui.components.SpeseDialog
 @Composable
 fun NewProductDialog(
     units: List<MeasurementUnit>,
-    product: com.dcapps.spese.core.model.Product? = null,
+    product: Product? = null,
     onDismiss: () -> Unit,
     onConfirm: (name: String, brand: String?, unitId: Long?) -> Unit,
 ) {

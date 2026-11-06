@@ -1,5 +1,6 @@
 package com.dcapps.spese.feature.expenses
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -23,7 +24,7 @@ import com.dcapps.spese.ui.components.SpeseDialog
 fun CreateListDialog(
     onDismiss: () -> Unit,
     onCreate: (name: String, shared: Boolean) -> Unit,
-    @androidx.annotation.StringRes titleRes: Int = R.string.lists_new,
+    @StringRes titleRes: Int = R.string.lists_new,
 ) {
     var name by remember { mutableStateOf("") }
     var shared by remember { mutableStateOf(true) }

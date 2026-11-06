@@ -88,7 +88,7 @@ class ProfileViewModel @Inject constructor(
         viewModelScope.launch {
             val result = userRepository.update(
                 user.id,
-                com.dcapps.spese.core.model.UpdateUserRequest(
+                UpdateUserRequest(
                     name = name.trim(),
                     surname = surname.trim(),
                 ),

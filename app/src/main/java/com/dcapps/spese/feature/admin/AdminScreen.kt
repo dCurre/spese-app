@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -23,6 +24,9 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.ScrollableTabRow
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
@@ -40,6 +44,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dcapps.spese.R
+import com.dcapps.spese.core.model.UserRole
 import com.dcapps.spese.ui.components.ConfirmDialog
 import com.dcapps.spese.ui.components.ErrorSnackbarEffect
 import com.dcapps.spese.ui.components.ReadOnlyPickerField
@@ -55,13 +60,13 @@ fun AdminScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     var tab by remember { mutableIntStateOf(0) }
-    val snackbarHostState = remember { androidx.compose.material3.SnackbarHostState() }
+    val snackbarHostState = remember { SnackbarHostState() }
     ErrorSnackbarEffect(
         state.message, snackbarHostState, viewModel::clearMessage,
     )
 
     Scaffold(
-        snackbarHost = { androidx.compose.material3.SnackbarHost(snackbarHostState) },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             SpeseTopAppBar(
                 title = stringResource(R.string.profile_admin),
@@ -81,7 +86,7 @@ fun AdminScreen(
                 )
                 state.isLoading -> CircularProgressIndicator(Modifier.align(Alignment.Center))
                 else -> Column(Modifier.fillMaxSize()) {
-                    androidx.compose.material3.ScrollableTabRow(selectedTabIndex = tab, edgePadding = 0.dp) {
+                    ScrollableTabRow(selectedTabIndex = tab, edgePadding = 0.dp) {
                         Tab(selected = tab == 0, onClick = { tab = 0 }, text = { Text(stringResource(R.string.admin_tab_expense_types)) })
                         Tab(selected = tab == 1, onClick = { tab = 1 }, text = { Text(stringResource(R.string.admin_tab_units)) })
                         Tab(selected = tab == 2, onClick = { tab = 2 }, text = { Text(stringResource(R.string.admin_tab_roles)) })
@@ -126,7 +131,7 @@ private fun NameSection(
 
     LazyColumn(
         Modifier.fillMaxSize(),
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
+        contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         item {
@@ -211,7 +216,7 @@ private fun UnitSection(viewModel: AdminViewModel, state: AdminUiState) {
 
     LazyColumn(
         Modifier.fillMaxSize(),
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
+        contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         item {
@@ -282,7 +287,7 @@ private fun UnitDialog(
 private fun UsersSection(viewModel: AdminViewModel, state: AdminUiState) {
     LazyColumn(
         Modifier.fillMaxSize(),
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
+        contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         if (state.users.isEmpty()) {
@@ -307,7 +312,7 @@ private fun UsersSection(viewModel: AdminViewModel, state: AdminUiState) {
 
 @Composable
 private fun RolePicker(
-    roles: List<com.dcapps.spese.core.model.UserRole>,
+    roles: List<UserRole>,
     currentRoleName: String?,
     onSelect: (Long) -> Unit,
     modifier: Modifier = Modifier,

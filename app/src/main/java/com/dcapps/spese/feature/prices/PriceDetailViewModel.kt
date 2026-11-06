@@ -12,6 +12,7 @@ import com.dcapps.spese.core.model.MeasurementUnit
 import com.dcapps.spese.core.model.PriceHistoryPoint
 import com.dcapps.spese.core.model.Product
 import com.dcapps.spese.core.model.Purchase
+import com.dcapps.spese.core.model.UpdateProductRequest
 import com.dcapps.spese.core.network.ApiResult
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.async
@@ -176,7 +177,7 @@ class PriceDetailViewModel @Inject constructor(
         viewModelScope.launch {
             val result = priceRepository.updateProduct(
                 productId,
-                com.dcapps.spese.core.model.UpdateProductRequest(
+                UpdateProductRequest(
                     name = name.trim(),
                     brand = brand?.takeIf { it.isNotBlank() },
                     defaultUnitId = defaultUnitId,

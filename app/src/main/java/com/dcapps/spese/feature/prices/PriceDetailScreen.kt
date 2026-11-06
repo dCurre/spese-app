@@ -1,10 +1,12 @@
 package com.dcapps.spese.feature.prices
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -19,6 +21,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
@@ -26,8 +29,11 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -40,12 +46,14 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dcapps.spese.R
+import com.dcapps.spese.core.model.Purchase
 import com.dcapps.spese.ui.components.ConfirmDialog
 import com.dcapps.spese.ui.components.ErrorSnackbarEffect
 import com.dcapps.spese.ui.components.OverflowMenu
 import com.dcapps.spese.ui.components.RowDivider
 import com.dcapps.spese.ui.components.SpeseFilterChip
 import com.dcapps.spese.ui.components.SpeseTopAppBar
+import com.dcapps.spese.ui.components.SwipeToDeleteRow
 import com.dcapps.spese.ui.theme.SpeseTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -56,22 +64,22 @@ fun PriceDetailScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     var showAddPurchase by remember { mutableStateOf(false) }
-    var editingPurchase by remember { mutableStateOf<com.dcapps.spese.core.model.Purchase?>(null) }
-    var purchaseToDelete by remember { mutableStateOf<com.dcapps.spese.core.model.Purchase?>(null) }
+    var editingPurchase by remember { mutableStateOf<Purchase?>(null) }
+    var purchaseToDelete by remember { mutableStateOf<Purchase?>(null) }
     var showEditProduct by remember { mutableStateOf(false) }
     var showDeleteProduct by remember { mutableStateOf(false) }
-    val snackbarHostState = remember { androidx.compose.material3.SnackbarHostState() }
+    val snackbarHostState = remember { SnackbarHostState() }
     ErrorSnackbarEffect(
         state.message, snackbarHostState, viewModel::clearMessage,
     )
 
     // Torna indietro quando il prodotto viene eliminato.
-    androidx.compose.runtime.LaunchedEffect(state.deleted) {
+    LaunchedEffect(state.deleted) {
         if (state.deleted) onBack()
     }
 
     Scaffold(
-        snackbarHost = { androidx.compose.material3.SnackbarHost(snackbarHostState) },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             SpeseTopAppBar(
                 title = state.product?.name ?: state.placeholderName
@@ -85,7 +93,7 @@ fun PriceDetailScreen(
                 },
                 actions = {
                     OverflowMenu { dismiss ->
-                        androidx.compose.material3.DropdownMenuItem(
+                        DropdownMenuItem(
                             text = { Text(stringResource(R.string.product_delete_title)) },
                             onClick = { dismiss(); showDeleteProduct = true },
                         )
@@ -105,7 +113,7 @@ fun PriceDetailScreen(
                 state.error != null -> Text(state.error!!, Modifier.align(Alignment.Center).padding(32.dp))
                 else -> LazyColumn(
                     Modifier.fillMaxSize(),
-                    contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                    contentPadding = PaddingValues(
                         start = 16.dp, top = 16.dp, end = 16.dp, bottom = 88.dp,
                     ),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -173,7 +181,7 @@ fun PriceDetailScreen(
                     }
 
                     items(state.purchases, key = { it.id }) { p ->
-                        com.dcapps.spese.ui.components.SwipeToDeleteRow(onRequestDelete = { purchaseToDelete = p }) {
+                        SwipeToDeleteRow(onRequestDelete = { purchaseToDelete = p }) {
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -270,9 +278,9 @@ fun PriceDetailScreen(
     }
 }
 
-@androidx.compose.runtime.Composable
+@Composable
 private fun ProductStatsCard(
-    purchases: List<com.dcapps.spese.core.model.Purchase>,
+    purchases: List<Purchase>,
     unitSymbol: String,
 ) {
     if (purchases.isEmpty()) return
@@ -285,12 +293,12 @@ private fun ProductStatsCard(
     val variationPct = if (minPrice > 0) ((lastPrice - minPrice) / minPrice * 100) else 0.0
 
     // Niente card: titolo "Statistiche" evidente + righe su sfondo, coerente con la sezione acquisti.
-    androidx.compose.foundation.layout.Column(androidx.compose.ui.Modifier.fillMaxWidth()) {
-        androidx.compose.material3.Text(
+    Column(Modifier.fillMaxWidth()) {
+        Text(
             stringResource(R.string.profile_stats),
-            style = androidx.compose.material3.MaterialTheme.typography.titleLarge,
-            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-            modifier = androidx.compose.ui.Modifier.padding(bottom = 4.dp),
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(bottom = 4.dp),
         )
         StatLine(stringResource(R.string.product_stats_min_price), "%.2f €/%s".format(minPrice, unitSymbol) + (minP?.store?.let { " · $it" } ?: ""))
         StatLine(stringResource(R.string.product_stats_last_price), "%.2f €/%s".format(lastPrice, unitSymbol))
@@ -301,24 +309,24 @@ private fun ProductStatsCard(
     }
 }
 
-@androidx.annotation.StringRes
+@StringRes
 private fun granularityLabelRes(g: Granularity): Int = when (g) {
     Granularity.DAY -> R.string.granularity_day
     Granularity.MONTH -> R.string.granularity_month
     Granularity.YEAR -> R.string.granularity_year
 }
 
-@androidx.compose.runtime.Composable
+@Composable
 private fun StatLine(label: String, value: String) {
-    androidx.compose.foundation.layout.Row(
-        androidx.compose.ui.Modifier.fillMaxWidth().padding(top = 6.dp),
-        horizontalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceBetween,
+    Row(
+        Modifier.fillMaxWidth().padding(top = 6.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
     ) {
-        androidx.compose.material3.Text(label, style = androidx.compose.material3.MaterialTheme.typography.bodyMedium)
-        androidx.compose.material3.Text(
+        Text(label, style = MaterialTheme.typography.bodyMedium)
+        Text(
             value,
-            style = androidx.compose.material3.MaterialTheme.typography.bodyMedium,
-            fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.SemiBold,
         )
     }
 }

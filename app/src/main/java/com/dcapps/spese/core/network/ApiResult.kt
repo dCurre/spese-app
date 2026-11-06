@@ -1,5 +1,6 @@
 package com.dcapps.spese.core.network
 
+import com.dcapps.spese.core.bugreport.ErrorReporterHolder
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -37,7 +38,7 @@ suspend fun <T> apiCall(json: Json, block: suspend () -> T): ApiResult<T> =
             // Gli errori applicativi ATTESI (permessi / validazione) sono risposte legittime del
             // backend, non bug: mostrali all'utente ma NON segnalarli come crash-report.
             if (!isExpectedAppError(e.code())) {
-                com.dcapps.spese.core.bugreport.ErrorReporterHolder.instance?.record(
+                ErrorReporterHolder.instance?.record(
                     message = it.message,
                     cause = e,
                     httpMethod = request?.method,
@@ -57,7 +58,7 @@ suspend fun <T> apiCall(json: Json, block: suspend () -> T): ApiResult<T> =
     }
 
 private fun ApiResult.Error.report() {
-    com.dcapps.spese.core.bugreport.ErrorReporterHolder.instance
+    ErrorReporterHolder.instance
         ?.record(message, cause)
 }
 

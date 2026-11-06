@@ -7,9 +7,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -25,8 +27,11 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -42,9 +47,12 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dcapps.spese.R
 import com.dcapps.spese.core.model.ShoppingList
 import com.dcapps.spese.feature.expenses.CreateListDialog
+import com.dcapps.spese.navigation.OnCreateRequested
+import com.dcapps.spese.navigation.Routes
 import com.dcapps.spese.ui.components.ConfirmDialog
 import com.dcapps.spese.ui.components.ErrorSnackbarEffect
 import com.dcapps.spese.ui.components.ErrorState
+import com.dcapps.spese.ui.components.IconCount
 import com.dcapps.spese.ui.components.RowDivider
 import com.dcapps.spese.ui.components.SortBar
 import com.dcapps.spese.ui.components.SortOption
@@ -62,20 +70,20 @@ fun ChecklistScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     var showCreate by remember { mutableStateOf(false) }
-    val snackbarHostState = remember { androidx.compose.material3.SnackbarHostState() }
+    val snackbarHostState = remember { SnackbarHostState() }
     ErrorSnackbarEffect(
         state.message, snackbarHostState, viewModel::clearMessage,
     )
 
-    com.dcapps.spese.navigation.OnCreateRequested(com.dcapps.spese.navigation.Routes.CHECKLIST) {
+    OnCreateRequested(Routes.CHECKLIST) {
         showCreate = true
     }
 
     Scaffold(
         topBar = { SpeseTopAppBar(title = stringResource(R.string.checklist_title)) },
-        snackbarHost = { androidx.compose.material3.SnackbarHost(snackbarHostState) },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { innerPadding ->
-        androidx.compose.material3.pulltorefresh.PullToRefreshBox(
+        PullToRefreshBox(
             isRefreshing = state.isLoading,
             onRefresh = { viewModel.load(showLoading = true) },
             modifier = Modifier.fillMaxSize().padding(innerPadding),
@@ -114,7 +122,7 @@ private fun ChecklistContent(
     var listToDelete by remember { mutableStateOf<ShoppingList?>(null) }
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(top = 8.dp, bottom = 88.dp),
+        contentPadding = PaddingValues(top = 8.dp, bottom = 88.dp),
     ) {
         item {
             SpeseSearchField(
@@ -161,7 +169,7 @@ private fun ChecklistContent(
     }
 }
 
-private fun androidx.compose.foundation.lazy.LazyListScope.section(
+private fun LazyListScope.section(
     title: String,
     lists: List<ShoppingList>,
     viewModel: ChecklistViewModel,
@@ -238,7 +246,7 @@ private fun ChecklistRow(
                 )
                 // Conteggio articoli (spuntati/totale) con icona, invece del solo testo.
                 countLabel?.let {
-                    com.dcapps.spese.ui.components.IconCount(
+                    IconCount(
                         icon = Icons.AutoMirrored.Filled.ListAlt,
                         text = it,
                         contentDescription = stringResource(R.string.checklist_items_cd),

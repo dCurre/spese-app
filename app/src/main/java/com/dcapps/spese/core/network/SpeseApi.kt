@@ -14,6 +14,7 @@ import com.dcapps.spese.core.model.CreatePurchaseRequest
 import com.dcapps.spese.core.model.CreateShoppingCategoryRequest
 import com.dcapps.spese.core.model.CreateShoppingItemRequest
 import com.dcapps.spese.core.model.CreateShoppingListRequest
+import com.dcapps.spese.core.model.CreateUserRequest
 import com.dcapps.spese.core.model.CreatedResponse
 import com.dcapps.spese.core.model.Expense
 import com.dcapps.spese.core.model.ExpenseType
@@ -24,6 +25,7 @@ import com.dcapps.spese.core.model.ExpensesResponse
 import com.dcapps.spese.core.model.InviteTokenResponse
 import com.dcapps.spese.core.model.JoinRequest
 import com.dcapps.spese.core.model.MeasurementUnit
+import com.dcapps.spese.core.model.MeasurementUnitRequest
 import com.dcapps.spese.core.model.MeasurementUnitsResponse
 import com.dcapps.spese.core.model.MessageResponse
 import com.dcapps.spese.core.model.NameRequest
@@ -35,12 +37,14 @@ import com.dcapps.spese.core.model.ProfileImageResponse
 import com.dcapps.spese.core.model.Purchase
 import com.dcapps.spese.core.model.PurchasesResponse
 import com.dcapps.spese.core.model.ReorderRequest
+import com.dcapps.spese.core.model.SelectImageRequest
 import com.dcapps.spese.core.model.ShoppingList
 import com.dcapps.spese.core.model.ShoppingListsResponse
 import com.dcapps.spese.core.model.TransferOwnerRequest
 import com.dcapps.spese.core.model.TransferShoppingOwnershipRequest
 import com.dcapps.spese.core.model.UpdateExpenseRequest
 import com.dcapps.spese.core.model.UpdateExpensesListRequest
+import com.dcapps.spese.core.model.UpdateProductRequest
 import com.dcapps.spese.core.model.UpdatePurchaseRequest
 import com.dcapps.spese.core.model.UpdateShoppingCategoryRequest
 import com.dcapps.spese.core.model.UpdateShoppingItemRequest
@@ -86,7 +90,7 @@ interface SpeseApi {
     suspend fun upsertUserByEmail(@Body body: UpsertUserRequest): User
 
     @POST("api/users")
-    suspend fun createUser(@Body body: com.dcapps.spese.core.model.CreateUserRequest): CreatedResponse
+    suspend fun createUser(@Body body: CreateUserRequest): CreatedResponse
 
     @GET("api/users/by-email/{email}/expenses-lists")
     suspend fun getUserExpensesLists(@Path("email") email: String): UserWithExpensesListsResponse
@@ -107,7 +111,7 @@ interface SpeseApi {
     @PUT("api/users/{id}/profile-image/select")
     suspend fun selectProfileImage(
         @Path("id") id: Long,
-        @Body body: com.dcapps.spese.core.model.SelectImageRequest,
+        @Body body: SelectImageRequest,
     ): ProfileImageResponse
 
     // ---------- Expenses lists ----------
@@ -326,13 +330,13 @@ interface SpeseApi {
 
     @POST("api/measurement-units")
     suspend fun createMeasurementUnit(
-        @Body body: com.dcapps.spese.core.model.MeasurementUnitRequest,
+        @Body body: MeasurementUnitRequest,
     ): CreatedResponse
 
     @PUT("api/measurement-units/{id}")
     suspend fun updateMeasurementUnit(
         @Path("id") id: Long,
-        @Body body: com.dcapps.spese.core.model.MeasurementUnitRequest,
+        @Body body: MeasurementUnitRequest,
     ): MessageResponse
 
     @DELETE("api/measurement-units/{id}")
@@ -351,7 +355,7 @@ interface SpeseApi {
     @PUT("api/products/{id}")
     suspend fun updateProduct(
         @Path("id") id: Long,
-        @Body body: com.dcapps.spese.core.model.UpdateProductRequest,
+        @Body body: UpdateProductRequest,
     ): MessageResponse
 
     @DELETE("api/products/{id}")

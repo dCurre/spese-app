@@ -2,6 +2,7 @@ package com.dcapps.spese.feature.prices
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -108,7 +109,7 @@ fun LineChart(
             // Asse Y: etichette max (alto), valore intermedio e min (basso).
             Column(
                 modifier = Modifier.height(160.dp).padding(end = 6.dp),
-                verticalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceBetween,
+                verticalArrangement = Arrangement.SpaceBetween,
             ) {
                 Text("%.2f".format(max), style = MaterialTheme.typography.labelSmall, color = axisColor)
                 Text("%.2f".format((max + min) / 2f), style = MaterialTheme.typography.labelSmall, color = axisColor)
@@ -177,7 +178,7 @@ fun LineChart(
         // Asse X: primo, centrale (se ci sono abbastanza punti) e ultimo periodo.
         Row(
             Modifier.fillMaxWidth().padding(start = 36.dp, top = 4.dp),
-            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceBetween,
+            horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             Text(points.first().period, style = MaterialTheme.typography.labelSmall, color = axisColor)
             if (points.size >= 3) {

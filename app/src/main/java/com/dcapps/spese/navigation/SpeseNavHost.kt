@@ -40,14 +40,19 @@ import com.dcapps.spese.feature.checklist.ChecklistDetailScreen
 import com.dcapps.spese.feature.checklist.ChecklistScreen
 import com.dcapps.spese.feature.expenses.ExpensesDetailScreen
 import com.dcapps.spese.feature.expenses.ExpensesListScreen
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.dcapps.spese.feature.about.AboutScreen
 import com.dcapps.spese.feature.admin.AdminScreen
+import com.dcapps.spese.feature.auth.AuthViewModel
 import com.dcapps.spese.feature.prices.PriceDetailScreen
 import com.dcapps.spese.feature.prices.PriceListScreen
 import com.dcapps.spese.feature.profile.ProfileScreen
 import com.dcapps.spese.feature.profile.ProfileEditScreen
 import com.dcapps.spese.feature.profile.ProfileSettingsScreen
 import com.dcapps.spese.feature.profile.ProfileStatsScreen
+import com.dcapps.spese.feature.update.UpdateScreen
+import com.dcapps.spese.feature.update.UpdateViewModel
+import com.dcapps.spese.ui.components.MessageSnackbarEffect
 
 object Routes {
     const val EXPENSES_LIST = "expenses"
@@ -83,8 +88,8 @@ private val topLevelDestinations = listOf(
 
 @Composable
 fun SpeseNavHost(
-    authViewModel: com.dcapps.spese.feature.auth.AuthViewModel = androidx.hilt.navigation.compose.hiltViewModel(),
-    updateViewModel: com.dcapps.spese.feature.update.UpdateViewModel = androidx.hilt.navigation.compose.hiltViewModel(),
+    authViewModel: AuthViewModel = hiltViewModel(),
+    updateViewModel: UpdateViewModel = hiltViewModel(),
 ) {
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
@@ -100,7 +105,7 @@ fun SpeseNavHost(
     val snackbarHostState = remember { androidx.compose.material3.SnackbarHostState() }
 
     // Feedback del controllo aggiornamenti manuale (es. "Nessun aggiornamento disponibile").
-    com.dcapps.spese.ui.components.MessageSnackbarEffect(
+    MessageSnackbarEffect(
         updateState.checkMessage, snackbarHostState, updateViewModel::clearCheckMessage,
     )
 
@@ -214,7 +219,7 @@ fun SpeseNavHost(
     // Popup di aggiornamento se il controllo manuale trova una versione nuova.
     val info = updateState.info
     if (updateState.showDialog && info != null) {
-        com.dcapps.spese.feature.update.UpdateScreen(
+        UpdateScreen(
             state = updateState,
             info = info,
             canInstall = updateViewModel.canInstall(),

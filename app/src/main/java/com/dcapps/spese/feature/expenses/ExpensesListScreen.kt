@@ -3,10 +3,12 @@ package com.dcapps.spese.feature.expenses
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import com.dcapps.spese.ui.components.ErrorState
+import com.dcapps.spese.ui.components.IconCount
 import com.dcapps.spese.ui.components.RowDivider
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -27,6 +29,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -41,6 +44,9 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.dcapps.spese.R
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dcapps.spese.core.model.ExpensesList
+import com.dcapps.spese.core.model.ListType
+import com.dcapps.spese.navigation.OnCreateRequested
+import com.dcapps.spese.navigation.Routes
 import com.dcapps.spese.ui.components.ConfirmDialog
 import com.dcapps.spese.ui.components.ErrorSnackbarEffect
 import com.dcapps.spese.ui.components.LoadingIndicator
@@ -66,7 +72,7 @@ fun ExpensesListScreen(
     ErrorSnackbarEffect(state.message, snackbarHostState, viewModel::clearMessage)
 
     // Il "+" centrale della bottom bar apre il dialog di creazione di questa schermata.
-    com.dcapps.spese.navigation.OnCreateRequested(com.dcapps.spese.navigation.Routes.EXPENSES_LIST) {
+    OnCreateRequested(Routes.EXPENSES_LIST) {
         showCreateDialog = true
     }
 
@@ -74,7 +80,7 @@ fun ExpensesListScreen(
         topBar = { SpeseTopAppBar(title = stringResource(R.string.lists_title)) },
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { innerPadding ->
-        androidx.compose.material3.pulltorefresh.PullToRefreshBox(
+        PullToRefreshBox(
             isRefreshing = state.isLoading,
             onRefresh = { viewModel.load(showLoading = true) },
             modifier = Modifier.fillMaxSize().padding(innerPadding),
@@ -126,7 +132,7 @@ private fun ListContent(
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(top = 8.dp, bottom = 88.dp),
+        contentPadding = PaddingValues(top = 8.dp, bottom = 88.dp),
     ) {
         item {
             SpeseSearchField(
@@ -223,7 +229,7 @@ private fun ListRow(
     ) {
         Column(Modifier.weight(1f)) {
             Text(list.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-            val isShared = list.type == com.dcapps.spese.core.model.ListType.SHARED
+            val isShared = list.type == ListType.SHARED
             Row(
                 modifier = Modifier.padding(top = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -238,14 +244,14 @@ private fun ListRow(
                 )
                 // Partecipanti e numero spese come icona + conteggio (meno verboso del testo).
                 list.participantsCount?.let {
-                    com.dcapps.spese.ui.components.IconCount(
+                    IconCount(
                         icon = Icons.Default.Group,
                         text = "$it",
                         contentDescription = stringResource(R.string.lists_participants_cd),
                     )
                 }
                 list.expensesCount?.let {
-                    com.dcapps.spese.ui.components.IconCount(
+                    IconCount(
                         icon = Icons.Default.ReceiptLong,
                         text = "$it",
                         contentDescription = stringResource(R.string.lists_expenses_cd),

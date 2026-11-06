@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -21,28 +22,37 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dcapps.spese.R
 import com.dcapps.spese.core.model.Expense
+import com.dcapps.spese.core.model.ListType
 import com.dcapps.spese.core.util.toEuro
 import com.dcapps.spese.core.util.toShortDate
 import com.dcapps.spese.ui.components.ConfirmDialog
@@ -71,8 +81,8 @@ fun ExpensesDetailScreen(
     var repeating by remember { mutableStateOf(false) }
     var expenseToDelete by remember { mutableStateOf<Expense?>(null) }
 
-    val isShared = state.list?.type == com.dcapps.spese.core.model.ListType.SHARED
-    val snackbarHostState = remember { androidx.compose.material3.SnackbarHostState() }
+    val isShared = state.list?.type == ListType.SHARED
+    val snackbarHostState = remember { SnackbarHostState() }
 
     ErrorSnackbarEffect(
         state.message, snackbarHostState, viewModel::clearMessage,
@@ -84,7 +94,7 @@ fun ExpensesDetailScreen(
     }
 
     Scaffold(
-        snackbarHost = { androidx.compose.material3.SnackbarHost(snackbarHostState) },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             SpeseTopAppBar(
                 title = state.list?.name ?: stringResource(R.string.detail_list_fallback),
@@ -135,7 +145,7 @@ fun ExpensesDetailScreen(
     }
 
     if (showDialog) {
-        val isPersonal = state.list?.type == com.dcapps.spese.core.model.ListType.PERSONAL
+        val isPersonal = state.list?.type == ListType.PERSONAL
         val nameSuggestions = state.expenses.map { it.name }.filter { it.isNotBlank() }
         ExpenseDialog(
             expense = editing,
@@ -211,7 +221,7 @@ private fun RenameListDialog(
         title = stringResource(R.string.detail_rename_list),
         onDismiss = onDismiss,
         content = {
-            androidx.compose.material3.OutlinedTextField(
+            OutlinedTextField(
                 value = name,
                 onValueChange = { name = it },
                 label = { Text(stringResource(R.string.name)) },
@@ -227,10 +237,10 @@ private fun RenameListDialog(
 
 @Composable
 private fun ShareLinkEffect(link: String, onShared: () -> Unit) {
-    val context = androidx.compose.ui.platform.LocalContext.current
+    val context = LocalContext.current
     val shareText = stringResource(R.string.detail_share_text, link)
     val chooserTitle = stringResource(R.string.detail_share_chooser)
-    androidx.compose.runtime.LaunchedEffect(link) {
+    LaunchedEffect(link) {
         val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
             type = "text/plain"
             putExtra(android.content.Intent.EXTRA_TEXT, shareText)
@@ -252,15 +262,15 @@ private fun ExpensesListMenu(
     if (!isShared) return
 
     OverflowMenu { dismiss ->
-        androidx.compose.material3.DropdownMenuItem(
+        DropdownMenuItem(
             text = { Text(stringResource(R.string.detail_share)) },
             onClick = { dismiss(); onShare() },
         )
-        androidx.compose.material3.DropdownMenuItem(
+        DropdownMenuItem(
             text = { Text(stringResource(R.string.detail_participants)) },
             onClick = { dismiss(); onParticipants() },
         )
-        androidx.compose.material3.DropdownMenuItem(
+        DropdownMenuItem(
             text = { Text(stringResource(R.string.detail_transfer_owner)) },
             onClick = { dismiss(); onTransfer() },
         )
@@ -277,7 +287,7 @@ private fun DetailContent(
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 88.dp),
+        contentPadding = PaddingValues(bottom = 88.dp),
     ) {
         // Totale: numero grande con i centesimi più piccoli/attenuati (come nel mock).
         item {
@@ -293,10 +303,10 @@ private fun DetailContent(
                 val centsSize = MaterialTheme.typography.headlineSmall.fontSize
                 val centsColor = MaterialTheme.colorScheme.onSurfaceVariant
                 Text(
-                    text = androidx.compose.ui.text.buildAnnotatedString {
+                    text = buildAnnotatedString {
                         if (commaIdx > 0) {
                             append(euro.substring(0, commaIdx))
-                            pushStyle(androidx.compose.ui.text.SpanStyle(fontSize = centsSize, color = centsColor))
+                            pushStyle(SpanStyle(fontSize = centsSize, color = centsColor))
                             append(euro.substring(commaIdx))
                             pop()
                         } else {
@@ -308,7 +318,7 @@ private fun DetailContent(
                 )
             }
         }
-        if (state.list?.type == com.dcapps.spese.core.model.ListType.SHARED && state.balanceTotals.isNotEmpty()) {
+        if (state.list?.type == ListType.SHARED && state.balanceTotals.isNotEmpty()) {
             item {
                 Box(Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
                     BalanceSection(
@@ -356,7 +366,7 @@ private fun DetailContent(
                 RowDivider()
             }
             ExpenseRow(expense, onEdit, onRepeat)
-            androidx.compose.material3.HorizontalDivider(
+            HorizontalDivider(
                 Modifier.padding(horizontal = 16.dp),
                 color = SpeseTheme.colors.divider,
             )
@@ -382,7 +392,7 @@ private fun ExpenseRow(
         Box(
             Modifier
                 .size(36.dp)
-                .clip(androidx.compose.foundation.shape.CircleShape)
+                .clip(CircleShape)
                 .background(MaterialTheme.colorScheme.surfaceVariant),
             contentAlignment = Alignment.Center,
         ) {

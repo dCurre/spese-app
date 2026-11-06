@@ -2,8 +2,10 @@ package com.dcapps.spese.feature.prices
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -14,14 +16,23 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -36,9 +47,13 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dcapps.spese.R
 import com.dcapps.spese.core.model.Product
+import com.dcapps.spese.navigation.OnCreateRequested
+import com.dcapps.spese.navigation.Routes
+import com.dcapps.spese.ui.components.ConfirmDialog
 import com.dcapps.spese.ui.components.ErrorSnackbarEffect
 import com.dcapps.spese.ui.components.ErrorState
 import com.dcapps.spese.ui.components.RowDivider
+import com.dcapps.spese.ui.components.SwipeToDeleteRow
 import com.dcapps.spese.ui.components.SortBar
 import com.dcapps.spese.ui.components.SortOption
 import com.dcapps.spese.ui.components.SpeseSearchField
@@ -53,20 +68,20 @@ fun PriceListScreen(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     var showCreate by remember { mutableStateOf(false) }
     var productToDelete by remember { mutableStateOf<Product?>(null) }
-    val snackbarHostState = remember { androidx.compose.material3.SnackbarHostState() }
+    val snackbarHostState = remember { SnackbarHostState() }
     ErrorSnackbarEffect(
         state.message, snackbarHostState, viewModel::clearMessage,
     )
 
-    com.dcapps.spese.navigation.OnCreateRequested(com.dcapps.spese.navigation.Routes.PRICES) {
+    OnCreateRequested(Routes.PRICES) {
         showCreate = true
     }
 
     Scaffold(
         topBar = { SpeseTopAppBar(title = stringResource(R.string.prices_title)) },
-        snackbarHost = { androidx.compose.material3.SnackbarHost(snackbarHostState) },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { innerPadding ->
-        androidx.compose.material3.pulltorefresh.PullToRefreshBox(
+        PullToRefreshBox(
             isRefreshing = state.isLoading,
             onRefresh = { viewModel.load(showLoading = true) },
             modifier = Modifier.fillMaxSize().padding(innerPadding),
@@ -78,7 +93,7 @@ fun PriceListScreen(
                 )
                 else -> LazyColumn(
                     Modifier.fillMaxSize(),
-                    contentPadding = androidx.compose.foundation.layout.PaddingValues(top = 8.dp, bottom = 88.dp),
+                    contentPadding = PaddingValues(top = 8.dp, bottom = 88.dp),
                 ) {
                     item {
                         SpeseSearchField(
@@ -122,7 +137,7 @@ fun PriceListScreen(
                         }
                     }
                     items(state.visibleProducts, key = { it.id }) { product ->
-                        com.dcapps.spese.ui.components.SwipeToDeleteRow(onRequestDelete = { productToDelete = product }) {
+                        SwipeToDeleteRow(onRequestDelete = { productToDelete = product }) {
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -167,7 +182,7 @@ fun PriceListScreen(
     }
 
     productToDelete?.let { product ->
-        com.dcapps.spese.ui.components.ConfirmDialog(
+        ConfirmDialog(
             title = stringResource(R.string.product_delete_title),
             message = stringResource(R.string.product_delete_message, product.name),
             onConfirm = { viewModel.deleteProduct(product) },
@@ -192,11 +207,11 @@ private fun BrandFilterButton(
     var temp by remember(expanded) { mutableStateOf(selected) }
 
     Box {
-        androidx.compose.material3.IconButton(onClick = { expanded = true }) {
-            androidx.compose.material3.BadgedBox(
+        IconButton(onClick = { expanded = true }) {
+            BadgedBox(
                 badge = {
                     if (selected.isNotEmpty()) {
-                        androidx.compose.material3.Badge(
+                        Badge(
                             containerColor = MaterialTheme.colorScheme.primary,
                         ) { Text("${selected.size}") }
                     }
@@ -208,7 +223,7 @@ private fun BrandFilterButton(
                 )
             }
         }
-        androidx.compose.material3.DropdownMenu(
+        DropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false },
         ) {
@@ -218,10 +233,10 @@ private fun BrandFilterButton(
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
             )
             brands.forEach { brand ->
-                androidx.compose.material3.DropdownMenuItem(
+                DropdownMenuItem(
                     text = { Text(brand) },
                     leadingIcon = {
-                        androidx.compose.material3.Checkbox(
+                        Checkbox(
                             checked = brand in temp,
                             onCheckedChange = null,
                         )
@@ -234,7 +249,7 @@ private fun BrandFilterButton(
             RowDivider()
             Row(
                 Modifier.fillMaxWidth().padding(horizontal = 8.dp),
-                horizontalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceBetween,
+                horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 TextButton(onClick = { temp = emptySet() }) {
                     Text(stringResource(R.string.filters_clear))

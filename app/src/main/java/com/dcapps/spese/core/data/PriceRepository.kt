@@ -6,6 +6,7 @@ import com.dcapps.spese.core.model.MeasurementUnit
 import com.dcapps.spese.core.model.PriceHistoryResponse
 import com.dcapps.spese.core.model.Product
 import com.dcapps.spese.core.model.Purchase
+import com.dcapps.spese.core.model.UpdateProductRequest
 import com.dcapps.spese.core.model.UpdatePurchaseRequest
 import com.dcapps.spese.core.network.ApiResult
 import com.dcapps.spese.core.network.SpeseApi
@@ -31,7 +32,7 @@ class PriceRepository @Inject constructor(
 
     suspend fun updateProduct(
         id: Long,
-        body: com.dcapps.spese.core.model.UpdateProductRequest,
+        body: UpdateProductRequest,
     ): ApiResult<Unit> = apiCall(json) { api.updateProduct(id, body); Unit }
 
     suspend fun deleteProduct(id: Long): ApiResult<Unit> =

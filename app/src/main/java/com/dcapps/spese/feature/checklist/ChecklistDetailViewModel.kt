@@ -5,6 +5,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dcapps.spese.core.data.ShoppingItemRepository
 import com.dcapps.spese.core.data.ShoppingRepository
+import com.dcapps.spese.core.model.BatchCategoryCreate
+import com.dcapps.spese.core.model.BatchItemCreate
+import com.dcapps.spese.core.model.BatchSaveRequest
 import com.dcapps.spese.core.model.CreateShoppingCategoryRequest
 import com.dcapps.spese.core.model.CreateShoppingItemRequest
 import com.dcapps.spese.core.model.ShoppingCategory
@@ -12,6 +15,7 @@ import com.dcapps.spese.core.model.ShoppingItem
 import com.dcapps.spese.core.model.ShoppingList
 import com.dcapps.spese.core.model.UpdateShoppingCategoryRequest
 import com.dcapps.spese.core.model.UpdateShoppingItemRequest
+import com.dcapps.spese.core.model.UpdateShoppingListRequest
 import com.dcapps.spese.core.network.ApiResult
 import com.dcapps.spese.core.realtime.RealtimeService
 import com.dcapps.spese.core.realtime.RealtimeTable
@@ -264,7 +268,7 @@ class ChecklistDetailViewModel @Inject constructor(
         viewModelScope.launch {
             shoppingRepository.update(
                 listId,
-                com.dcapps.spese.core.model.UpdateShoppingListRequest(starred = !list.starred),
+                UpdateShoppingListRequest(starred = !list.starred),
             )
             load(showLoading = false)
         }
@@ -315,8 +319,8 @@ class ChecklistDetailViewModel @Inject constructor(
         val lines = text.lines().map { it.trim() }.filter { it.isNotBlank() }
         if (lines.isEmpty()) return
         var tempId = 1L
-        val catsCreate = mutableListOf<com.dcapps.spese.core.model.BatchCategoryCreate>()
-        val itemsCreate = mutableListOf<com.dcapps.spese.core.model.BatchItemCreate>()
+        val catsCreate = mutableListOf<BatchCategoryCreate>()
+        val itemsCreate = mutableListOf<BatchItemCreate>()
         var currentCatTemp: String? = null
         // Marcatori di spunta a inizio riga.
         val checkedPrefixes = listOf("[v]", "[x]", "[X]", "✓", "☑", "[✓]")
@@ -327,7 +331,7 @@ class ChecklistDetailViewModel @Inject constructor(
                 val name = raw.dropLast(1).trim()
                 if (name.isNotEmpty()) {
                     val t = "t${tempId++}"
-                    catsCreate += com.dcapps.spese.core.model.BatchCategoryCreate(tempId = t, name = name)
+                    catsCreate += BatchCategoryCreate(tempId = t, name = name)
                     currentCatTemp = t
                 }
             } else {
@@ -349,7 +353,7 @@ class ChecklistDetailViewModel @Inject constructor(
                 }
                 val name = body.trim()
                 if (name.isNotEmpty()) {
-                    itemsCreate += com.dcapps.spese.core.model.BatchItemCreate(
+                    itemsCreate += BatchItemCreate(
                         name = name,
                         quantity = quantity,
                         checked = checked,
@@ -360,7 +364,7 @@ class ChecklistDetailViewModel @Inject constructor(
         }
         if (catsCreate.isEmpty() && itemsCreate.isEmpty()) return
         viewModelScope.launch {
-            val req = com.dcapps.spese.core.model.BatchSaveRequest(
+            val req = BatchSaveRequest(
                 categoriesCreate = catsCreate,
                 itemsCreate = itemsCreate,
             )

@@ -1,5 +1,6 @@
 package com.dcapps.spese.feature.expenses
 
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.selection.selectable
@@ -44,7 +45,7 @@ fun TransferOwnerDialog(
                 )
             } else {
                 candidates.forEach { p ->
-                    androidx.compose.foundation.layout.Row(
+                    Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .selectable(

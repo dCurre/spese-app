@@ -25,6 +25,7 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -45,6 +46,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.dcapps.spese.R
+import com.dcapps.spese.feature.feedback.FeedbackDialog
 import com.dcapps.spese.ui.components.SpeseTopAppBar
 import com.dcapps.spese.ui.theme.SpeseTheme
 
@@ -65,7 +67,7 @@ fun ProfileScreen(
     var showFeedback by remember { mutableStateOf(false) }
 
     if (showFeedback) {
-        com.dcapps.spese.feature.feedback.FeedbackDialog(onDismiss = { showFeedback = false })
+        FeedbackDialog(onDismiss = { showFeedback = false })
     }
 
     Scaffold(
@@ -178,7 +180,7 @@ fun ProfileScreen(
 
 @Composable
 private fun ProfileGroupDivider() {
-    androidx.compose.material3.HorizontalDivider(
+    HorizontalDivider(
         color = SpeseTheme.colors.divider,
     )
 }

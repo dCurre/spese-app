@@ -9,6 +9,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -96,7 +97,7 @@ fun BugReportDialog(
         confirmEnabled = !state.sending && !state.notConfigured,
         // "No grazie" scarta anche il crash salvato: dismiss custom ma neutro come l'annulla.
         dismissButton = {
-            androidx.compose.material3.TextButton(onClick = { viewModel.dismissCrash(); onDismiss() }) {
+            TextButton(onClick = { viewModel.dismissCrash(); onDismiss() }) {
                 Text(stringResource(R.string.bug_no_thanks))
             }
         },

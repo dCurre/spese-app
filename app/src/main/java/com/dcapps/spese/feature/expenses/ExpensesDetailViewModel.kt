@@ -16,6 +16,8 @@ import com.dcapps.spese.core.model.ExpenseType
 import com.dcapps.spese.core.model.ExpensesList
 import com.dcapps.spese.core.model.ExpensesListParticipant
 import com.dcapps.spese.core.model.UpdateExpenseRequest
+import com.dcapps.spese.core.model.UpdateExpensesListRequest
+import com.dcapps.spese.core.model.User
 import com.dcapps.spese.core.network.ApiResult
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.async
@@ -44,7 +46,7 @@ data class ExpensesDetailUiState(
     val query: String = "",
     val sort: ExpenseSort = ExpenseSort.DATE,
     val sortAsc: Boolean = false,
-    val availableUsers: List<com.dcapps.spese.core.model.User> = emptyList(),
+    val availableUsers: List<User> = emptyList(),
     val shareLink: String? = null,
     val message: String? = null,
 ) {
@@ -280,7 +282,7 @@ class ExpensesDetailViewModel @Inject constructor(
         viewModelScope.launch {
             val r = expensesRepository.updateList(
                 listId,
-                com.dcapps.spese.core.model.UpdateExpensesListRequest(name = newName.trim()),
+                UpdateExpensesListRequest(name = newName.trim()),
             )
             when (r) {
                 is ApiResult.Success -> load()

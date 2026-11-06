@@ -9,9 +9,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -67,7 +70,7 @@ fun ProfileListItem(
     }
 }
 
-@androidx.compose.material3.ExperimentalMaterial3Api
+@ExperimentalMaterial3Api
 @Composable
 fun SelectableChip(label: String, selected: Boolean, onClick: () -> Unit) {
     FilterChip(
@@ -75,7 +78,7 @@ fun SelectableChip(label: String, selected: Boolean, onClick: () -> Unit) {
         onClick = onClick,
         label = { Text(label) },
         // Selezione coerente col resto dell'app (verde primary, come SortBar e FAB).
-        colors = androidx.compose.material3.FilterChipDefaults.filterChipColors(
+        colors = FilterChipDefaults.filterChipColors(
             selectedContainerColor = MaterialTheme.colorScheme.primary,
             selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
         ),
@@ -96,14 +99,14 @@ fun EditNameDialog(
         title = stringResource(R.string.profile_edit_name),
         onDismiss = onDismiss,
         content = {
-            androidx.compose.material3.OutlinedTextField(
+            OutlinedTextField(
                 value = name,
                 onValueChange = { name = it },
                 label = { Text(stringResource(R.string.name)) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
             )
-            androidx.compose.material3.OutlinedTextField(
+            OutlinedTextField(
                 value = surname,
                 onValueChange = { surname = it },
                 label = { Text(stringResource(R.string.profile_surname)) },

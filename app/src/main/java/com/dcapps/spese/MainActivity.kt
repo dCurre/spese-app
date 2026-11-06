@@ -17,12 +17,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.dcapps.spese.core.bugreport.CrashStore
+import com.dcapps.spese.core.locale.LocaleManager
 import com.dcapps.spese.feature.auth.AuthViewModel
+import com.dcapps.spese.feature.bugreport.BugReportDialog
 import com.dcapps.spese.feature.bugreport.BugReportGateViewModel
+import com.dcapps.spese.feature.bugreport.BugReportViewModel
 import com.dcapps.spese.feature.auth.SignInScreen
 import com.dcapps.spese.feature.update.UpdateScreen
 import com.dcapps.spese.feature.update.UpdateViewModel
 import com.dcapps.spese.navigation.SpeseNavHost
+import com.dcapps.spese.ui.components.LoadingIndicator
 import com.dcapps.spese.ui.theme.SpeseTheme
 import com.dcapps.spese.ui.theme.ThemePreference
 import dagger.hilt.android.AndroidEntryPoint
@@ -82,9 +87,9 @@ private fun SpeseApp(viewModel: AuthViewModel = hiltViewModel()) {
     val savedLanguage = user?.languagePreference
     androidx.compose.runtime.LaunchedEffect(savedLanguage) {
         if (!savedLanguage.isNullOrBlank() &&
-            savedLanguage != com.dcapps.spese.core.locale.LocaleManager.currentLanguage()
+            savedLanguage != LocaleManager.currentLanguage()
         ) {
-            com.dcapps.spese.core.locale.LocaleManager.setLanguage(savedLanguage)
+            LocaleManager.setLanguage(savedLanguage)
         }
     }
 
@@ -117,7 +122,7 @@ private fun SpeseApp(viewModel: AuthViewModel = hiltViewModel()) {
 
 @Composable
 private fun BugReportGate(
-    bugReportViewModel: com.dcapps.spese.feature.bugreport.BugReportViewModel = hiltViewModel(),
+    bugReportViewModel: BugReportViewModel = hiltViewModel(),
     controllerVm: BugReportGateViewModel = hiltViewModel(),
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
@@ -126,7 +131,7 @@ private fun BugReportGate(
     // All'avvio: se c'è un crash salvato, apri subito la segnalazione.
     var crashPending by androidx.compose.runtime.remember {
         androidx.compose.runtime.mutableStateOf(
-            com.dcapps.spese.core.bugreport.CrashStore.read(context) != null,
+            CrashStore.read(context) != null,
         )
     }
 
@@ -135,7 +140,7 @@ private fun BugReportGate(
         if (show) bugReportViewModel.prefillFromLastError()
     }
     if (show) {
-        com.dcapps.spese.feature.bugreport.BugReportDialog(
+        BugReportDialog(
             onDismiss = {
                 crashPending = false
                 controllerVm.dismiss()
@@ -175,5 +180,5 @@ private fun UpdateGate(updateViewModel: UpdateViewModel = hiltViewModel()) {
 
 @Composable
 private fun LoadingScreen(modifier: Modifier = Modifier) {
-    com.dcapps.spese.ui.components.LoadingIndicator(modifier)
+    LoadingIndicator(modifier)
 }

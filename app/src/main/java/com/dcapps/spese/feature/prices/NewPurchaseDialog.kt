@@ -12,7 +12,9 @@ import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -31,6 +33,7 @@ import com.dcapps.spese.core.model.Purchase
 import com.dcapps.spese.ui.components.AutocompleteField
 import com.dcapps.spese.ui.components.DateField
 import com.dcapps.spese.ui.components.SpeseDialog
+import com.dcapps.spese.ui.theme.SpeseTheme
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
@@ -40,7 +43,7 @@ import java.time.format.DateTimeFormatter
  * Dialog nuovo/modifica acquisto. L'unità di misura NON si sceglie qui: è quella del prodotto
  * ([productUnitId]); viene solo mostrata come riferimento e inviata automaticamente.
  */
-@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NewPurchaseDialog(
     productUnitId: Long?,
@@ -79,11 +82,11 @@ fun NewPurchaseDialog(
         // In modifica l'elimina è un cestino (danger) accanto al titolo (coerente con gli altri).
         titleAction = if (onDelete != null) {
             {
-                androidx.compose.material3.IconButton(onClick = onDelete) {
+                IconButton(onClick = onDelete) {
                     Icon(
                         Icons.Default.Delete,
                         contentDescription = stringResource(R.string.product_delete_purchase),
-                        tint = com.dcapps.spese.ui.theme.SpeseTheme.colors.danger,
+                        tint = SpeseTheme.colors.danger,
                     )
                 }
             }

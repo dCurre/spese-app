@@ -1,6 +1,7 @@
 package com.dcapps.spese.ui.components
 
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
@@ -34,7 +35,7 @@ fun SpeseTopAppBar(
     navigationIcon: @Composable () -> Unit = {},
     onTitleEdit: (() -> Unit)? = null,
     titleEditLabel: String? = null,
-    actions: @Composable androidx.compose.foundation.layout.RowScope.() -> Unit = {},
+    actions: @Composable RowScope.() -> Unit = {},
 ) {
     TopAppBar(
         title = {

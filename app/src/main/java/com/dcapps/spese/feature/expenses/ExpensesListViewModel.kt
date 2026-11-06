@@ -11,6 +11,7 @@ import com.dcapps.spese.core.realtime.RealtimeService
 import com.dcapps.spese.core.realtime.RealtimeTable
 import com.dcapps.spese.core.model.CreateExpensesListRequest
 import com.dcapps.spese.core.model.ExpensesList
+import com.dcapps.spese.core.model.UpdateExpensesListRequest
 import com.dcapps.spese.core.model.UpdateUserRequest
 import com.dcapps.spese.core.network.ApiResult
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -145,7 +146,7 @@ class ExpensesListViewModel @Inject constructor(
         viewModelScope.launch {
             expensesRepository.updateList(
                 list.id,
-                com.dcapps.spese.core.model.UpdateExpensesListRequest(paid = paid),
+                UpdateExpensesListRequest(paid = paid),
             )
             load()
         }

@@ -5,6 +5,7 @@ import com.dcapps.spese.core.model.BatchCategoryUpdate
 import com.dcapps.spese.core.model.BatchItemCreate
 import com.dcapps.spese.core.model.BatchItemUpdate
 import com.dcapps.spese.core.model.BatchSaveRequest
+import com.dcapps.spese.core.model.ShoppingCategory
 import com.dcapps.spese.core.model.ShoppingList
 
 /**
@@ -142,7 +143,7 @@ class ChecklistEditState private constructor(
             list.items.forEach { i ->
                 items += EditItem(i.id, i.name, i.quantity ?: 1, i.checked, null, i.sortOrder)
             }
-            fun walk(categories: List<com.dcapps.spese.core.model.ShoppingCategory>) {
+            fun walk(categories: List<ShoppingCategory>) {
                 categories.forEach { c ->
                     cats += EditCategory(c.id, c.name, c.parentId, c.sortOrder)
                     c.items.forEach { i ->

@@ -1,6 +1,7 @@
 package com.dcapps.spese.core.data
 
 import com.dcapps.spese.core.model.ProfileImageResponse
+import com.dcapps.spese.core.model.SelectImageRequest
 import com.dcapps.spese.core.model.UpdateUserRequest
 import com.dcapps.spese.core.model.UpsertUserRequest
 import com.dcapps.spese.core.model.User
@@ -66,6 +67,6 @@ class UserRepository @Inject constructor(
     /** Seleziona come immagine profilo una già presente nello storico. */
     suspend fun selectProfileImage(userId: Long, url: String): ApiResult<ProfileImageResponse> =
         apiCall(json) {
-            api.selectProfileImage(userId, com.dcapps.spese.core.model.SelectImageRequest(url))
+            api.selectProfileImage(userId, SelectImageRequest(url))
         }
 }

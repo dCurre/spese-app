@@ -29,6 +29,7 @@ import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.UnfoldLess
 import androidx.compose.material.icons.filled.UnfoldMore
 import androidx.compose.material.icons.outlined.StarBorder
+import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
@@ -40,9 +41,12 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -87,13 +91,13 @@ fun ChecklistDetailScreen(
     var showImport by remember { mutableStateOf(false) }
     var showDeleteList by remember { mutableStateOf(false) }
 
-    val snackbarHostState = remember { androidx.compose.material3.SnackbarHostState() }
+    val snackbarHostState = remember { SnackbarHostState() }
     ErrorSnackbarEffect(
         state.message, snackbarHostState, viewModel::clearMessage,
     )
 
     // Torna indietro quando la checklist viene eliminata.
-    androidx.compose.runtime.LaunchedEffect(state.deleted) {
+    LaunchedEffect(state.deleted) {
         if (state.deleted) onBack()
     }
 
@@ -106,7 +110,7 @@ fun ChecklistDetailScreen(
     val editState = state.editState
 
     Scaffold(
-        snackbarHost = { androidx.compose.material3.SnackbarHost(snackbarHostState) },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             SpeseTopAppBar(
                 title = if (editState != null) stringResource(R.string.cd_edit_list)
@@ -193,7 +197,7 @@ fun ChecklistDetailScreen(
                     TextButton(onClick = viewModel::cancelEdit, modifier = Modifier.weight(1f)) {
                         Text(stringResource(R.string.action_cancel))
                     }
-                    androidx.compose.material3.Button(
+                    Button(
                         onClick = viewModel::saveEdits,
                         enabled = !state.saving,
                         modifier = Modifier.weight(1f),
@@ -392,7 +396,7 @@ private fun LaunchedShare(token: String, onShared: () -> Unit) {
     val link = "https://spese-dc.web.app/checklist/join/$token"
     val shareText = stringResource(R.string.cd_share_text, link)
     val chooserTitle = stringResource(R.string.detail_share_chooser)
-    androidx.compose.runtime.LaunchedEffect(token) {
+    LaunchedEffect(token) {
         val intent = Intent(Intent.ACTION_SEND).apply {
             type = "text/plain"
             putExtra(Intent.EXTRA_TEXT, shareText)
@@ -422,7 +426,7 @@ private fun ChecklistOverflowMenu(
             text = { Text(stringResource(R.string.cd_import_confirm)) },
             onClick = { dismiss(); onImport() },
         )
-        androidx.compose.material3.HorizontalDivider()
+        HorizontalDivider()
         DropdownMenuItem(
             text = {
                 Text(
@@ -517,7 +521,7 @@ private fun ItemRow(
 
 @Composable
 private fun NewCategoryDialog(
-    categories: List<com.dcapps.spese.core.model.ShoppingCategory>,
+    categories: List<ShoppingCategory>,
     onDismiss: () -> Unit,
     onCreate: (name: String, parentId: Long?) -> Unit,
 ) {
@@ -551,7 +555,7 @@ private fun NewCategoryDialog(
 
 @Composable
 private fun ParentCategoryPicker(
-    categories: List<com.dcapps.spese.core.model.ShoppingCategory>,
+    categories: List<ShoppingCategory>,
     selectedId: Long?,
     onSelect: (Long?) -> Unit,
 ) {

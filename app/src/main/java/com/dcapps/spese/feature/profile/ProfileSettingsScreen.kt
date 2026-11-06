@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dcapps.spese.R
+import com.dcapps.spese.core.locale.LocaleManager
 import com.dcapps.spese.ui.components.SpeseTopAppBar
 import com.dcapps.spese.ui.theme.SpeseTheme
 
@@ -61,7 +62,7 @@ fun ProfileSettingsScreen(
             // Lingua — sezione a righe (stile app: intestazione + chip + divisore).
             SettingsSection(title = stringResource(R.string.profile_language)) {
                 val currentLang = user?.languagePreference?.takeIf { it.isNotBlank() }
-                    ?: com.dcapps.spese.core.locale.LocaleManager.currentLanguage()
+                    ?: LocaleManager.currentLanguage()
                 SelectableChip(stringResource(R.string.profile_language_it), currentLang == "it") { viewModel.setLanguage("it") }
                 SelectableChip(stringResource(R.string.profile_language_en), currentLang == "en") { viewModel.setLanguage("en") }
             }
