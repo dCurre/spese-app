@@ -56,6 +56,13 @@ fun <K> SortBar(
                     selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
                     selectedTrailingIconColor = MaterialTheme.colorScheme.onPrimary,
                 ),
+                // Bordo più contrastato dei default Material (poco visibili su sfondo scuro).
+                border = FilterChipDefaults.filterChipBorder(
+                    enabled = true,
+                    selected = selected,
+                    borderColor = MaterialTheme.colorScheme.outline,
+                    borderWidth = 1.dp,
+                ),
                 trailingIcon = if (selected) {
                     {
                         Icon(

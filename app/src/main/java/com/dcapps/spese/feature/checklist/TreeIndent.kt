@@ -13,55 +13,53 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.dp
 import com.dcapps.spese.ui.theme.SpeseTheme
 
+/** Larghezza di una colonna di indentazione: pari al centro della freccetta di collasso (⌄). */
+private val INDENT = 28.dp
+
 /**
- * Rende l'alberatura grafica della checklist: per ogni livello di profondità disegna una linea
- * verticale guida a sinistra (come il frontend), così l'annidamento di categorie e item è visibile
- * e non affidato al solo padding. Righe consecutive allo stesso livello formano una linea continua.
+ * Rende l'alberatura grafica della checklist, fedele al frontend:
+ *  - una guida VERTICALE per ogni livello di annidamento, allineata al CENTRO della freccetta di
+ *    collasso (⌄) della categoria genitore (la larghezza colonna [INDENT] è scelta per questo);
+ *  - sull'ultimo livello, un trattino ORIZZONTALE che si stacca dalla verticale verso la riga;
+ *  - per l'ULTIMO figlio del gruppo la verticale si ferma a metà (└─), per gli altri prosegue (├─);
+ *  - gli antenati mantengono la loro verticale continua lungo tutta l'altezza.
  *
- * @param depth profondità dell'elemento (0 = radice, nessuna linea).
- * @param content contenuto della riga, reso a destra delle guide.
+ * @param depth profondità (0 = radice, nessuna guida).
+ * @param isLastChild true se è l'ultimo figlio del suo gruppo (connettore └─ invece di ├─).
  */
 @Composable
 fun TreeIndent(
     depth: Int,
     modifier: Modifier = Modifier,
+    isLastChild: Boolean = false,
     content: @Composable () -> Unit,
 ) {
     if (depth <= 0) {
-        // Nessuna guida da disegnare, ma il modifier (es. il .clickable della riga) va comunque
-        // applicato: avvolgiamo il contenuto in un Box che lo riceve, altrimenti gli elementi di
-        // profondità 0 (es. item senza categoria) perderebbero il click.
         Box(modifier) { content() }
         return
     }
     val lineColor = SpeseTheme.colors.divider
-    // L'altezza intrinseca fa sì che le linee coprano esattamente l'altezza della riga,
-    // così tra righe adiacenti la guida verticale appare continua.
     Row(modifier = modifier.height(IntrinsicSize.Min)) {
         repeat(depth) { level ->
-            // L'ultimo livello (adiacente al contenuto) ha anche un trattino orizzontale "a ramo"
-            // (├─) che collega la guida verticale alla riga, come nell'alberatura del frontend.
-            val isConnector = level == depth - 1
+            val isLast = level == depth - 1
             Box(
                 Modifier
-                    .width(16.dp)
+                    .width(INDENT)
                     .fillMaxHeight()
                     .drawBehind {
-                        val x = 8.dp.toPx()
-                        drawLine(
-                            color = lineColor,
-                            start = Offset(x, 0f),
-                            end = Offset(x, size.height),
-                            strokeWidth = 1.dp.toPx(),
-                        )
-                        if (isConnector) {
-                            val midY = size.height / 2f
-                            drawLine(
-                                color = lineColor,
-                                start = Offset(x, midY),
-                                end = Offset(size.width, midY),
-                                strokeWidth = 1.dp.toPx(),
-                            )
+                        // Centro della colonna = centro della freccetta del genitore di quel livello.
+                        val x = size.width / 2f
+                        val midY = size.height / 2f
+                        val stroke = 1.dp.toPx()
+                        if (isLast) {
+                            // Verticale fino a metà (└─) se ultimo figlio, altrimenti tutta (├─).
+                            val vEnd = if (isLastChild) midY else size.height
+                            drawLine(lineColor, Offset(x, 0f), Offset(x, vEnd), strokeWidth = stroke)
+                            // Trattino orizzontale verso il contenuto.
+                            drawLine(lineColor, Offset(x, midY), Offset(size.width, midY), strokeWidth = stroke)
+                        } else {
+                            // Antenato: verticale continua.
+                            drawLine(lineColor, Offset(x, 0f), Offset(x, size.height), strokeWidth = stroke)
                         }
                     },
             )

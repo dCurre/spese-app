@@ -44,6 +44,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -92,6 +93,10 @@ fun PriceDetailScreen(
     BottomSheetScaffold(
         scaffoldState = scaffoldState,
         snackbarHost = { SnackbarHost(snackbarHostState) },
+        // Colori del tema app: senza, il BottomSheetScaffold usa un containerColor Material diverso
+        // (lo sfondo dello schermo "cambiava colore"). Lo sheet usa surface, il resto background.
+        containerColor = MaterialTheme.colorScheme.background,
+        sheetContainerColor = MaterialTheme.colorScheme.surface,
         // Altezza da collassato: giusto intestazione + chip periodo (il grafico resta nascosto).
         sheetPeekHeight = 120.dp,
         topBar = {
@@ -156,8 +161,10 @@ fun PriceDetailScreen(
                 state.error != null -> Text(state.error!!, Modifier.align(Alignment.Center).padding(32.dp))
                 else -> LazyColumn(
                     Modifier.fillMaxSize(),
+                    // innerPadding del BottomSheetScaffold copre già il peek del pannello grafico;
+                    // il bottom extra serve a non far coprire l'ultima riga dal FAB in overlay.
                     contentPadding = PaddingValues(
-                        start = 16.dp, top = 16.dp, end = 16.dp, bottom = 140.dp,
+                        start = 16.dp, top = 16.dp, end = 16.dp, bottom = 88.dp,
                     ),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
@@ -339,13 +346,21 @@ private fun granularityLabelRes(g: Granularity): Int = when (g) {
 private fun StatLine(label: String, value: String) {
     Row(
         Modifier.fillMaxWidth().padding(top = 6.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
+        // Spazio minimo garantito tra etichetta e valore (evita che si tocchino quando il valore
+        // è lungo, es. "Prezzo minimo" + prezzo + negozio).
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Text(label, style = MaterialTheme.typography.bodyMedium)
+        Text(
+            label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
         Text(
             value,
             style = MaterialTheme.typography.bodyMedium,
             fontWeight = FontWeight.SemiBold,
+            textAlign = TextAlign.End,
+            modifier = Modifier.weight(1f),
         )
     }
 }

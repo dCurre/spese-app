@@ -38,8 +38,14 @@ sealed interface ChecklistRow {
         val directCount: Int = 0,
         // true se la categoria ha articoli e sono TUTTI spuntati (ricorsivo): nome barrato.
         val completed: Boolean = false,
+        // true se è l'ultimo figlio del suo gruppo: connettore albero "└─" invece di "├─".
+        val isLastChild: Boolean = false,
     ) : ChecklistRow
-    data class Item(val item: ShoppingItem, val depth: Int) : ChecklistRow
+    data class Item(
+        val item: ShoppingItem,
+        val depth: Int,
+        val isLastChild: Boolean = false,
+    ) : ChecklistRow
 }
 
 /** Criterio di ordinamento degli item dentro ogni categoria. */
@@ -277,6 +283,16 @@ class ChecklistDetailViewModel @Inject constructor(
         }
     }
 
+    /** Rinomina la checklist (modifica classica del nome, come nelle altre sezioni). */
+    fun renameList(newName: String) {
+        if (newName.isBlank()) return
+        viewModelScope.launch {
+            val r = shoppingRepository.update(listId, UpdateShoppingListRequest(name = newName.trim()))
+            if (r is ApiResult.Error) _uiState.update { it.copy(message = r.message) }
+            load(showLoading = false)
+        }
+    }
+
     /** Aggiunge/toglie la checklist dai preferiti (stella). */
     fun toggleStarred() {
         val list = _uiState.value.list ?: return
@@ -463,9 +479,12 @@ class ChecklistDetailViewModel @Inject constructor(
         val q = _uiState.value.query
         val cmp = itemComparator()
         val rows = mutableListOf<ChecklistRow>()
-        // Item senza categoria, in cima.
+        // Item senza categoria, in cima (depth 0: nessuna guida albero).
         list.items.filter { matchesQuery(it, q) }.sortedWith(cmp).forEach { rows += ChecklistRow.Item(it, 0) }
-        list.categories.sortedBy { it.sortOrder }.forEach { cat -> appendCategory(cat, 0, rows, q, cmp) }
+        val topCats = list.categories.sortedBy { it.sortOrder }.filter { q.isBlank() || categoryHasMatch(it, q) }
+        topCats.forEachIndexed { i, cat ->
+            appendCategory(cat, 0, rows, q, cmp, isLast = i == topCats.lastIndex)
+        }
         return rows
     }
 
@@ -490,6 +509,7 @@ class ChecklistDetailViewModel @Inject constructor(
         out: MutableList<ChecklistRow>,
         q: String,
         cmp: Comparator<ShoppingItem>,
+        isLast: Boolean = false,
     ) {
         // In ricerca, salta le categorie che non contengono nulla di corrispondente.
         if (q.isNotBlank() && !categoryHasMatch(cat, q)) return
@@ -499,11 +519,21 @@ class ChecklistDetailViewModel @Inject constructor(
             cat, depth, collapsed = isCollapsed,
             directCount = cat.items.size + cat.children.size,
             completed = categoryCompleted(cat),
+            isLastChild = isLast,
         )
         // In ricerca ignoriamo il collasso (si vogliono vedere i risultati).
         if (isCollapsed && q.isBlank()) return
-        cat.items.filter { matchesQuery(it, q) }.sortedWith(cmp).forEach { out += ChecklistRow.Item(it, depth + 1) }
-        cat.children.sortedBy { it.sortOrder }.forEach { child -> appendCategory(child, depth + 1, out, q, cmp) }
+        // Figli del gruppo: prima gli articoli, poi le sottocategorie (filtrati). L'ultimo in
+        // assoluto è "ultimo figlio" → connettore └─.
+        val childItems = cat.items.filter { matchesQuery(it, q) }.sortedWith(cmp)
+        val childCats = cat.children.sortedBy { it.sortOrder }.filter { q.isBlank() || categoryHasMatch(it, q) }
+        childItems.forEachIndexed { i, item ->
+            val last = childCats.isEmpty() && i == childItems.lastIndex
+            out += ChecklistRow.Item(item, depth + 1, isLastChild = last)
+        }
+        childCats.forEachIndexed { i, child ->
+            appendCategory(child, depth + 1, out, q, cmp, isLast = i == childCats.lastIndex)
+        }
     }
 
     fun onQueryChange(q: String) {

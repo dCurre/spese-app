@@ -279,6 +279,7 @@
     <string name="filters_clear">Clear filters</string>
     <string name="prices_empty">No products. Create one with +.</string>
     <string name="prices_unit">unit: %1$s</string>
-    <string name="prices_min_price">min %1$.2f €</string>
+    <string name="prices_min_label">min</string>
+    <string name="prices_min_value">%1$.2f €/%2$s</string>
     <string name="prices_count_cd">Number of registered prices</string>
 </resources>

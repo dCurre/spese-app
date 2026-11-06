@@ -155,33 +155,46 @@ fun PriceListScreen(
                             ) {
                                 Column(Modifier.weight(1f)) {
                                     Text(product.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                                    val subtitle = listOfNotNull(
-                                        product.brand?.takeIf { it.isNotBlank() },
-                                        product.defaultUnitSymbol?.let { stringResource(R.string.prices_unit, it) },
-                                    ).joinToString(" · ")
-                                    if (subtitle.isNotBlank()) {
-                                        Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    // Sottotitolo: marca · unità · (icona scontrino + n° acquisti).
+                                    Row(
+                                        modifier = Modifier.padding(top = 2.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                    ) {
+                                        val subtitle = listOfNotNull(
+                                            product.brand?.takeIf { it.isNotBlank() },
+                                            product.defaultUnitSymbol?.let { stringResource(R.string.prices_unit, it) },
+                                        ).joinToString(" · ")
+                                        if (subtitle.isNotBlank()) {
+                                            Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        }
+                                        IconCount(
+                                            icon = Icons.AutoMirrored.Filled.ReceiptLong,
+                                            text = "${product.purchaseCount}",
+                                            contentDescription = stringResource(R.string.prices_count_cd),
+                                        )
                                     }
                                 }
-                                // Minimo storico (sopra) + badge conteggio acquisti (sotto), prima della freccetta.
-                                Column(
-                                    horizontalAlignment = Alignment.End,
-                                    modifier = Modifier.padding(end = 8.dp),
-                                ) {
-                                    product.minPrice?.let { min ->
+                                // Minimo storico a destra, centrato in altezza: "min" piccolo sopra,
+                                // valore con unità (prezzo al litro/ml/…) sotto.
+                                product.minPrice?.let { min ->
+                                    val unit = product.defaultUnitSymbol ?: "u"
+                                    Column(
+                                        horizontalAlignment = Alignment.End,
+                                        modifier = Modifier.padding(end = 8.dp),
+                                    ) {
                                         Text(
-                                            stringResource(R.string.prices_min_price, min),
+                                            stringResource(R.string.prices_min_label),
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                        Text(
+                                            stringResource(R.string.prices_min_value, min, unit),
                                             style = MaterialTheme.typography.bodyMedium,
                                             fontWeight = FontWeight.Bold,
                                             color = SpeseTheme.colors.credit,
                                         )
                                     }
-                                    IconCount(
-                                        icon = Icons.AutoMirrored.Filled.ReceiptLong,
-                                        text = "${product.purchaseCount}",
-                                        contentDescription = stringResource(R.string.prices_count_cd),
-                                        modifier = Modifier.padding(top = 2.dp),
-                                    )
                                 }
                                 Icon(
                                     Icons.AutoMirrored.Filled.KeyboardArrowRight,

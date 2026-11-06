@@ -2,7 +2,6 @@ package com.dcapps.spese.navigation
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -305,19 +304,12 @@ private fun CenterFabBottomBar(
             }
         }
         if (createRoute != null) {
-            // FAB "a cavallo" della navbar: spostato in alto di circa metà della sua altezza così
-            // sporge sopra il bordo superiore della barra (metà dentro, metà fuori).
             FloatingActionButton(
                 onClick = onCreate,
                 shape = CircleShape,
                 containerColor = androidx.compose.material3.MaterialTheme.colorScheme.primary,
                 contentColor = androidx.compose.material3.MaterialTheme.colorScheme.onPrimary,
-                elevation = androidx.compose.material3.FloatingActionButtonDefaults.elevation(
-                    defaultElevation = 6.dp,
-                ),
-                modifier = Modifier
-                    .size(56.dp)
-                    .offset(y = (-24).dp),
+                modifier = Modifier.padding(top = 2.dp).size(56.dp),
             ) {
                 Icon(Icons.Default.Add, contentDescription = stringResource(R.string.action_add))
             }

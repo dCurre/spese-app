@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -18,6 +19,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CreateNewFolder
+import androidx.compose.material.icons.outlined.DriveFileRenameOutline
 import androidx.compose.material.icons.outlined.FileDownload
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
@@ -90,6 +92,7 @@ fun ChecklistDetailScreen(
     var showNewCategory by remember { mutableStateOf(false) }
     var showImport by remember { mutableStateOf(false) }
     var showDeleteList by remember { mutableStateOf(false) }
+    var showRename by remember { mutableStateOf(false) }
 
     val snackbarHostState = remember { SnackbarHostState() }
     ErrorSnackbarEffect(
@@ -115,7 +118,8 @@ fun ChecklistDetailScreen(
             SpeseTopAppBar(
                 title = if (editState != null) stringResource(R.string.cd_edit_list)
                     else state.displayName ?: stringResource(R.string.detail_list_fallback),
-                onTitleEdit = if (editState == null) { { viewModel.enterEditMode() } } else null,
+                // Matita accanto al nome = rinomina classica della lista (come nelle altre sezioni).
+                onTitleEdit = if (editState == null) { { showRename = true } } else null,
                 navigationIcon = {
                     IconButton(onClick = { if (editState != null) viewModel.cancelEdit() else onBack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.action_back))
@@ -152,6 +156,7 @@ fun ChecklistDetailScreen(
                         ChecklistOverflowMenu(
                             viewModel,
                             hasItems = state.hasItems,
+                            onBulkEdit = { viewModel.enterEditMode() },
                             onExport = {
                                 val text = viewModel.buildExportText()
                                 val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
@@ -351,6 +356,40 @@ fun ChecklistDetailScreen(
             onDismiss = { showDeleteList = false },
         )
     }
+
+    if (showRename) {
+        RenameListDialog(
+            currentName = state.list?.name ?: state.displayName ?: "",
+            onDismiss = { showRename = false },
+            onConfirm = { viewModel.renameList(it); showRename = false },
+        )
+    }
+}
+
+@Composable
+private fun RenameListDialog(
+    currentName: String,
+    onDismiss: () -> Unit,
+    onConfirm: (String) -> Unit,
+) {
+    var name by remember { mutableStateOf(currentName) }
+    SpeseDialog(
+        title = stringResource(R.string.detail_rename_list),
+        onDismiss = onDismiss,
+        icon = Icons.Outlined.DriveFileRenameOutline,
+        content = {
+            OutlinedTextField(
+                value = name,
+                onValueChange = { name = it },
+                label = { Text(stringResource(R.string.name)) },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        },
+        confirmText = stringResource(R.string.action_save),
+        onConfirm = { onConfirm(name) },
+        confirmEnabled = name.isNotBlank(),
+    )
 }
 
 @Composable
@@ -399,11 +438,17 @@ private fun LaunchedShare(token: String, onShared: () -> Unit) {
 private fun ChecklistOverflowMenu(
     viewModel: ChecklistDetailViewModel,
     hasItems: Boolean,
+    onBulkEdit: () -> Unit,
     onExport: () -> Unit,
     onImport: () -> Unit,
     onDelete: () -> Unit,
 ) {
     OverflowMenu { dismiss ->
+        // Modifica lista (bulk edit: riordino/editing multiplo di categorie e articoli).
+        DropdownMenuItem(
+            text = { Text(stringResource(R.string.cd_edit_list)) },
+            onClick = { dismiss(); onBulkEdit() },
+        )
         // Spunta/despunta tutto come due voci separate (solo se ci sono articoli).
         if (hasItems) {
             DropdownMenuItem(
@@ -414,8 +459,8 @@ private fun ChecklistOverflowMenu(
                 text = { Text(stringResource(R.string.cd_menu_uncheck_all)) },
                 onClick = { dismiss(); viewModel.checkAll(false) },
             )
-            HorizontalDivider()
         }
+        HorizontalDivider()
         DropdownMenuItem(
             text = { Text(stringResource(R.string.detail_share)) },
             onClick = { dismiss(); viewModel.generateInviteToken() },
@@ -455,10 +500,13 @@ private fun CategoryHeaderRow(
 ) {
     TreeIndent(
         depth = row.depth,
+        isLastChild = row.isLastChild,
         modifier = Modifier.fillMaxWidth().padding(start = 8.dp, end = 4.dp, top = 8.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onToggleCollapse) {
+            // Freccetta larga quanto una colonna di indentazione (28dp) e centrata: così la guida
+            // verticale dei figli cade esattamente sotto il centro di questa freccetta.
+            IconButton(onClick = onToggleCollapse, modifier = Modifier.size(28.dp)) {
                 Icon(
                     imageVector = if (row.collapsed) {
                         Icons.AutoMirrored.Filled.KeyboardArrowRight
@@ -466,6 +514,7 @@ private fun CategoryHeaderRow(
                         Icons.Default.KeyboardArrowDown
                     },
                     contentDescription = if (row.collapsed) stringResource(R.string.cd_expand) else stringResource(R.string.cd_collapse),
+                    modifier = Modifier.size(20.dp),
                 )
             }
             // Tap sul nome = collassa/espande (come la freccetta). Nome barrato se completata.
@@ -493,7 +542,6 @@ private fun CategoryHeaderRow(
             }
         }
     }
-    HorizontalDivider(Modifier.padding(horizontal = 16.dp))
 }
 
 @Composable
@@ -505,6 +553,7 @@ private fun ItemRow(
     val item = row.item
     TreeIndent(
         depth = row.depth,
+        isLastChild = row.isLastChild,
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onEdit() }
