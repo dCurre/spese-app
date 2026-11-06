@@ -11,6 +11,10 @@ data class Product(
     val brand: String? = null,
     @SerialName("default_unit_id") val defaultUnitId: Long? = null,
     @SerialName("default_unit_symbol") val defaultUnitSymbol: String? = null,
+    // Numero di acquisti registrati per il prodotto (badge in lista).
+    @SerialName("purchase_count") val purchaseCount: Int = 0,
+    // Prezzo unitario minimo di sempre (null se nessun acquisto).
+    @SerialName("min_price") val minPrice: Double? = null,
 )
 
 @Serializable

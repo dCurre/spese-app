@@ -2,6 +2,7 @@ package com.dcapps.spese.navigation
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -56,9 +57,11 @@ import com.dcapps.spese.ui.components.MessageSnackbarEffect
 
 object Routes {
     const val EXPENSES_LIST = "expenses"
-    const val EXPENSES_DETAIL = "expenses/{listId}"
+    const val EXPENSES_DETAIL = "expenses/{listId}?name={name}"
     const val CHECKLIST = "checklist"
-    const val CHECKLIST_DETAIL = "checklist/{listId}"
+    // name/starred passati come arg per mostrare subito titolo e stella corretti, prima che
+    // getList risponda (evita il flicker del nome e la stella con stato sbagliato).
+    const val CHECKLIST_DETAIL = "checklist/{listId}?name={name}&starred={starred}"
     const val PRICES = "prices"
     const val PRICE_DETAIL = "prices/{productId}?name={name}"
     const val PROFILE = "profile"
@@ -67,8 +70,10 @@ object Routes {
     const val PROFILE_STATS = "profile/stats"
     const val ADMIN = "admin"
     const val ABOUT = "about"
-    fun expensesDetail(listId: Long) = "expenses/$listId"
-    fun checklistDetail(listId: Long) = "checklist/$listId"
+    fun expensesDetail(listId: Long, name: String) =
+        "expenses/$listId?name=${android.net.Uri.encode(name)}"
+    fun checklistDetail(listId: Long, name: String, starred: Boolean) =
+        "checklist/$listId?name=${android.net.Uri.encode(name)}&starred=$starred"
     fun priceDetail(productId: Long, name: String = "") =
         "prices/$productId?name=${android.net.Uri.encode(name)}"
 }
@@ -153,23 +158,32 @@ fun SpeseNavHost(
         ) {
             composable(Routes.EXPENSES_LIST) {
                 ExpensesListScreen(
-                    onOpenList = { list -> navController.navigate(Routes.expensesDetail(list.id)) },
+                    onOpenList = { list -> navController.navigate(Routes.expensesDetail(list.id, list.name)) },
                 )
             }
             composable(
                 route = Routes.EXPENSES_DETAIL,
-                arguments = listOf(navArgument("listId") { type = NavType.LongType }),
+                arguments = listOf(
+                    navArgument("listId") { type = NavType.LongType },
+                    navArgument("name") { type = NavType.StringType; defaultValue = "" },
+                ),
             ) {
                 ExpensesDetailScreen(onBack = { navController.popBackStack() })
             }
             composable(Routes.CHECKLIST) {
                 ChecklistScreen(
-                    onOpenList = { list -> navController.navigate(Routes.checklistDetail(list.id)) },
+                    onOpenList = { list ->
+                        navController.navigate(Routes.checklistDetail(list.id, list.name, list.starred))
+                    },
                 )
             }
             composable(
                 route = Routes.CHECKLIST_DETAIL,
-                arguments = listOf(navArgument("listId") { type = NavType.LongType }),
+                arguments = listOf(
+                    navArgument("listId") { type = NavType.LongType },
+                    navArgument("name") { type = NavType.StringType; defaultValue = "" },
+                    navArgument("starred") { type = NavType.BoolType; defaultValue = false },
+                ),
             ) {
                 ChecklistDetailScreen(onBack = { navController.popBackStack() })
             }
@@ -291,12 +305,19 @@ private fun CenterFabBottomBar(
             }
         }
         if (createRoute != null) {
+            // FAB "a cavallo" della navbar: spostato in alto di circa metà della sua altezza così
+            // sporge sopra il bordo superiore della barra (metà dentro, metà fuori).
             FloatingActionButton(
                 onClick = onCreate,
                 shape = CircleShape,
                 containerColor = androidx.compose.material3.MaterialTheme.colorScheme.primary,
                 contentColor = androidx.compose.material3.MaterialTheme.colorScheme.onPrimary,
-                modifier = Modifier.padding(top = 2.dp).size(56.dp),
+                elevation = androidx.compose.material3.FloatingActionButtonDefaults.elevation(
+                    defaultElevation = 6.dp,
+                ),
+                modifier = Modifier
+                    .size(56.dp)
+                    .offset(y = (-24).dp),
             ) {
                 Icon(Icons.Default.Add, contentDescription = stringResource(R.string.action_add))
             }

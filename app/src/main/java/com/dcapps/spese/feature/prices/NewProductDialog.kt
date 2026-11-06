@@ -22,7 +22,7 @@ import com.dcapps.spese.R
 import com.dcapps.spese.core.model.MeasurementUnit
 import com.dcapps.spese.core.model.Product
 import com.dcapps.spese.ui.components.ReadOnlyPickerField
-import com.dcapps.spese.ui.components.SpeseDialog
+import com.dcapps.spese.ui.components.SpeseFormBottomSheet
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -36,7 +36,8 @@ fun NewProductDialog(
     var brand by remember { mutableStateOf(product?.brand ?: "") }
     var unitId by remember { mutableStateOf(product?.defaultUnitId ?: units.firstOrNull()?.id) }
 
-    SpeseDialog(
+    // Pannello dal basso (bottom sheet) invece del dialog centrale.
+    SpeseFormBottomSheet(
         title = if (product == null) stringResource(R.string.prices_new_product)
             else stringResource(R.string.product_edit_title),
         onDismiss = onDismiss,

@@ -4,6 +4,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.SwapHoriz
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
@@ -37,6 +39,7 @@ fun TransferOwnerDialog(
     SpeseDialog(
         title = stringResource(R.string.detail_transfer_owner),
         onDismiss = onDismiss,
+        icon = Icons.Outlined.SwapHoriz,
         content = {
             if (candidates.isEmpty()) {
                 Text(

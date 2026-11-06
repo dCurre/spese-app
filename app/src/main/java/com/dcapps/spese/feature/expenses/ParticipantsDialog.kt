@@ -11,6 +11,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.PersonAdd
+import androidx.compose.material.icons.outlined.Group
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -54,6 +55,7 @@ fun ParticipantsDialog(
     SpeseDialog(
         title = stringResource(R.string.detail_participants),
         onDismiss = onDismiss,
+        icon = Icons.Outlined.Group,
         content = {
             Column(Modifier.verticalScroll(rememberScrollState())) {
                 // Elenco partecipanti attuali.

@@ -15,7 +15,13 @@ sealed interface ApiResult<out T> {
         val message: String,
         val code: Int? = null,
         val cause: Throwable? = null,
-    ) : ApiResult<Nothing>
+    ) : ApiResult<Nothing> {
+        /**
+         * true se è un errore applicativo ATTESO (permessi/validazione/conflitto): va mostrato
+         * all'utente come informazione, ma NON offre l'azione "Segnala" (non è un bug).
+         */
+        val isExpected: Boolean get() = code != null && isExpectedAppError(code)
+    }
 }
 
 /**
@@ -69,7 +75,7 @@ private fun ApiResult.Error.report() {
  *  - 403 permessi insufficienti (es. cambio ruolo non autorizzato)
  *  - 409 conflitto
  */
-private fun isExpectedAppError(code: Int): Boolean = code in setOf(400, 403, 409, 422)
+internal fun isExpectedAppError(code: Int): Boolean = code in setOf(400, 403, 409, 422)
 
 /** Estrae il messaggio dal corpo `{"error": ...}` già letto; [rawBody] può essere null. */
 private fun parseErrorMessage(json: Json, rawBody: String?): String? {

@@ -19,7 +19,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material3.Card
+import androidx.compose.material3.BottomSheetScaffold
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -28,9 +28,11 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SheetValue
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.rememberBottomSheetScaffoldState
+import androidx.compose.material3.rememberStandardBottomSheetState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -78,8 +80,20 @@ fun PriceDetailScreen(
         if (state.deleted) onBack()
     }
 
-    Scaffold(
+    // Pannello grafico persistente (P11): parte collassato mostrando solo intestazione + chip
+    // periodo; trascinandolo verso l'alto appare il grafico. Lo sfondo (statistiche + acquisti)
+    // resta visibile e usabile.
+    val scaffoldState = rememberBottomSheetScaffoldState(
+        bottomSheetState = rememberStandardBottomSheetState(
+            initialValue = SheetValue.PartiallyExpanded,
+        ),
+    )
+
+    BottomSheetScaffold(
+        scaffoldState = scaffoldState,
         snackbarHost = { SnackbarHost(snackbarHostState) },
+        // Altezza da collassato: giusto intestazione + chip periodo (il grafico resta nascosto).
+        sheetPeekHeight = 120.dp,
         topBar = {
             SpeseTopAppBar(
                 title = state.product?.name ?: state.placeholderName
@@ -101,9 +115,38 @@ fun PriceDetailScreen(
                 },
             )
         },
-        floatingActionButton = {
-            FloatingActionButton(onClick = { showAddPurchase = true }) {
-                Icon(Icons.Default.Add, contentDescription = stringResource(R.string.purchase_new_title))
+        sheetContent = {
+            Column(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .padding(bottom = 24.dp),
+            ) {
+                // Intestazione + chip periodo: sempre visibili (anche da collassato).
+                Text(stringResource(R.string.product_price_trend), style = MaterialTheme.typography.titleMedium)
+                Row(
+                    Modifier.padding(top = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Granularity.entries.forEach { g ->
+                        SpeseFilterChip(
+                            selected = state.granularity == g,
+                            onClick = { viewModel.setGranularity(g) },
+                            label = stringResource(granularityLabelRes(g)),
+                        )
+                    }
+                    if (state.historyLoading) {
+                        CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp)
+                    }
+                }
+                LineChart(
+                    points = state.history,
+                    unitSymbol = state.product?.defaultUnitSymbol
+                        ?: state.purchases.firstNotNullOfOrNull { it.unitSymbol }
+                        ?: "u",
+                    modifier = Modifier.padding(top = 12.dp),
+                )
             }
         },
     ) { innerPadding ->
@@ -114,7 +157,7 @@ fun PriceDetailScreen(
                 else -> LazyColumn(
                     Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(
-                        start = 16.dp, top = 16.dp, end = 16.dp, bottom = 88.dp,
+                        start = 16.dp, top = 16.dp, end = 16.dp, bottom = 140.dp,
                     ),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
@@ -124,42 +167,6 @@ fun PriceDetailScreen(
                             ?: state.purchases.firstNotNullOfOrNull { it.unitSymbol }
                             ?: "u"
                         ProductStatsCard(state.purchases, statsUnit)
-                    }
-
-                    // Grafico prezzi.
-                    item {
-                        Card(Modifier.fillMaxWidth()) {
-                            Column(Modifier.padding(16.dp)) {
-                                Text(stringResource(R.string.product_price_trend), style = MaterialTheme.typography.titleMedium)
-                                Row(
-                                    Modifier.padding(top = 8.dp),
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                ) {
-                                    Granularity.entries.forEach { g ->
-                                        SpeseFilterChip(
-                                            selected = state.granularity == g,
-                                            onClick = { viewModel.setGranularity(g) },
-                                            label = stringResource(granularityLabelRes(g)),
-                                        )
-                                    }
-                                    // Loading locale del grafico: non fa sparire la schermata.
-                                    if (state.historyLoading) {
-                                        CircularProgressIndicator(
-                                            Modifier.size(16.dp),
-                                            strokeWidth = 2.dp,
-                                        )
-                                    }
-                                }
-                                LineChart(
-                                    points = state.history,
-                                    unitSymbol = state.product?.defaultUnitSymbol
-                                        ?: state.purchases.firstNotNullOfOrNull { it.unitSymbol }
-                                        ?: "u",
-                                    modifier = Modifier.padding(top = 12.dp),
-                                )
-                            }
-                        }
                     }
 
                     item {
@@ -210,6 +217,18 @@ fun PriceDetailScreen(
                         }
                         RowDivider()
                     }
+                }
+            }
+
+            // FAB "aggiungi acquisto": overlay in basso a destra (BottomSheetScaffold non ha
+            // uno slot FAB dedicato). Sta sopra lo sfondo, il pannello grafico gli passa davanti.
+            // Nascosto durante caricamento/errore (quando non c'è la lista acquisti).
+            if (!state.isLoading && state.error == null) {
+                FloatingActionButton(
+                    onClick = { showAddPurchase = true },
+                    modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp),
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = stringResource(R.string.purchase_new_title))
                 }
             }
         }

@@ -3,6 +3,7 @@ package com.dcapps.spese.feature.expenses
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import com.dcapps.spese.ui.components.ErrorState
+import com.dcapps.spese.ui.components.RefreshOnResume
 import com.dcapps.spese.ui.components.IconCount
 import com.dcapps.spese.ui.components.RowDivider
 import androidx.compose.foundation.layout.Arrangement
@@ -75,6 +76,9 @@ fun ExpensesListScreen(
     OnCreateRequested(Routes.EXPENSES_LIST) {
         showCreateDialog = true
     }
+
+    // Rinfresca al ritorno dal dettaglio (es. spese aggiunte/modificate → totali e conteggi).
+    RefreshOnResume { viewModel.load() }
 
     Scaffold(
         topBar = { SpeseTopAppBar(title = stringResource(R.string.lists_title)) },

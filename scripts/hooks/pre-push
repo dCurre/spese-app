@@ -86,9 +86,21 @@ NEW_VERSION="${MAJOR}.${MINOR}.$((PATCH + 1))"
 
 printf '%s' "$NEW_VERSION" > "$VERSION_FILE"
 git add "$VERSION_FILE"
-git commit --amend --no-edit --quiet
 
-echo "pre-push: VERSION ${CURRENT} -> ${NEW_VERSION} (inclusa nell'ultimo commit)." >&2
+# Riscrive il subject del commit nel formato "[NEW_VERSION] - descrizione". Toglie un eventuale
+# prefisso "[x.y.z] - " già presente (evita doppioni su re-push o se l'autore l'ha già messo),
+# poi antepone la versione bumpata. Il body del messaggio (righe successive) resta invariato.
+old_subject=$(git log -1 --pretty=%s)
+old_body=$(git log -1 --pretty=%b)
+clean_subject=$(printf '%s' "$old_subject" | sed -E 's/^\[[0-9]+\.[0-9]+\.[0-9]+\] - //')
+new_subject="[${NEW_VERSION}] - ${clean_subject}"
+if [ -n "$old_body" ]; then
+  git commit --amend --quiet -m "$new_subject" -m "$old_body"
+else
+  git commit --amend --quiet -m "$new_subject"
+fi
+
+echo "pre-push: VERSION ${CURRENT} -> ${NEW_VERSION}; subject = \"${new_subject}\"." >&2
 echo "pre-push: rilancio il push del commit aggiornato..." >&2
 
 # Aborta QUESTO push (spingerebbe il vecchio commit) e spingi il nuovo HEAD verso lo

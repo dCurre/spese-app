@@ -34,6 +34,10 @@ sealed interface ChecklistRow {
         val category: ShoppingCategory,
         val depth: Int,
         val collapsed: Boolean = false,
+        // Numero di sottoelementi diretti (sottocategorie + articoli diretti): badge conteggio.
+        val directCount: Int = 0,
+        // true se la categoria ha articoli e sono TUTTI spuntati (ricorsivo): nome barrato.
+        val completed: Boolean = false,
     ) : ChecklistRow
     data class Item(val item: ShoppingItem, val depth: Int) : ChecklistRow
 }
@@ -63,11 +67,18 @@ data class ChecklistDetailUiState(
     val message: String? = null,
     // Impostato dopo l'eliminazione della lista: la UI torna indietro.
     val deleted: Boolean = false,
+    // Placeholder passati via nav-arg per mostrare subito titolo e stella corretti prima che
+    // getList risponda (evita flicker del nome / stella con stato sbagliato).
+    val placeholderName: String? = null,
+    val placeholderStarred: Boolean = false,
 ) {
     val isEditing: Boolean get() = editState != null
 
-    /** La checklist è nei preferiti? */
-    val starred: Boolean get() = list?.starred == true
+    /** Nome da mostrare: quello reale se caricato, altrimenti il placeholder dal nav-arg. */
+    val displayName: String? get() = list?.name ?: placeholderName?.takeIf { it.isNotBlank() }
+
+    /** La checklist è nei preferiti? Usa il valore reale se caricato, altrimenti il placeholder. */
+    val starred: Boolean get() = list?.starred ?: placeholderStarred
 
     /** Tutti gli articoli dell'albero (item radice + quelli dentro le categorie, ricorsivo). */
     private fun allItems(): List<ShoppingItem> {
@@ -94,8 +105,12 @@ class ChecklistDetailViewModel @Inject constructor(
 ) : ViewModel() {
 
     val listId: Long = checkNotNull(savedStateHandle["listId"])
+    private val navName: String? = savedStateHandle["name"]
+    private val navStarred: Boolean = savedStateHandle["starred"] ?: false
 
-    private val _uiState = MutableStateFlow(ChecklistDetailUiState())
+    private val _uiState = MutableStateFlow(
+        ChecklistDetailUiState(placeholderName = navName, placeholderStarred = navStarred),
+    )
     val uiState: StateFlow<ChecklistDetailUiState> = _uiState.asStateFlow()
 
     /** Id delle categorie collassate (contenuti nascosti). */
@@ -458,6 +473,17 @@ class ChecklistDetailViewModel @Inject constructor(
     private fun categoryHasMatch(cat: ShoppingCategory, q: String): Boolean =
         cat.items.any { matchesQuery(it, q) } || cat.children.any { categoryHasMatch(it, q) }
 
+    /**
+     * True se la categoria contiene almeno un articolo (diretto o nei discendenti) e TUTTI sono
+     * spuntati: in tal caso il nome va barrato.
+     */
+    private fun categoryCompleted(cat: ShoppingCategory): Boolean {
+        fun collect(c: ShoppingCategory): List<ShoppingItem> =
+            c.items + c.children.flatMap { collect(it) }
+        val all = collect(cat)
+        return all.isNotEmpty() && all.all { it.checked }
+    }
+
     private fun appendCategory(
         cat: ShoppingCategory,
         depth: Int,
@@ -469,7 +495,11 @@ class ChecklistDetailViewModel @Inject constructor(
         if (q.isNotBlank() && !categoryHasMatch(cat, q)) return
 
         val isCollapsed = cat.id in collapsed
-        out += ChecklistRow.CategoryHeader(cat, depth, collapsed = isCollapsed)
+        out += ChecklistRow.CategoryHeader(
+            cat, depth, collapsed = isCollapsed,
+            directCount = cat.items.size + cat.children.size,
+            completed = categoryCompleted(cat),
+        )
         // In ricerca ignoriamo il collasso (si vogliono vedere i risultati).
         if (isCollapsed && q.isBlank()) return
         cat.items.filter { matchesQuery(it, q) }.sortedWith(cmp).forEach { out += ChecklistRow.Item(it, depth + 1) }

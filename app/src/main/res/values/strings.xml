@@ -279,4 +279,6 @@
     <string name="filters_clear">Pulisci filtri</string>
     <string name="prices_empty">Nessun prodotto. Creane uno con il +.</string>
     <string name="prices_unit">unità: %1$s</string>
+    <string name="prices_min_price">min %1$.2f €</string>
+    <string name="prices_count_cd">Numero di prezzi registrati</string>
 </resources>

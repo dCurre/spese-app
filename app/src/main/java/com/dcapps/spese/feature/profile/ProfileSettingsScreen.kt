@@ -61,7 +61,7 @@ fun ProfileSettingsScreen(
         ) {
             // Lingua — sezione a righe (stile app: intestazione + chip + divisore).
             SettingsSection(title = stringResource(R.string.profile_language)) {
-                val currentLang = user?.languagePreference?.takeIf { it.isNotBlank() }
+                val currentLang = user?.appLanguagePreference?.takeIf { it.isNotBlank() }
                     ?: LocaleManager.currentLanguage()
                 SelectableChip(stringResource(R.string.profile_language_it), currentLang == "it") { viewModel.setLanguage("it") }
                 SelectableChip(stringResource(R.string.profile_language_en), currentLang == "en") { viewModel.setLanguage("en") }
@@ -71,7 +71,7 @@ fun ProfileSettingsScreen(
 
             // Tema
             SettingsSection(title = stringResource(R.string.profile_theme)) {
-                val current = user?.themePreference ?: "default"
+                val current = user?.appThemePreference ?: "default"
                 SelectableChip(stringResource(R.string.profile_theme_default), current == "default") { viewModel.setTheme("default") }
                 SelectableChip(stringResource(R.string.profile_theme_light), current == "light") { viewModel.setTheme("light") }
                 SelectableChip(stringResource(R.string.profile_theme_dark), current == "dark") { viewModel.setTheme("dark") }

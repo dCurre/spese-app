@@ -10,6 +10,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.outlined.ShoppingCart
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -79,6 +80,7 @@ fun NewPurchaseDialog(
         title = if (purchase == null) stringResource(R.string.purchase_new_title)
             else stringResource(R.string.purchase_edit_title),
         onDismiss = onDismiss,
+        icon = Icons.Outlined.ShoppingCart,
         // In modifica l'elimina è un cestino (danger) accanto al titolo (coerente con gli altri).
         titleAction = if (onDelete != null) {
             {

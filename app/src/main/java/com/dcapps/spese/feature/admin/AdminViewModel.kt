@@ -26,6 +26,8 @@ data class AdminUiState(
     val roles: List<UserRole> = emptyList(),
     val users: List<User> = emptyList(),
     val message: String? = null,
+    // false per gli errori applicativi attesi (es. 403 cambio ruolo): la snackbar non offre "Segnala".
+    val messageReportable: Boolean = true,
 )
 
 @HiltViewModel
@@ -95,7 +97,8 @@ class AdminViewModel @Inject constructor(
         viewModelScope.launch {
             when (val r = suspendCall()) {
                 is ApiResult.Success -> load()
-                is ApiResult.Error -> _uiState.update { it.copy(message = r.message) }
+                is ApiResult.Error ->
+                    _uiState.update { it.copy(message = r.message, messageReportable = !r.isExpected) }
             }
         }
     }

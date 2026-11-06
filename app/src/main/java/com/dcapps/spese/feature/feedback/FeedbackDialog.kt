@@ -2,6 +2,9 @@ package com.dcapps.spese.feature.feedback
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.Feedback
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -34,6 +37,7 @@ fun FeedbackDialog(
         SpeseDialog(
             title = stringResource(R.string.feedback_thanks_title),
             onDismiss = onDismiss,
+            icon = Icons.Outlined.CheckCircle,
             content = { Text(stringResource(R.string.feedback_thanks_message)) },
             confirmText = stringResource(R.string.action_close),
             onConfirm = onDismiss,
@@ -45,6 +49,7 @@ fun FeedbackDialog(
     SpeseDialog(
         title = stringResource(R.string.feedback_title),
         onDismiss = onDismiss,
+        icon = Icons.Outlined.Feedback,
         content = {
             Text(
                 stringResource(R.string.feedback_intro),

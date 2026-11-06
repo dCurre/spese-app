@@ -48,12 +48,15 @@ fun ErrorSnackbarEffect(
     message: String?,
     snackbarHostState: SnackbarHostState,
     onShown: () -> Unit,
+    // false per gli errori applicativi attesi (permessi/validazione): niente azione "Segnala",
+    // perché non sono bug da segnalare ma risposte legittime del backend.
+    reportable: Boolean = true,
     gateViewModel: BugReportGateViewModel = hiltViewModel(),
 ) {
     MessageSnackbarEffect(
         message = message,
         snackbarHostState = snackbarHostState,
         onShown = onShown,
-        onReport = { gateViewModel.request() },
+        onReport = if (reportable) ({ gateViewModel.request() }) else null,
     )
 }

@@ -49,7 +49,12 @@ data class ExpensesDetailUiState(
     val availableUsers: List<User> = emptyList(),
     val shareLink: String? = null,
     val message: String? = null,
+    // Nome passato via nav-arg per mostrare subito il titolo corretto, prima che getList risponda.
+    val placeholderName: String? = null,
 ) {
+    /** Nome da mostrare: quello reale se caricato, altrimenti il placeholder dal nav-arg. */
+    val displayName: String? get() = list?.name ?: placeholderName?.takeIf { it.isNotBlank() }
+
     val total: BigDecimal
         get() = expenses.fold(BigDecimal.ZERO) { acc, e -> acc + e.amount }
 
@@ -76,8 +81,9 @@ class ExpensesDetailViewModel @Inject constructor(
 ) : ViewModel() {
 
     val listId: Long = checkNotNull(savedStateHandle["listId"])
+    private val navName: String? = savedStateHandle["name"]
 
-    private val _uiState = MutableStateFlow(ExpensesDetailUiState())
+    private val _uiState = MutableStateFlow(ExpensesDetailUiState(placeholderName = navName))
     val uiState: StateFlow<ExpensesDetailUiState> = _uiState.asStateFlow()
 
     init {

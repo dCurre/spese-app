@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -50,7 +51,8 @@ fun ItemEditDialog(
     SpeseDialog(
         title = stringResource(R.string.item_edit_title),
         onDismiss = onDismiss,
-        // Elimina come icona cestino (danger) accanto al titolo; i bottoni in basso restano
+        icon = Icons.Outlined.Edit,
+        // Elimina come icona cestino (danger) a destra del titolo; i bottoni in basso restano
         // lo standard Salva/Annulla.
         titleAction = {
             IconButton(onClick = onDelete) {

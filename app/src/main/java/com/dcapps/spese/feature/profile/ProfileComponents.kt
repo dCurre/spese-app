@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.outlined.DriveFileRenameOutline
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
@@ -98,6 +99,7 @@ fun EditNameDialog(
     SpeseDialog(
         title = stringResource(R.string.profile_edit_name),
         onDismiss = onDismiss,
+        icon = Icons.Outlined.DriveFileRenameOutline,
         content = {
             OutlinedTextField(
                 value = name,

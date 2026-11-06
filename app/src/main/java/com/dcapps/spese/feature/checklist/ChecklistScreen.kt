@@ -53,6 +53,7 @@ import com.dcapps.spese.ui.components.ConfirmDialog
 import com.dcapps.spese.ui.components.ErrorSnackbarEffect
 import com.dcapps.spese.ui.components.ErrorState
 import com.dcapps.spese.ui.components.IconCount
+import com.dcapps.spese.ui.components.RefreshOnResume
 import com.dcapps.spese.ui.components.RowDivider
 import com.dcapps.spese.ui.components.SortBar
 import com.dcapps.spese.ui.components.SortOption
@@ -78,6 +79,10 @@ fun ChecklistScreen(
     OnCreateRequested(Routes.CHECKLIST) {
         showCreate = true
     }
+
+    // Rinfresca al ritorno dal dettaglio: spuntare/cancellare articoli cambia i conteggi
+    // ma non emette eventi realtime sulla tabella delle liste.
+    RefreshOnResume { viewModel.load() }
 
     Scaffold(
         topBar = { SpeseTopAppBar(title = stringResource(R.string.checklist_title)) },

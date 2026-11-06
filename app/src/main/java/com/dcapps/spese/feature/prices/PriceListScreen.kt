@@ -14,6 +14,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.filled.ReceiptLong
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Badge
@@ -52,12 +53,15 @@ import com.dcapps.spese.navigation.Routes
 import com.dcapps.spese.ui.components.ConfirmDialog
 import com.dcapps.spese.ui.components.ErrorSnackbarEffect
 import com.dcapps.spese.ui.components.ErrorState
+import com.dcapps.spese.ui.components.RefreshOnResume
 import com.dcapps.spese.ui.components.RowDivider
 import com.dcapps.spese.ui.components.SwipeToDeleteRow
+import com.dcapps.spese.ui.components.IconCount
 import com.dcapps.spese.ui.components.SortBar
 import com.dcapps.spese.ui.components.SortOption
 import com.dcapps.spese.ui.components.SpeseSearchField
 import com.dcapps.spese.ui.components.SpeseTopAppBar
+import com.dcapps.spese.ui.theme.SpeseTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -76,6 +80,9 @@ fun PriceListScreen(
     OnCreateRequested(Routes.PRICES) {
         showCreate = true
     }
+
+    // Rinfresca al ritorno dal dettaglio prodotto (es. nuovi acquisti → conteggio/minimo prezzo).
+    RefreshOnResume { viewModel.load() }
 
     Scaffold(
         topBar = { SpeseTopAppBar(title = stringResource(R.string.prices_title)) },
@@ -155,6 +162,26 @@ fun PriceListScreen(
                                     if (subtitle.isNotBlank()) {
                                         Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     }
+                                }
+                                // Minimo storico (sopra) + badge conteggio acquisti (sotto), prima della freccetta.
+                                Column(
+                                    horizontalAlignment = Alignment.End,
+                                    modifier = Modifier.padding(end = 8.dp),
+                                ) {
+                                    product.minPrice?.let { min ->
+                                        Text(
+                                            stringResource(R.string.prices_min_price, min),
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            color = SpeseTheme.colors.credit,
+                                        )
+                                    }
+                                    IconCount(
+                                        icon = Icons.AutoMirrored.Filled.ReceiptLong,
+                                        text = "${product.purchaseCount}",
+                                        contentDescription = stringResource(R.string.prices_count_cd),
+                                        modifier = Modifier.padding(top = 2.dp),
+                                    )
                                 }
                                 Icon(
                                     Icons.AutoMirrored.Filled.KeyboardArrowRight,
@@ -251,7 +278,8 @@ private fun BrandFilterButton(
                 Modifier.fillMaxWidth().padding(horizontal = 8.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
-                TextButton(onClick = { temp = emptySet() }) {
+                // "Pulisci filtri" azzera e applica subito (chiude il menu), senza richiedere Conferma.
+                TextButton(onClick = { onApply(emptySet()); expanded = false }) {
                     Text(stringResource(R.string.filters_clear))
                 }
                 TextButton(onClick = { onApply(temp); expanded = false }) {

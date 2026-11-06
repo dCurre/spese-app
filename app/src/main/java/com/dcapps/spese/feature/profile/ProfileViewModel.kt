@@ -8,7 +8,6 @@ import com.dcapps.spese.R
 import com.dcapps.spese.core.auth.AuthManager
 import com.dcapps.spese.core.auth.SessionManager
 import com.dcapps.spese.core.data.UserRepository
-import com.dcapps.spese.core.locale.LocaleManager
 import com.dcapps.spese.core.model.UpdateUserRequest
 import com.dcapps.spese.core.model.User
 import com.dcapps.spese.core.network.ApiResult
@@ -55,12 +54,13 @@ class ProfileViewModel @Inject constructor(
         viewModelScope.launch {
             when (val result = userRepository.getWithLists(user.email)) {
                 is ApiResult.Success -> {
-                    // Conserva la preferenza tema corrente: il reload delle statistiche non
-                    // deve sovrascrivere un tema appena scelto dall'utente (che potrebbe non
-                    // essere ancora stato persistito sul server).
-                    val currentTheme = session.currentUser.value?.themePreference
+                    // Conserva tema/lingua APP correnti: il reload delle statistiche non deve
+                    // sovrascrivere una scelta appena fatta dall'utente (che potrebbe non essere
+                    // ancora stata persistita sul server).
+                    val current = session.currentUser.value
                     val freshUser = result.data.user.copy(
-                        themePreference = currentTheme ?: result.data.user.themePreference,
+                        appThemePreference = current?.appThemePreference ?: result.data.user.appThemePreference,
+                        appLanguagePreference = current?.appLanguagePreference ?: result.data.user.appLanguagePreference,
                     )
                     session.setUser(freshUser)
                     val lists = result.data.expensesLists
@@ -105,23 +105,28 @@ class ProfileViewModel @Inject constructor(
 
     fun setTheme(theme: String) {
         val user = session.currentUser.value ?: return
-        // Aggiorna subito la sessione (il tema si applica live), poi persisti.
-        session.setUser(user.copy(themePreference = theme))
-        _uiState.update { it.copy(user = user.copy(themePreference = theme)) }
+        // Tema SOLO dell'app (campo separato dal web). Aggiorna subito la sessione (si applica live).
+        session.setUser(user.copy(appThemePreference = theme))
+        _uiState.update { it.copy(user = user.copy(appThemePreference = theme)) }
         viewModelScope.launch {
-            userRepository.update(user.id, UpdateUserRequest(themePreference = theme))
+            userRepository.update(user.id, UpdateUserRequest(appThemePreference = theme))
         }
     }
 
-    /** Cambia la lingua: applica subito la locale, aggiorna la sessione e persiste sul backend. */
+    /**
+     * Cambia la lingua: aggiorna la sessione (sorgente di verità) e persiste sul backend.
+     * NON chiama direttamente LocaleManager: l'applicazione effettiva della locale è reattiva al
+     * cambiamento della sessione (LaunchedEffect in MainActivity), esattamente come per il tema.
+     * Così c'è una sola applicazione della lingua e si evita il flicker alla prima scelta.
+     */
     fun setLanguage(language: String) {
-        // Applica la lingua all'app (ricrea l'Activity con la nuova locale).
-        LocaleManager.setLanguage(language)
         val user = session.currentUser.value ?: return
-        session.setUser(user.copy(languagePreference = language))
-        _uiState.update { it.copy(user = user.copy(languagePreference = language)) }
+        // Lingua SOLO dell'app (campo separato dal web). L'applicazione effettiva è reattiva
+        // al cambiamento della sessione (LaunchedEffect in MainActivity), come per il tema.
+        session.setUser(user.copy(appLanguagePreference = language))
+        _uiState.update { it.copy(user = user.copy(appLanguagePreference = language)) }
         viewModelScope.launch {
-            userRepository.update(user.id, UpdateUserRequest(languagePreference = language))
+            userRepository.update(user.id, UpdateUserRequest(appLanguagePreference = language))
         }
     }
 

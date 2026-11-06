@@ -20,6 +20,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.outlined.DriveFileRenameOutline
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenuItem
@@ -97,7 +98,7 @@ fun ExpensesDetailScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             SpeseTopAppBar(
-                title = state.list?.name ?: stringResource(R.string.detail_list_fallback),
+                title = state.displayName ?: stringResource(R.string.detail_list_fallback),
                 onTitleEdit = { showRename = true },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
@@ -220,6 +221,7 @@ private fun RenameListDialog(
     SpeseDialog(
         title = stringResource(R.string.detail_rename_list),
         onDismiss = onDismiss,
+        icon = Icons.Outlined.DriveFileRenameOutline,
         content = {
             OutlinedTextField(
                 value = name,

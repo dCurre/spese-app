@@ -72,7 +72,8 @@ private fun SpeseApp(viewModel: AuthViewModel = hiltViewModel()) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val user by viewModel.currentUser.collectAsStateWithLifecycle()
 
-    val preference = when (user?.themePreference) {
+    // Tema dell'APP (campo separato da quello del frontend web).
+    val preference = when (user?.appThemePreference) {
         "default" -> ThemePreference.DEFAULT
         "light" -> ThemePreference.LIGHT
         "dark" -> ThemePreference.DARK
@@ -81,10 +82,10 @@ private fun SpeseApp(viewModel: AuthViewModel = hiltViewModel()) {
         else -> ThemePreference.DEFAULT
     }
 
-    // Applica la lingua salvata sul backend quando l'utente è disponibile (es. dopo il login o
-    // il restore di sessione). Si aggiorna solo se diversa da quella corrente, per evitare
-    // ricreazioni inutili dell'Activity.
-    val savedLanguage = user?.languagePreference
+    // Applica la lingua dell'APP (campo separato dal web) quando l'utente è disponibile (es. dopo
+    // il login o il restore di sessione). Si aggiorna solo se diversa da quella corrente, per
+    // evitare ricreazioni inutili dell'Activity.
+    val savedLanguage = user?.appLanguagePreference
     androidx.compose.runtime.LaunchedEffect(savedLanguage) {
         if (!savedLanguage.isNullOrBlank() &&
             savedLanguage != LocaleManager.currentLanguage()

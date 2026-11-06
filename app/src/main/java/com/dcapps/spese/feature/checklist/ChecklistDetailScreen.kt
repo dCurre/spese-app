@@ -18,12 +18,11 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CreateNewFolder
+import androidx.compose.material.icons.outlined.FileDownload
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.DoneAll
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.RemoveDone
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.UnfoldLess
@@ -68,6 +67,7 @@ import com.dcapps.spese.ui.components.ErrorSnackbarEffect
 import com.dcapps.spese.ui.components.OverflowMenu
 import com.dcapps.spese.ui.components.ReadOnlyPickerField
 import com.dcapps.spese.ui.components.SortBar
+import com.dcapps.spese.ui.components.SpeseBadge
 import com.dcapps.spese.ui.components.SortOption
 import com.dcapps.spese.ui.components.SpeseDialog
 import com.dcapps.spese.ui.components.SpeseSearchField
@@ -114,7 +114,7 @@ fun ChecklistDetailScreen(
         topBar = {
             SpeseTopAppBar(
                 title = if (editState != null) stringResource(R.string.cd_edit_list)
-                    else state.list?.name ?: stringResource(R.string.detail_list_fallback),
+                    else state.displayName ?: stringResource(R.string.detail_list_fallback),
                 onTitleEdit = if (editState == null) { { viewModel.enterEditMode() } } else null,
                 navigationIcon = {
                     IconButton(onClick = { if (editState != null) viewModel.cancelEdit() else onBack() }) {
@@ -123,26 +123,6 @@ fun ChecklistDetailScreen(
                 },
                 actions = {
                     if (editState == null) {
-                        // Spunta/despunta tutto (solo se ci sono articoli).
-                        if (state.hasItems) {
-                            IconButton(onClick = { viewModel.checkAll(!state.allItemsChecked) }) {
-                                Icon(
-                                    imageVector = if (state.allItemsChecked) Icons.Default.RemoveDone
-                                        else Icons.Default.DoneAll,
-                                    contentDescription = stringResource(
-                                        if (state.allItemsChecked) R.string.cd_menu_uncheck_all
-                                        else R.string.cd_menu_check_all,
-                                    ),
-                                )
-                            }
-                        }
-                        // Aggiunta rapida categoria.
-                        IconButton(onClick = { showNewCategory = true }) {
-                            Icon(
-                                Icons.Default.CreateNewFolder,
-                                contentDescription = stringResource(R.string.editor_new_category),
-                            )
-                        }
                         // Toggle unico comprimi/espandi tutto (solo se ci sono categorie).
                         if (state.hasCategories) {
                             IconButton(onClick = { viewModel.toggleCollapseAll() }) {
@@ -171,6 +151,7 @@ fun ChecklistDetailScreen(
                         val exportChooserTitle = stringResource(R.string.cd_export_chooser)
                         ChecklistOverflowMenu(
                             viewModel,
+                            hasItems = state.hasItems,
                             onExport = {
                                 val text = viewModel.buildExportText()
                                 val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
@@ -224,6 +205,13 @@ fun ChecklistDetailScreen(
                         onClick = { viewModel.addItem(newItem, null); newItem = "" },
                         enabled = newItem.isNotBlank(),
                     ) { Icon(Icons.Default.Add, contentDescription = stringResource(R.string.action_add)) }
+                    // Aggiunta rapida categoria, accanto al "+" item.
+                    IconButton(onClick = { showNewCategory = true }) {
+                        Icon(
+                            Icons.Default.CreateNewFolder,
+                            contentDescription = stringResource(R.string.editor_new_category),
+                        )
+                    }
                 }
             }
         },
@@ -371,6 +359,7 @@ private fun ImportDialog(onDismiss: () -> Unit, onImport: (String) -> Unit) {
     SpeseDialog(
         title = stringResource(R.string.cd_import_title),
         onDismiss = onDismiss,
+        icon = Icons.Outlined.FileDownload,
         content = {
             Text(
                 stringResource(R.string.cd_import_help),
@@ -409,11 +398,24 @@ private fun LaunchedShare(token: String, onShared: () -> Unit) {
 @Composable
 private fun ChecklistOverflowMenu(
     viewModel: ChecklistDetailViewModel,
+    hasItems: Boolean,
     onExport: () -> Unit,
     onImport: () -> Unit,
     onDelete: () -> Unit,
 ) {
     OverflowMenu { dismiss ->
+        // Spunta/despunta tutto come due voci separate (solo se ci sono articoli).
+        if (hasItems) {
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.cd_menu_check_all)) },
+                onClick = { dismiss(); viewModel.checkAll(true) },
+            )
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.cd_menu_uncheck_all)) },
+                onClick = { dismiss(); viewModel.checkAll(false) },
+            )
+            HorizontalDivider()
+        }
         DropdownMenuItem(
             text = { Text(stringResource(R.string.detail_share)) },
             onClick = { dismiss(); viewModel.generateInviteToken() },
@@ -466,13 +468,23 @@ private fun CategoryHeaderRow(
                     contentDescription = if (row.collapsed) stringResource(R.string.cd_expand) else stringResource(R.string.cd_collapse),
                 )
             }
-            // Tap sul nome = collassa/espande (come la freccetta).
+            // Tap sul nome = collassa/espande (come la freccetta). Nome barrato se completata.
             Text(
                 text = row.category.name,
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.weight(1f).clickable { onToggleCollapse() }.padding(vertical = 8.dp),
+                textDecoration = if (row.completed) TextDecoration.LineThrough else null,
+                color = if (row.completed) MaterialTheme.colorScheme.onSurfaceVariant
+                    else MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.clickable { onToggleCollapse() }.padding(vertical = 8.dp),
             )
+            // Badge con il numero di sottoelementi diretti (sottocategorie + articoli).
+            SpeseBadge(
+                text = "${row.directCount}",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 8.dp),
+            )
+            Spacer(Modifier.weight(1f))
             IconButton(onClick = onEdit) {
                 Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.cd_edit_category))
             }
@@ -530,6 +542,7 @@ private fun NewCategoryDialog(
     SpeseDialog(
         title = stringResource(R.string.editor_new_category),
         onDismiss = onDismiss,
+        icon = Icons.Default.CreateNewFolder,
         content = {
             OutlinedTextField(
                 value = name,
@@ -581,6 +594,7 @@ private fun CategoryEditDialog(
     SpeseDialog(
         title = stringResource(R.string.cd_category_title),
         onDismiss = onDismiss,
+        icon = Icons.Default.CreateNewFolder,
         // Elimina come cestino (danger) accanto al titolo; in basso Salva/Annulla.
         titleAction = {
             IconButton(onClick = onDelete) {

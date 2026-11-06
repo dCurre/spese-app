@@ -10,6 +10,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.outlined.Receipt
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DropdownMenu
@@ -94,6 +95,7 @@ fun ExpenseDialog(
         title = if (isEdit) stringResource(R.string.expense_edit_title)
             else stringResource(R.string.detail_new_expense),
         onDismiss = onDismiss,
+        icon = Icons.Outlined.Receipt,
         // In modifica l'elimina è un cestino (danger) accanto al titolo; in basso Salva/Annulla.
         titleAction = if (isEdit && onDelete != null) {
             {

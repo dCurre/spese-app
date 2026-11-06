@@ -20,7 +20,9 @@ Su Windows/Git-Bash l'hook è già eseguibile (bit registrato in git).
 1. Dai `git push`.
 2. L'hook `pre-push` capisce quali commit stai pushando.
 3. Se VERSION **non** è già cambiata in quei commit, incrementa la patch, la aggiunge e
-   fa `git commit --amend` sull'ultimo commit (versione + codice nello stesso commit).
+   fa `git commit --amend` sull'ultimo commit (versione + codice nello stesso commit). In più
+   riscrive il subject del commit nel formato **`[versione] - descrizione`** (togliendo un
+   eventuale prefisso `[x.y.z] - ` già presente): non serve metterlo a mano.
 4. git aveva già "congelato" il vecchio HEAD per quel push: l'hook quindi **annulla** il
    push corrente e rilancia lui il push del commit aggiornato.
 5. A GitHub arriva **un solo push** → **una sola build/release**. Nessun doppio bump,

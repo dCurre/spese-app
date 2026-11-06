@@ -6,6 +6,9 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.BugReport
+import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -36,6 +39,7 @@ fun BugReportDialog(
         SpeseDialog(
             title = stringResource(R.string.bug_thanks_title),
             onDismiss = onDismiss,
+            icon = Icons.Outlined.CheckCircle,
             content = { Text(stringResource(R.string.bug_thanks_message)) },
             confirmText = stringResource(R.string.action_close),
             onConfirm = onDismiss,
@@ -47,6 +51,7 @@ fun BugReportDialog(
     SpeseDialog(
         title = stringResource(R.string.bug_title),
         onDismiss = onDismiss,
+        icon = Icons.Outlined.BugReport,
         content = {
             Column(Modifier.verticalScroll(rememberScrollState())) {
                 Text(

@@ -15,6 +15,8 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.outlined.Category
+import androidx.compose.material.icons.outlined.Straighten
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
@@ -63,6 +65,7 @@ fun AdminScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     ErrorSnackbarEffect(
         state.message, snackbarHostState, viewModel::clearMessage,
+        reportable = state.messageReportable,
     )
 
     Scaffold(
@@ -195,6 +198,7 @@ private fun NameDialog(
     SpeseDialog(
         title = title,
         onDismiss = onDismiss,
+        icon = Icons.Outlined.Category,
         content = {
             OutlinedTextField(
                 value = value,
@@ -270,6 +274,7 @@ private fun UnitDialog(
     SpeseDialog(
         title = stringResource(R.string.admin_new_unit),
         onDismiss = onDismiss,
+        icon = Icons.Outlined.Straighten,
         content = {
             OutlinedTextField(name, { name = it }, label = { Text(stringResource(R.string.name)) }, singleLine = true, modifier = Modifier.fillMaxWidth())
             OutlinedTextField(symbol, { symbol = it }, label = { Text(stringResource(R.string.admin_unit_symbol)) }, singleLine = true, modifier = Modifier.fillMaxWidth().padding(top = 8.dp))

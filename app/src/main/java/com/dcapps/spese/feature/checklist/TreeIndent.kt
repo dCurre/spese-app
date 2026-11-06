@@ -28,14 +28,20 @@ fun TreeIndent(
     content: @Composable () -> Unit,
 ) {
     if (depth <= 0) {
-        content()
+        // Nessuna guida da disegnare, ma il modifier (es. il .clickable della riga) va comunque
+        // applicato: avvolgiamo il contenuto in un Box che lo riceve, altrimenti gli elementi di
+        // profondità 0 (es. item senza categoria) perderebbero il click.
+        Box(modifier) { content() }
         return
     }
     val lineColor = SpeseTheme.colors.divider
     // L'altezza intrinseca fa sì che le linee coprano esattamente l'altezza della riga,
     // così tra righe adiacenti la guida verticale appare continua.
     Row(modifier = modifier.height(IntrinsicSize.Min)) {
-        repeat(depth) {
+        repeat(depth) { level ->
+            // L'ultimo livello (adiacente al contenuto) ha anche un trattino orizzontale "a ramo"
+            // (├─) che collega la guida verticale alla riga, come nell'alberatura del frontend.
+            val isConnector = level == depth - 1
             Box(
                 Modifier
                     .width(16.dp)
@@ -48,6 +54,15 @@ fun TreeIndent(
                             end = Offset(x, size.height),
                             strokeWidth = 1.dp.toPx(),
                         )
+                        if (isConnector) {
+                            val midY = size.height / 2f
+                            drawLine(
+                                color = lineColor,
+                                start = Offset(x, midY),
+                                end = Offset(size.width, midY),
+                                strokeWidth = 1.dp.toPx(),
+                            )
+                        }
                     },
             )
         }

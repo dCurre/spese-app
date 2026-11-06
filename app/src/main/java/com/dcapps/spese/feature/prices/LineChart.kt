@@ -41,39 +41,15 @@ fun LineChart(
     unitSymbol: String,
     modifier: Modifier = Modifier,
 ) {
-    // Nessun dato: messaggio. Un solo punto: non si può tracciare una linea, ma mostriamo
-    // comunque il periodo e il prezzo di quell'unico dato (più utile del messaggio secco).
-    if (points.isEmpty()) {
+    // Servono almeno due punti per tracciare un andamento: con 0 o 1 dato mostriamo solo l'avviso
+    // (niente valori intermedi calcolati o riepiloghi di un singolo dato, poco utili).
+    if (points.size < 2) {
         Box(modifier.fillMaxWidth().height(160.dp), contentAlignment = Alignment.Center) {
             Text(
                 stringResource(R.string.chart_insufficient_data),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-        }
-        return
-    }
-    if (points.size == 1) {
-        val only = points.first()
-        Box(modifier.fillMaxWidth().height(160.dp), contentAlignment = Alignment.Center) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
-                    stringResource(
-                        R.string.chart_point_tooltip,
-                        only.period,
-                        "%.2f".format(only.avgUnitPrice),
-                        unitSymbol,
-                    ),
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.SemiBold,
-                )
-                Text(
-                    stringResource(R.string.chart_need_more_points),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 4.dp),
-                )
-            }
         }
         return
     }
