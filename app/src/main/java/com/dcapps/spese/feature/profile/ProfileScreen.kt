@@ -17,6 +17,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.AdminPanelSettings
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.QueryStats
 import androidx.compose.material.icons.filled.Refresh
@@ -30,6 +31,9 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -56,6 +60,11 @@ fun ProfileScreen(
 ) {
     val user by viewModel.currentUser.collectAsStateWithLifecycle()
     val isAdmin = user?.role == "admin" || user?.role == "superadmin"
+    var showFeedback by remember { mutableStateOf(false) }
+
+    if (showFeedback) {
+        com.dcapps.spese.feature.feedback.FeedbackDialog(onDismiss = { showFeedback = false })
+    }
 
     Scaffold(
         topBar = { com.dcapps.spese.ui.components.SpeseTopAppBar(title = stringResource(R.string.profile_title)) },
@@ -139,6 +148,12 @@ fun ProfileScreen(
                 trailing = if (updateChecking) {
                     { CircularProgressIndicator(Modifier.size(20.dp)) }
                 } else null,
+            )
+            ProfileGroupDivider()
+            ProfileListItem(
+                icon = Icons.Default.Lightbulb,
+                title = stringResource(R.string.profile_feedback),
+                onClick = { showFeedback = true },
             )
             ProfileGroupDivider()
             if (isAdmin) {

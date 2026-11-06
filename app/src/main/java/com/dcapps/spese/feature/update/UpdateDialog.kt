@@ -3,13 +3,9 @@ package com.dcapps.spese.feature.update
 import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -21,6 +17,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.dcapps.spese.R
 import com.dcapps.spese.core.update.UpdateInfo
+import com.dcapps.spese.ui.components.SpeseConfirmButton
+import com.dcapps.spese.ui.components.SpeseDialog
 
 /**
  * Popup di aggiornamento. Mostra versione e changelog; il pulsante scarica e installa l'APK.
@@ -36,11 +34,10 @@ fun UpdateDialog(
 ) {
     val context = LocalContext.current
 
-    AlertDialog(
-        onDismissRequest = { if (!state.downloading) onDismiss() },
-        title = { Text(stringResource(R.string.update_title)) },
-        text = {
-            Column(Modifier.verticalScroll(rememberScrollState())) {
+    SpeseDialog(
+        title = stringResource(R.string.update_title),
+        onDismiss = { if (!state.downloading) onDismiss() },
+        content = {
                 Text(
                     stringResource(R.string.update_available, info.version),
                     style = MaterialTheme.typography.bodyMedium,
@@ -53,6 +50,17 @@ fun UpdateDialog(
                             .padding(top = 8.dp)
                             .heightIn(max = 220.dp),
                     )
+                }
+                // Link cliccabile alla pagina della release su GitHub (changelog completo).
+                info.releaseUrl?.let { url ->
+                    TextButton(
+                        onClick = {
+                            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+                        },
+                        contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
+                    ) {
+                        Text(stringResource(R.string.update_full_changelog))
+                    }
                 }
                 when {
                     state.downloading -> {
@@ -73,11 +81,14 @@ fun UpdateDialog(
                         modifier = Modifier.padding(top = 12.dp),
                     )
                 }
-            }
         },
+        // Durante il download i bottoni spariscono. Conferma = verde (standard); l'azione
+        // cambia (installa / consenti installazione) ma il colore resta coerente.
         confirmButton = {
             if (!state.downloading) {
-                TextButton(
+                SpeseConfirmButton(
+                    text = if (canInstall) stringResource(R.string.update_action)
+                        else stringResource(R.string.update_allow_install),
                     onClick = {
                         if (canInstall) {
                             onUpdate()
@@ -90,12 +101,7 @@ fun UpdateDialog(
                             context.startActivity(intent)
                         }
                     },
-                ) {
-                    Text(
-                        if (canInstall) stringResource(R.string.update_action)
-                        else stringResource(R.string.update_allow_install),
-                    )
-                }
+                )
             }
         },
         dismissButton = {

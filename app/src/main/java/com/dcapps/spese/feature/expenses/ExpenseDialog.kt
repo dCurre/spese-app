@@ -9,7 +9,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material3.AlertDialog
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DropdownMenu
@@ -18,6 +18,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -36,6 +37,8 @@ import com.dcapps.spese.core.model.Expense
 import com.dcapps.spese.core.model.ExpenseType
 import com.dcapps.spese.core.model.ExpensesListParticipant
 import com.dcapps.spese.core.util.toShortDate
+import com.dcapps.spese.ui.components.SpeseDialog
+import com.dcapps.spese.ui.theme.SpeseTheme
 import java.math.BigDecimal
 import java.time.Instant
 
@@ -86,15 +89,23 @@ fun ExpenseDialog(
         amount != null && amount.signum() > 0 &&
         selectedOwnerId != null
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            Text(
-                if (isEdit) stringResource(R.string.expense_edit_title)
-                else stringResource(R.string.detail_new_expense),
-            )
-        },
-        text = {
+    SpeseDialog(
+        title = if (isEdit) stringResource(R.string.expense_edit_title)
+            else stringResource(R.string.detail_new_expense),
+        onDismiss = onDismiss,
+        // In modifica l'elimina è un cestino (danger) accanto al titolo; in basso Salva/Annulla.
+        titleAction = if (isEdit && onDelete != null) {
+            {
+                IconButton(onClick = onDelete) {
+                    Icon(
+                        Icons.Default.Delete,
+                        contentDescription = stringResource(R.string.action_delete),
+                        tint = SpeseTheme.colors.danger,
+                    )
+                }
+            }
+        } else null,
+        content = {
             Column(Modifier.verticalScroll(rememberScrollState())) {
                 // Nome con autocomplete dai nomi di spese già presenti.
                 val nameMatches = nameSuggestions.filter {
@@ -177,21 +188,9 @@ fun ExpenseDialog(
                 }
             }
         },
-        confirmButton = {
-            TextButton(
-                enabled = valid,
-                onClick = {
-                    onConfirm(name, amount!!, selectedOwnerId!!, selectedDate, selectedTypeId)
-                },
-            ) { Text(stringResource(R.string.action_save)) }
-        },
-        dismissButton = {
-            if (isEdit && onDelete != null) {
-                TextButton(onClick = onDelete) { Text(stringResource(R.string.action_delete)) }
-            } else {
-                TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
-            }
-        },
+        confirmText = stringResource(R.string.action_save),
+        onConfirm = { onConfirm(name, amount!!, selectedOwnerId!!, selectedDate, selectedTypeId) },
+        confirmEnabled = valid,
     )
 
     if (showDatePicker) {

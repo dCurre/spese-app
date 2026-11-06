@@ -35,19 +35,26 @@ class MainActivity : AppCompatActivity() {
 
         // Animazione d'uscita dello splash: la banconota "corre via" verso destra (slide-out +
         // fade). Si anima l'iconView (così scorre via solo l'icona, non lo sfondo); l'iconView può
-        // essere null su alcuni device (causava un NPE), quindi si ricade sulla view intera.
+        // essere null su alcuni device (NPE noto di core-splashscreen 1.0.1, b/243457485, fixato in
+        // 1.1.0+/1.2.0), quindi si ricade sulla view intera. In più tutto è avvolto in try/catch:
+        // se qualsiasi cosa è null o lancia, si rimuove comunque lo splash senza far crashare l'app.
         splashScreen.setOnExitAnimationListener { provider ->
-            val target = provider.iconView ?: provider.view
-            val slide = ObjectAnimator.ofFloat(
-                target, "translationX", 0f, provider.view.width.toFloat() * 1.2f,
-            )
-            val fade = ObjectAnimator.ofFloat(target, "alpha", 1f, 0f)
-            slide.interpolator = AnticipateInterpolator(1.2f)
-            slide.duration = 650
-            fade.duration = 650
-            slide.doOnEnd { provider.remove() }
-            slide.start()
-            fade.start()
+            try {
+                val target = provider.iconView ?: provider.view
+                val slide = ObjectAnimator.ofFloat(
+                    target, "translationX", 0f, provider.view.width.toFloat() * 1.2f,
+                )
+                val fade = ObjectAnimator.ofFloat(target, "alpha", 1f, 0f)
+                slide.interpolator = AnticipateInterpolator(1.2f)
+                slide.duration = 650
+                fade.duration = 650
+                slide.doOnEnd { provider.remove() }
+                slide.start()
+                fade.start()
+            } catch (t: Throwable) {
+                // Fallback sicuro: niente animazione, ma lo splash sparisce e l'app parte.
+                provider.remove()
+            }
         }
 
         enableEdgeToEdge()

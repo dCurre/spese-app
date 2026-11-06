@@ -19,7 +19,9 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material3.AlertDialog
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.UnfoldLess
+import androidx.compose.material.icons.filled.UnfoldMore
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
@@ -92,6 +94,7 @@ fun ChecklistDetailScreen(
             com.dcapps.spese.ui.components.SpeseTopAppBar(
                 title = if (editState != null) stringResource(R.string.cd_edit_list)
                     else state.list?.name ?: stringResource(R.string.detail_list_fallback),
+                onTitleEdit = if (editState == null) { { viewModel.enterEditMode() } } else null,
                 navigationIcon = {
                     IconButton(onClick = { if (editState != null) viewModel.cancelEdit() else onBack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.action_back))
@@ -99,6 +102,19 @@ fun ChecklistDetailScreen(
                 },
                 actions = {
                     if (editState == null) {
+                        // Toggle unico comprimi/espandi tutto (solo se ci sono categorie).
+                        if (state.hasCategories) {
+                            IconButton(onClick = { viewModel.toggleCollapseAll() }) {
+                                Icon(
+                                    imageVector = if (state.allCollapsed) Icons.Default.UnfoldMore
+                                        else Icons.Default.UnfoldLess,
+                                    contentDescription = stringResource(
+                                        if (state.allCollapsed) R.string.cd_menu_expand_all
+                                        else R.string.cd_menu_collapse_all,
+                                    ),
+                                )
+                            }
+                        }
                         val exportChooserTitle = stringResource(R.string.cd_export_chooser)
                         OverflowMenu(
                             viewModel,
@@ -168,12 +184,47 @@ fun ChecklistDetailScreen(
                     editState = editState,
                     onEdit = viewModel::editLocal,
                 )
-                state.rows.isEmpty() -> Text(
+                // Lista del tutto vuota (nessun item e nessuna categoria): messaggio, niente barra.
+                state.list?.let { it.items.isEmpty() && it.categories.isEmpty() } == true -> Text(
                     stringResource(R.string.cd_empty),
                     Modifier.align(Alignment.Center).padding(32.dp),
                     style = MaterialTheme.typography.bodyMedium,
                 )
                 else -> LazyColumn(Modifier.fillMaxSize()) {
+                    // Barra di ricerca + ordinamento (fisse in cima, scorrono con la lista).
+                    item {
+                        OutlinedTextField(
+                            value = state.query,
+                            onValueChange = viewModel::onQueryChange,
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+                            placeholder = { Text(stringResource(R.string.cd_search_item)) },
+                            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                            shape = androidx.compose.foundation.shape.RoundedCornerShape(24.dp),
+                            singleLine = true,
+                        )
+                    }
+                    item {
+                        com.dcapps.spese.ui.components.SortBar(
+                            options = listOf(
+                                com.dcapps.spese.ui.components.SortOption(ChecklistItemSort.ORDER, stringResource(R.string.cd_sort_order)),
+                                com.dcapps.spese.ui.components.SortOption(ChecklistItemSort.NAME, stringResource(R.string.sort_name)),
+                                com.dcapps.spese.ui.components.SortOption(ChecklistItemSort.CHECKED, stringResource(R.string.cd_sort_checked)),
+                            ),
+                            selectedKey = state.sort,
+                            ascending = state.sortAsc,
+                            onSelect = viewModel::onSortChange,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                        )
+                    }
+                    if (state.rows.isEmpty()) {
+                        item {
+                            Text(
+                                stringResource(R.string.cd_no_results),
+                                style = MaterialTheme.typography.bodyMedium,
+                                modifier = Modifier.padding(16.dp),
+                            )
+                        }
+                    }
                     items(state.rows, key = { rowKey(it) }) { row ->
                         when (row) {
                             is ChecklistRow.CategoryHeader -> CategoryHeaderRow(
@@ -269,28 +320,25 @@ fun ChecklistDetailScreen(
 @Composable
 private fun ImportDialog(onDismiss: () -> Unit, onImport: (String) -> Unit) {
     var text by remember { mutableStateOf("") }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.cd_import_title)) },
-        text = {
-            androidx.compose.foundation.layout.Column {
-                Text(
-                    stringResource(R.string.cd_import_help),
-                    style = MaterialTheme.typography.bodySmall,
-                )
-                OutlinedTextField(
-                    value = text,
-                    onValueChange = { text = it },
-                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                    placeholder = { Text(stringResource(R.string.cd_import_placeholder)) },
-                    minLines = 4,
-                )
-            }
+    com.dcapps.spese.ui.components.SpeseDialog(
+        title = stringResource(R.string.cd_import_title),
+        onDismiss = onDismiss,
+        content = {
+            Text(
+                stringResource(R.string.cd_import_help),
+                style = MaterialTheme.typography.bodySmall,
+            )
+            OutlinedTextField(
+                value = text,
+                onValueChange = { text = it },
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                placeholder = { Text(stringResource(R.string.cd_import_placeholder)) },
+                minLines = 4,
+            )
         },
-        confirmButton = {
-            TextButton(enabled = text.isNotBlank(), onClick = { onImport(text) }) { Text(stringResource(R.string.cd_import_confirm)) }
-        },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
+        confirmText = stringResource(R.string.cd_import_confirm),
+        onConfirm = { onImport(text) },
+        confirmEnabled = text.isNotBlank(),
     )
 }
 
@@ -324,10 +372,6 @@ private fun OverflowMenu(
     }
     DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
         DropdownMenuItem(
-            text = { Text(stringResource(R.string.action_edit)) },
-            onClick = { expanded = false; viewModel.enterEditMode() },
-        )
-        DropdownMenuItem(
             text = { Text(stringResource(R.string.editor_new_category)) },
             onClick = { expanded = false; onNewCategory() },
         )
@@ -338,14 +382,6 @@ private fun OverflowMenu(
         DropdownMenuItem(
             text = { Text(stringResource(R.string.cd_menu_uncheck_all)) },
             onClick = { expanded = false; viewModel.checkAll(false) },
-        )
-        DropdownMenuItem(
-            text = { Text(stringResource(R.string.cd_menu_collapse_all)) },
-            onClick = { expanded = false; viewModel.setAllCollapsed(true) },
-        )
-        DropdownMenuItem(
-            text = { Text(stringResource(R.string.cd_menu_expand_all)) },
-            onClick = { expanded = false; viewModel.setAllCollapsed(false) },
         )
         DropdownMenuItem(
             text = { Text(stringResource(R.string.detail_share)) },
@@ -456,32 +492,29 @@ private fun NewCategoryDialog(
 ) {
     var name by remember { mutableStateOf("") }
     var parentId by remember { mutableStateOf<Long?>(null) }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.editor_new_category)) },
-        text = {
-            androidx.compose.foundation.layout.Column {
-                OutlinedTextField(
-                    value = name,
-                    onValueChange = { name = it },
-                    label = { Text(stringResource(R.string.name)) },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
+    com.dcapps.spese.ui.components.SpeseDialog(
+        title = stringResource(R.string.editor_new_category),
+        onDismiss = onDismiss,
+        content = {
+            OutlinedTextField(
+                value = name,
+                onValueChange = { name = it },
+                label = { Text(stringResource(R.string.name)) },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            // Scelta categoria padre (opzionale) → crea una sottocategoria.
+            if (categories.isNotEmpty()) {
+                ParentCategoryPicker(
+                    categories = categories,
+                    selectedId = parentId,
+                    onSelect = { parentId = it },
                 )
-                // Scelta categoria padre (opzionale) → crea una sottocategoria.
-                if (categories.isNotEmpty()) {
-                    ParentCategoryPicker(
-                        categories = categories,
-                        selectedId = parentId,
-                        onSelect = { parentId = it },
-                    )
-                }
             }
         },
-        confirmButton = {
-            TextButton(enabled = name.isNotBlank(), onClick = { onCreate(name, parentId) }) { Text(stringResource(R.string.action_create)) }
-        },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
+        confirmText = stringResource(R.string.action_create),
+        onConfirm = { onCreate(name, parentId) },
+        confirmEnabled = name.isNotBlank(),
     )
 }
 
@@ -532,28 +565,35 @@ private fun CategoryEditDialog(
 ) {
     var name by remember { mutableStateOf(category.name) }
     var parentId by remember { mutableStateOf(category.parentId) }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.cd_category_title)) },
-        text = {
-            androidx.compose.foundation.layout.Column {
-                OutlinedTextField(
-                    value = name,
-                    onValueChange = { name = it },
-                    label = { Text(stringResource(R.string.name)) },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                ParentCategoryPicker(
-                    categories = availableParents,
-                    selectedId = parentId,
-                    onSelect = { parentId = it },
+    com.dcapps.spese.ui.components.SpeseDialog(
+        title = stringResource(R.string.cd_category_title),
+        onDismiss = onDismiss,
+        // Elimina come cestino (danger) accanto al titolo; in basso Salva/Annulla.
+        titleAction = {
+            IconButton(onClick = onDelete) {
+                Icon(
+                    Icons.Default.Delete,
+                    contentDescription = stringResource(R.string.action_delete),
+                    tint = com.dcapps.spese.ui.theme.SpeseTheme.colors.danger,
                 )
             }
         },
-        confirmButton = {
-            TextButton(enabled = name.isNotBlank(), onClick = { onConfirm(name, parentId) }) { Text(stringResource(R.string.action_save)) }
+        content = {
+            OutlinedTextField(
+                value = name,
+                onValueChange = { name = it },
+                label = { Text(stringResource(R.string.name)) },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            ParentCategoryPicker(
+                categories = availableParents,
+                selectedId = parentId,
+                onSelect = { parentId = it },
+            )
         },
-        dismissButton = { TextButton(onClick = onDelete) { Text(stringResource(R.string.action_delete)) } },
+        confirmText = stringResource(R.string.action_save),
+        onConfirm = { onConfirm(name, parentId) },
+        confirmEnabled = name.isNotBlank(),
     )
 }

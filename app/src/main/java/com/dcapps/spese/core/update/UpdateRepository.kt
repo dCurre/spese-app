@@ -11,6 +11,8 @@ data class UpdateInfo(
     val changelog: String,
     val apkUrl: String,
     val apkSize: Long,
+    /** URL della pagina della release su GitHub (changelog completo), se disponibile. */
+    val releaseUrl: String? = null,
 )
 
 @Singleton
@@ -41,6 +43,7 @@ class UpdateRepository @Inject constructor(
             changelog = release.body?.takeIf { it.isNotBlank() } ?: (release.name ?: ""),
             apkUrl = apk.browserDownloadUrl,
             apkSize = apk.size,
+            releaseUrl = release.htmlUrl,
         )
     }
 }

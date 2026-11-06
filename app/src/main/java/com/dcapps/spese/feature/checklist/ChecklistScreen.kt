@@ -188,11 +188,9 @@ private fun androidx.compose.foundation.lazy.LazyListScope.section(
 }
 
 /**
- * Card checklist con swipe (verso sinistra) che rivela uno sfondo rosso "Elimina"; al termine
- * dello swipe chiede conferma tramite [onRequestDelete] (non elimina direttamente). La card
- * viene riportata in posizione: l'eliminazione effettiva avviene solo dopo la conferma.
+ * Riga checklist con swipe-to-delete (sfondo rosso "Elimina"); l'eliminazione effettiva passa
+ * dal dialog di conferma. Usa il componente condiviso [SwipeToDeleteRow].
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SwipeableChecklistRow(
     list: ShoppingList,
@@ -200,41 +198,7 @@ private fun SwipeableChecklistRow(
     onStar: () -> Unit,
     onRequestDelete: () -> Unit,
 ) {
-    val dismissState = androidx.compose.material3.rememberSwipeToDismissBoxState(
-        confirmValueChange = { value ->
-            if (value == androidx.compose.material3.SwipeToDismissBoxValue.EndToStart) {
-                onRequestDelete()
-            }
-            // Non confermare il dismiss: la riga torna in posizione, l'eliminazione passa
-            // dal dialog di conferma.
-            false
-        },
-    )
-    androidx.compose.material3.SwipeToDismissBox(
-        state = dismissState,
-        enableDismissFromStartToEnd = false,
-        backgroundContent = {
-            Row(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(com.dcapps.spese.ui.theme.SpeseTheme.colors.dangerBg)
-                    .padding(horizontal = 24.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.End,
-            ) {
-                Icon(
-                    Icons.Default.Delete,
-                    contentDescription = stringResource(R.string.action_delete),
-                    tint = com.dcapps.spese.ui.theme.SpeseTheme.colors.danger,
-                )
-                Text(
-                    stringResource(R.string.action_delete),
-                    color = com.dcapps.spese.ui.theme.SpeseTheme.colors.danger,
-                    modifier = Modifier.padding(start = 8.dp),
-                )
-            }
-        },
-    ) {
+    com.dcapps.spese.ui.components.SwipeToDeleteRow(onRequestDelete = onRequestDelete) {
         ChecklistRow(list, onOpenList, onStar = onStar)
     }
 }

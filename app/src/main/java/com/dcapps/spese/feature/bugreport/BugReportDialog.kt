@@ -6,11 +6,9 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -18,6 +16,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.dcapps.spese.R
+import com.dcapps.spese.ui.components.SpeseDialog
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 /**
@@ -33,19 +32,21 @@ fun BugReportDialog(
 
     // Successo: mostra conferma e chiude.
     if (state.resultUrl != null) {
-        AlertDialog(
-            onDismissRequest = onDismiss,
-            title = { Text(stringResource(R.string.bug_thanks_title)) },
-            text = { Text(stringResource(R.string.bug_thanks_message)) },
-            confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_close)) } },
+        SpeseDialog(
+            title = stringResource(R.string.bug_thanks_title),
+            onDismiss = onDismiss,
+            content = { Text(stringResource(R.string.bug_thanks_message)) },
+            confirmText = stringResource(R.string.action_close),
+            onConfirm = onDismiss,
+            dismissButton = {},
         )
         return
     }
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.bug_title)) },
-        text = {
+    SpeseDialog(
+        title = stringResource(R.string.bug_title),
+        onDismiss = onDismiss,
+        content = {
             Column(Modifier.verticalScroll(rememberScrollState())) {
                 Text(
                     stringResource(R.string.bug_intro),
@@ -89,19 +90,15 @@ fun BugReportDialog(
                 }
             }
         },
-        confirmButton = {
-            TextButton(
-                onClick = viewModel::send,
-                enabled = !state.sending && !state.notConfigured,
-            ) {
-                Text(
-                    if (state.sending) stringResource(R.string.bug_sending)
-                    else stringResource(R.string.bug_send),
-                )
-            }
-        },
+        confirmText = if (state.sending) stringResource(R.string.bug_sending)
+            else stringResource(R.string.bug_send),
+        onConfirm = viewModel::send,
+        confirmEnabled = !state.sending && !state.notConfigured,
+        // "No grazie" scarta anche il crash salvato: dismiss custom ma neutro come l'annulla.
         dismissButton = {
-            TextButton(onClick = { viewModel.dismissCrash(); onDismiss() }) { Text(stringResource(R.string.bug_no_thanks)) }
+            androidx.compose.material3.TextButton(onClick = { viewModel.dismissCrash(); onDismiss() }) {
+                Text(stringResource(R.string.bug_no_thanks))
+            }
         },
     )
 }

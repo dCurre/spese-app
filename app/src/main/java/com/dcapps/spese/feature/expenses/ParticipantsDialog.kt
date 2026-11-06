@@ -11,7 +11,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.PersonAdd
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -33,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import com.dcapps.spese.R
 import com.dcapps.spese.core.model.ExpensesListParticipant
 import com.dcapps.spese.core.model.User
+import com.dcapps.spese.ui.components.SpeseDialog
 
 /**
  * Dialog di gestione partecipanti: elenco attuale (con rimozione), aggiunta di un utente
@@ -51,10 +51,10 @@ fun ParticipantsDialog(
 ) {
     var guestName by remember { mutableStateOf("") }
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.detail_participants)) },
-        text = {
+    SpeseDialog(
+        title = stringResource(R.string.detail_participants),
+        onDismiss = onDismiss,
+        content = {
             Column(Modifier.verticalScroll(rememberScrollState())) {
                 // Elenco partecipanti attuali.
                 participants.forEach { p ->
@@ -124,6 +124,9 @@ fun ParticipantsDialog(
                 }
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_close)) } },
+        confirmText = stringResource(R.string.action_close),
+        onConfirm = onDismiss,
+        // Dialog di sola gestione: niente "Annulla", solo "Chiudi".
+        dismissButton = {},
     )
 }

@@ -34,12 +34,23 @@ sealed interface ChecklistRow {
     data class Item(val item: ShoppingItem, val depth: Int) : ChecklistRow
 }
 
+/** Criterio di ordinamento degli item dentro ogni categoria. */
+enum class ChecklistItemSort { ORDER, NAME, CHECKED }
+
 data class ChecklistDetailUiState(
     val isLoading: Boolean = true,
     val error: String? = null,
     val list: ShoppingList? = null,
     val rows: List<ChecklistRow> = emptyList(),
     val categories: List<ShoppingCategory> = emptyList(),
+    // Ricerca e ordinamento (applicati mantenendo la struttura ad albero).
+    val query: String = "",
+    val sort: ChecklistItemSort = ChecklistItemSort.ORDER,
+    val sortAsc: Boolean = true,
+    // true se TUTTE le categorie sono collassate: guida l'icona toggle comprimi/espandi.
+    val allCollapsed: Boolean = false,
+    // true se esiste almeno una categoria (il toggle ha senso solo allora).
+    val hasCategories: Boolean = false,
     val inviteToken: String? = null,
     // Modalità modifica: se non null, l'utente sta editando (le modifiche sono locali
     // finché non salva con batch-save).
@@ -93,6 +104,8 @@ class ChecklistDetailViewModel @Inject constructor(
                             list = result.data,
                             rows = flatten(result.data),
                             categories = flattenCategories(result.data),
+                            allCollapsed = computeAllCollapsed(result.data),
+                            hasCategories = result.data.categories.isNotEmpty(),
                         )
                     }
                 }
@@ -372,28 +385,77 @@ class ChecklistDetailViewModel @Inject constructor(
         return out
     }
 
-    /** Appiattisce l'albero (item senza categoria, poi categorie ricorsive) in righe. */
+    /** Comparator per gli item dentro una categoria, secondo [sort]/[sortAsc]. */
+    private fun itemComparator(): Comparator<ShoppingItem> {
+        val base: Comparator<ShoppingItem> = when (_uiState.value.sort) {
+            ChecklistItemSort.ORDER -> compareBy { it.sortOrder }
+            ChecklistItemSort.NAME -> compareBy { it.name.lowercase() }
+            // Spuntati per ultimi (false prima di true); a parità, ordine originale.
+            ChecklistItemSort.CHECKED -> compareBy<ShoppingItem> { it.checked }.thenBy { it.sortOrder }
+        }
+        return if (_uiState.value.sortAsc) base else base.reversed()
+    }
+
+    private fun matchesQuery(item: ShoppingItem, q: String): Boolean =
+        q.isBlank() || item.name.contains(q.trim(), ignoreCase = true)
+
+    /**
+     * Appiattisce l'albero in righe applicando ricerca e ordinamento:
+     *  - gli item sono ordinati dentro ciascuna categoria secondo [itemComparator];
+     *  - con una query attiva, si mostrano solo gli item corrispondenti e le categorie che
+     *    (anche nei discendenti) ne contengono almeno uno; le altre categorie spariscono.
+     */
     private fun flatten(list: ShoppingList): List<ChecklistRow> {
+        val q = _uiState.value.query
+        val cmp = itemComparator()
         val rows = mutableListOf<ChecklistRow>()
         // Item senza categoria, in cima.
-        list.items.sortedBy { it.sortOrder }.forEach { rows += ChecklistRow.Item(it, 0) }
-        list.categories.sortedBy { it.sortOrder }.forEach { cat -> appendCategory(cat, 0, rows) }
+        list.items.filter { matchesQuery(it, q) }.sortedWith(cmp).forEach { rows += ChecklistRow.Item(it, 0) }
+        list.categories.sortedBy { it.sortOrder }.forEach { cat -> appendCategory(cat, 0, rows, q, cmp) }
         return rows
     }
 
-    private fun appendCategory(cat: ShoppingCategory, depth: Int, out: MutableList<ChecklistRow>) {
+    /** True se la categoria o un suo discendente contiene almeno un item che matcha la query. */
+    private fun categoryHasMatch(cat: ShoppingCategory, q: String): Boolean =
+        cat.items.any { matchesQuery(it, q) } || cat.children.any { categoryHasMatch(it, q) }
+
+    private fun appendCategory(
+        cat: ShoppingCategory,
+        depth: Int,
+        out: MutableList<ChecklistRow>,
+        q: String,
+        cmp: Comparator<ShoppingItem>,
+    ) {
+        // In ricerca, salta le categorie che non contengono nulla di corrispondente.
+        if (q.isNotBlank() && !categoryHasMatch(cat, q)) return
+
         val isCollapsed = cat.id in collapsed
         out += ChecklistRow.CategoryHeader(cat, depth, collapsed = isCollapsed)
-        if (isCollapsed) return // non mostrare contenuti delle categorie chiuse
-        cat.items.sortedBy { it.sortOrder }.forEach { out += ChecklistRow.Item(it, depth + 1) }
-        cat.children.sortedBy { it.sortOrder }.forEach { child -> appendCategory(child, depth + 1, out) }
+        // In ricerca ignoriamo il collasso (si vogliono vedere i risultati).
+        if (isCollapsed && q.isBlank()) return
+        cat.items.filter { matchesQuery(it, q) }.sortedWith(cmp).forEach { out += ChecklistRow.Item(it, depth + 1) }
+        cat.children.sortedBy { it.sortOrder }.forEach { child -> appendCategory(child, depth + 1, out, q, cmp) }
+    }
+
+    fun onQueryChange(q: String) {
+        _uiState.update { it.copy(query = q) }
+        _uiState.value.list?.let { list -> _uiState.update { it.copy(rows = flatten(list)) } }
+    }
+
+    fun onSortChange(sort: ChecklistItemSort) {
+        _uiState.update { s ->
+            // Ritoccando il criterio già attivo si inverte la direzione.
+            val asc = if (s.sort == sort) !s.sortAsc else true
+            s.copy(sort = sort, sortAsc = asc)
+        }
+        _uiState.value.list?.let { list -> _uiState.update { it.copy(rows = flatten(list)) } }
     }
 
     /** Collassa/espande una categoria (solo stato locale, ricalcola le righe). */
     fun toggleCategoryCollapsed(categoryId: Long) {
         if (categoryId in collapsed) collapsed.remove(categoryId) else collapsed.add(categoryId)
         val list = _uiState.value.list ?: return
-        _uiState.update { it.copy(rows = flatten(list)) }
+        _uiState.update { it.copy(rows = flatten(list), allCollapsed = computeAllCollapsed(list)) }
     }
 
     /** Collassa o espande tutte le categorie. */
@@ -401,9 +463,18 @@ class ChecklistDetailViewModel @Inject constructor(
         val list = _uiState.value.list ?: return
         collapsed.clear()
         if (collapseAll) collapsed.addAll(allCategoryIds(list.categories))
-        _uiState.update { it.copy(rows = flatten(list)) }
+        _uiState.update { it.copy(rows = flatten(list), allCollapsed = computeAllCollapsed(list)) }
     }
+
+    /** Toggle unico comprimi/espandi tutto: se tutto è già collassato espande, altrimenti collassa. */
+    fun toggleCollapseAll() = setAllCollapsed(!_uiState.value.allCollapsed)
 
     private fun allCategoryIds(cats: List<ShoppingCategory>): List<Long> =
         cats.flatMap { listOf(it.id) + allCategoryIds(it.children) }
+
+    /** true se tutte le categorie esistenti sono attualmente collassate. */
+    private fun computeAllCollapsed(list: ShoppingList): Boolean {
+        val all = allCategoryIds(list.categories)
+        return all.isNotEmpty() && collapsed.containsAll(all)
+    }
 }

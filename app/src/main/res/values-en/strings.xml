@@ -34,6 +34,7 @@
     <string name="profile_stats_expenses">Total expenses</string>
     <string name="profile_check_updates">Check for updates</string>
     <string name="profile_checking">Checking…</string>
+    <string name="profile_feedback">Send feedback</string>
 
     <!-- Bottom navigation -->
     <string name="nav_expenses">Expenses</string>
@@ -192,6 +193,15 @@
     <string name="bug_not_configured">Reporting is not configured in this build.</string>
     <string name="bug_sending">Sending…</string>
     <string name="bug_send">Send</string>
+
+    <!-- Feedback / feature request -->
+    <string name="feedback_title">Send feedback</string>
+    <string name="feedback_intro">Have an idea or a feature you\'d like to see in the app? Tell us about it.</string>
+    <string name="feedback_description_label">Describe the feature you\'d like</string>
+    <string name="feedback_sending">Sending…</string>
+    <string name="feedback_send">Send</string>
+    <string name="feedback_thanks_title">Thank you!</string>
+    <string name="feedback_thanks_message">Feedback sent. We\'ll review it as soon as possible.</string>
     <string name="bug_no_thanks">No, thanks</string>
 
     <!-- Update -->
@@ -201,6 +211,7 @@
     <string name="update_action">Update</string>
     <string name="update_allow_install">Allow installation</string>
     <string name="update_later">Later</string>
+    <string name="update_full_changelog">Full changelog</string>
 
     <!-- Snackbar -->
     <string name="snackbar_report">Report</string>
@@ -223,6 +234,10 @@
     <string name="cd_edit_list">Edit list</string>
     <string name="cd_saving">Saving…</string>
     <string name="cd_empty">Empty list. Add an item below.</string>
+    <string name="cd_search_item">Search item</string>
+    <string name="cd_sort_order">Order</string>
+    <string name="cd_sort_checked">Checked</string>
+    <string name="cd_no_results">No item matches your search.</string>
     <string name="cd_export_chooser">Export checklist</string>
     <string name="cd_share_text">Join my checklist: %1$s</string>
     <string name="cd_delete_item_message">Delete \"%1$s\"?</string>

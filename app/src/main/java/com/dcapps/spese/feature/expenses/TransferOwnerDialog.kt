@@ -1,14 +1,11 @@
 package com.dcapps.spese.feature.expenses
 
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.selection.selectable
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -20,6 +17,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.dcapps.spese.R
 import com.dcapps.spese.core.model.ExpensesListParticipant
+import com.dcapps.spese.ui.components.SpeseDialog
 
 /**
  * Dialog per trasferire la proprietà della lista: si può scegliere solo un partecipante
@@ -35,44 +33,38 @@ fun TransferOwnerDialog(
     val candidates = participants.filter { it.userId != ownerId && !it.isGuest }
     var selected by remember { mutableStateOf(candidates.firstOrNull()?.userId) }
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.detail_transfer_owner)) },
-        text = {
+    SpeseDialog(
+        title = stringResource(R.string.detail_transfer_owner),
+        onDismiss = onDismiss,
+        content = {
             if (candidates.isEmpty()) {
                 Text(
                     stringResource(R.string.transfer_empty),
                     style = MaterialTheme.typography.bodyMedium,
                 )
             } else {
-                Column {
-                    candidates.forEach { p ->
-                        androidx.compose.foundation.layout.Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .selectable(
-                                    selected = selected == p.userId,
-                                    onClick = { selected = p.userId },
-                                )
-                                .padding(vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            RadioButton(
+                candidates.forEach { p ->
+                    androidx.compose.foundation.layout.Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .selectable(
                                 selected = selected == p.userId,
                                 onClick = { selected = p.userId },
                             )
-                            Text(participantLabel(p), modifier = Modifier.padding(start = 8.dp))
-                        }
+                            .padding(vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        RadioButton(
+                            selected = selected == p.userId,
+                            onClick = { selected = p.userId },
+                        )
+                        Text(participantLabel(p), modifier = Modifier.padding(start = 8.dp))
                     }
                 }
             }
         },
-        confirmButton = {
-            TextButton(
-                enabled = selected != null,
-                onClick = { selected?.let(onConfirm) },
-            ) { Text(stringResource(R.string.transfer_confirm)) }
-        },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
+        confirmText = stringResource(R.string.transfer_confirm),
+        onConfirm = { selected?.let(onConfirm) },
+        confirmEnabled = selected != null,
     )
 }

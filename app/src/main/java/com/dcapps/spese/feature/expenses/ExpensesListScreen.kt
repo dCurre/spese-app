@@ -1,5 +1,6 @@
 package com.dcapps.spese.feature.expenses
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -11,12 +12,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -154,7 +153,9 @@ private fun ListContent(
         if (state.activeLists.isNotEmpty()) {
             item { SectionHeader(stringResource(R.string.lists_section_active)) }
             items(state.activeLists, key = { it.id }) { list ->
-                ListRow(list, onOpenList, onDeleteList)
+                com.dcapps.spese.ui.components.SwipeToDeleteRow(onRequestDelete = { onDeleteList(list) }) {
+                    ListRow(list, onOpenList)
+                }
                 RowDivider()
             }
         }
@@ -177,7 +178,9 @@ private fun ListContent(
             }
             if (state.paidListsShown) {
                 items(state.paidLists, key = { it.id }) { list ->
-                    ListRow(list, onOpenList, onDeleteList)
+                    com.dcapps.spese.ui.components.SwipeToDeleteRow(onRequestDelete = { onDeleteList(list) }) {
+                        ListRow(list, onOpenList)
+                    }
                     RowDivider()
                 }
             }
@@ -208,11 +211,11 @@ private fun RowDivider() {
 private fun ListRow(
     list: ExpensesList,
     onOpenList: (ExpensesList) -> Unit,
-    onDeleteList: (ExpensesList) -> Unit,
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.background)
             .clickable { onOpenList(list) }
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -232,9 +235,6 @@ private fun ListRow(
             val subtitle = listOfNotNull(typeLabel, participantsLabel, expensesLabel)
                 .joinToString(" · ")
             Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
-        IconButton(onClick = { onDeleteList(list) }) {
-            Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.action_delete), tint = com.dcapps.spese.ui.theme.SpeseTheme.colors.danger)
         }
     }
 }

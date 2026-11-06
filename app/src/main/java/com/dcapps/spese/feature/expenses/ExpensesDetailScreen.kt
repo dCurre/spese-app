@@ -78,6 +78,7 @@ fun ExpensesDetailScreen(
         topBar = {
             com.dcapps.spese.ui.components.SpeseTopAppBar(
                 title = state.list?.name ?: stringResource(R.string.detail_list_fallback),
+                onTitleEdit = { showRename = true },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.action_back))
@@ -86,7 +87,6 @@ fun ExpensesDetailScreen(
                 actions = {
                     ExpensesListMenu(
                         isShared = isShared,
-                        onRename = { showRename = true },
                         onShare = viewModel::share,
                         onParticipants = {
                             viewModel.loadAvailableUsers()
@@ -197,10 +197,10 @@ private fun RenameListDialog(
     onConfirm: (String) -> Unit,
 ) {
     var name by remember { mutableStateOf(currentName) }
-    androidx.compose.material3.AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.detail_rename_list)) },
-        text = {
+    com.dcapps.spese.ui.components.SpeseDialog(
+        title = stringResource(R.string.detail_rename_list),
+        onDismiss = onDismiss,
+        content = {
             androidx.compose.material3.OutlinedTextField(
                 value = name,
                 onValueChange = { name = it },
@@ -209,15 +209,9 @@ private fun RenameListDialog(
                 modifier = Modifier.fillMaxWidth(),
             )
         },
-        confirmButton = {
-            androidx.compose.material3.TextButton(
-                enabled = name.isNotBlank(),
-                onClick = { onConfirm(name) },
-            ) { Text(stringResource(R.string.action_save)) }
-        },
-        dismissButton = {
-            androidx.compose.material3.TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
-        },
+        confirmText = stringResource(R.string.action_save),
+        onConfirm = { onConfirm(name) },
+        confirmEnabled = name.isNotBlank(),
     )
 }
 
@@ -239,11 +233,14 @@ private fun ShareLinkEffect(link: String, onShared: () -> Unit) {
 @Composable
 private fun ExpensesListMenu(
     isShared: Boolean,
-    onRename: () -> Unit,
     onShare: () -> Unit,
     onParticipants: () -> Unit,
     onTransfer: () -> Unit,
 ) {
+    // Il menu "⋮" contiene solo azioni di condivisione: se la lista non è condivisa non c'è
+    // nulla da mostrare (la rinomina è passata alla matita accanto al titolo).
+    if (!isShared) return
+
     var expanded by remember { mutableStateOf(false) }
     IconButton(onClick = { expanded = true }) {
         Icon(Icons.Default.MoreVert, contentDescription = stringResource(R.string.detail_more_actions))
@@ -253,23 +250,17 @@ private fun ExpensesListMenu(
         onDismissRequest = { expanded = false },
     ) {
         androidx.compose.material3.DropdownMenuItem(
-            text = { Text(stringResource(R.string.detail_rename_list)) },
-            onClick = { expanded = false; onRename() },
+            text = { Text(stringResource(R.string.detail_share)) },
+            onClick = { expanded = false; onShare() },
         )
-        if (isShared) {
-            androidx.compose.material3.DropdownMenuItem(
-                text = { Text(stringResource(R.string.detail_share)) },
-                onClick = { expanded = false; onShare() },
-            )
-            androidx.compose.material3.DropdownMenuItem(
-                text = { Text(stringResource(R.string.detail_participants)) },
-                onClick = { expanded = false; onParticipants() },
-            )
-            androidx.compose.material3.DropdownMenuItem(
-                text = { Text(stringResource(R.string.detail_transfer_owner)) },
-                onClick = { expanded = false; onTransfer() },
-            )
-        }
+        androidx.compose.material3.DropdownMenuItem(
+            text = { Text(stringResource(R.string.detail_participants)) },
+            onClick = { expanded = false; onParticipants() },
+        )
+        androidx.compose.material3.DropdownMenuItem(
+            text = { Text(stringResource(R.string.detail_transfer_owner)) },
+            onClick = { expanded = false; onTransfer() },
+        )
     }
 }
 

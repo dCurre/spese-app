@@ -19,7 +19,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.SmallFloatingActionButton
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -67,6 +67,8 @@ fun PriceDetailScreen(
         topBar = {
             com.dcapps.spese.ui.components.SpeseTopAppBar(
                 title = state.product?.name ?: stringResource(R.string.product_detail_fallback),
+                onTitleEdit = { showEditProduct = true },
+                titleEditLabel = stringResource(R.string.product_edit_title),
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.action_back))
@@ -81,10 +83,6 @@ fun PriceDetailScreen(
                         onDismissRequest = { menuExpanded = false },
                     ) {
                         androidx.compose.material3.DropdownMenuItem(
-                            text = { Text(stringResource(R.string.product_edit_title)) },
-                            onClick = { menuExpanded = false; showEditProduct = true },
-                        )
-                        androidx.compose.material3.DropdownMenuItem(
                             text = { Text(stringResource(R.string.product_delete_title)) },
                             onClick = { menuExpanded = false; showDeleteProduct = true },
                         )
@@ -93,7 +91,7 @@ fun PriceDetailScreen(
             )
         },
         floatingActionButton = {
-            SmallFloatingActionButton(onClick = { showAddPurchase = true }) {
+            FloatingActionButton(onClick = { showAddPurchase = true }) {
                 Icon(Icons.Default.Add, contentDescription = stringResource(R.string.purchase_new_title))
             }
         },

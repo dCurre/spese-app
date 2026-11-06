@@ -1,15 +1,12 @@
 package com.dcapps.spese.feature.expenses
 
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.selection.selectable
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -20,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.dcapps.spese.R
+import com.dcapps.spese.ui.components.SpeseDialog
 
 @Composable
 fun CreateListDialog(
@@ -30,31 +28,23 @@ fun CreateListDialog(
     var name by remember { mutableStateOf("") }
     var shared by remember { mutableStateOf(true) }
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(titleRes)) },
-        text = {
-            Column {
-                OutlinedTextField(
-                    value = name,
-                    onValueChange = { name = it },
-                    label = { Text(stringResource(R.string.name)) },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                TypeOption(stringResource(R.string.lists_type_shared), selected = shared) { shared = true }
-                TypeOption(stringResource(R.string.lists_type_personal), selected = !shared) { shared = false }
-            }
+    SpeseDialog(
+        title = stringResource(titleRes),
+        onDismiss = onDismiss,
+        content = {
+            OutlinedTextField(
+                value = name,
+                onValueChange = { name = it },
+                label = { Text(stringResource(R.string.name)) },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            TypeOption(stringResource(R.string.lists_type_shared), selected = shared) { shared = true }
+            TypeOption(stringResource(R.string.lists_type_personal), selected = !shared) { shared = false }
         },
-        confirmButton = {
-            TextButton(
-                onClick = { onCreate(name, shared) },
-                enabled = name.isNotBlank(),
-            ) { Text(stringResource(R.string.action_create)) }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
-        },
+        confirmText = stringResource(R.string.action_create),
+        onConfirm = { onCreate(name, shared) },
+        confirmEnabled = name.isNotBlank(),
     )
 }
 

@@ -69,19 +69,16 @@ fun ProfileListItem(
 @androidx.compose.material3.ExperimentalMaterial3Api
 @Composable
 fun SelectableChip(label: String, selected: Boolean, onClick: () -> Unit) {
-    FilterChip(selected = selected, onClick = onClick, label = { Text(label) })
-}
-
-/** Riga etichetta/valore delle statistiche. */
-@Composable
-fun StatRow(label: String, value: Int) {
-    Row(
-        Modifier.fillMaxWidth().padding(vertical = 8.dp, horizontal = 16.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-    ) {
-        Text(label, style = MaterialTheme.typography.bodyLarge)
-        Text("$value", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
-    }
+    FilterChip(
+        selected = selected,
+        onClick = onClick,
+        label = { Text(label) },
+        // Selezione coerente col resto dell'app (verde primary, come SortBar e FAB).
+        colors = androidx.compose.material3.FilterChipDefaults.filterChipColors(
+            selectedContainerColor = MaterialTheme.colorScheme.primary,
+            selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
+        ),
+    )
 }
 
 /** Dialog di modifica nome/cognome. */
@@ -94,37 +91,27 @@ fun EditNameDialog(
 ) {
     var name by remember { mutableStateOf(initialName) }
     var surname by remember { mutableStateOf(initialSurname) }
-    androidx.compose.material3.AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.profile_edit_name)) },
-        text = {
-            Column {
-                androidx.compose.material3.OutlinedTextField(
-                    value = name,
-                    onValueChange = { name = it },
-                    label = { Text(stringResource(R.string.name)) },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                androidx.compose.material3.OutlinedTextField(
-                    value = surname,
-                    onValueChange = { surname = it },
-                    label = { Text(stringResource(R.string.profile_surname)) },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                )
-            }
+    com.dcapps.spese.ui.components.SpeseDialog(
+        title = stringResource(R.string.profile_edit_name),
+        onDismiss = onDismiss,
+        content = {
+            androidx.compose.material3.OutlinedTextField(
+                value = name,
+                onValueChange = { name = it },
+                label = { Text(stringResource(R.string.name)) },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            androidx.compose.material3.OutlinedTextField(
+                value = surname,
+                onValueChange = { surname = it },
+                label = { Text(stringResource(R.string.profile_surname)) },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+            )
         },
-        confirmButton = {
-            androidx.compose.material3.TextButton(
-                enabled = name.isNotBlank(),
-                onClick = { onConfirm(name, surname) },
-            ) { Text(stringResource(R.string.action_save)) }
-        },
-        dismissButton = {
-            androidx.compose.material3.TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.action_cancel))
-            }
-        },
+        confirmText = stringResource(R.string.action_save),
+        onConfirm = { onConfirm(name, surname) },
+        confirmEnabled = name.isNotBlank(),
     )
 }

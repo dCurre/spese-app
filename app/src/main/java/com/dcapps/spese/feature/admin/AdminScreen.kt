@@ -182,10 +182,10 @@ private fun NameDialog(
     onConfirm: (String) -> Unit,
 ) {
     var value by remember { mutableStateOf(initial) }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(title) },
-        text = {
+    com.dcapps.spese.ui.components.SpeseDialog(
+        title = title,
+        onDismiss = onDismiss,
+        content = {
             OutlinedTextField(
                 value = value,
                 onValueChange = { value = it },
@@ -194,10 +194,9 @@ private fun NameDialog(
                 modifier = Modifier.fillMaxWidth(),
             )
         },
-        confirmButton = {
-            TextButton(enabled = value.isNotBlank(), onClick = { onConfirm(value.trim()) }) { Text(stringResource(R.string.action_save)) }
-        },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
+        confirmText = stringResource(R.string.action_save),
+        onConfirm = { onConfirm(value.trim()) },
+        confirmEnabled = value.isNotBlank(),
     )
 }
 
@@ -258,23 +257,17 @@ private fun UnitDialog(
     var symbol by remember { mutableStateOf("") }
     var category by remember { mutableStateOf("peso") }
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.admin_new_unit)) },
-        text = {
-            Column {
-                OutlinedTextField(name, { name = it }, label = { Text(stringResource(R.string.name)) }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(symbol, { symbol = it }, label = { Text(stringResource(R.string.admin_unit_symbol)) }, singleLine = true, modifier = Modifier.fillMaxWidth().padding(top = 8.dp))
-                OutlinedTextField(category, { category = it }, label = { Text(stringResource(R.string.admin_unit_category)) }, singleLine = true, modifier = Modifier.fillMaxWidth().padding(top = 8.dp))
-            }
+    com.dcapps.spese.ui.components.SpeseDialog(
+        title = stringResource(R.string.admin_new_unit),
+        onDismiss = onDismiss,
+        content = {
+            OutlinedTextField(name, { name = it }, label = { Text(stringResource(R.string.name)) }, singleLine = true, modifier = Modifier.fillMaxWidth())
+            OutlinedTextField(symbol, { symbol = it }, label = { Text(stringResource(R.string.admin_unit_symbol)) }, singleLine = true, modifier = Modifier.fillMaxWidth().padding(top = 8.dp))
+            OutlinedTextField(category, { category = it }, label = { Text(stringResource(R.string.admin_unit_category)) }, singleLine = true, modifier = Modifier.fillMaxWidth().padding(top = 8.dp))
         },
-        confirmButton = {
-            TextButton(
-                enabled = name.isNotBlank() && symbol.isNotBlank() && category.isNotBlank(),
-                onClick = { onConfirm(name.trim(), symbol.trim(), category.trim()) },
-            ) { Text(stringResource(R.string.action_create)) }
-        },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
+        confirmText = stringResource(R.string.action_create),
+        onConfirm = { onConfirm(name.trim(), symbol.trim(), category.trim()) },
+        confirmEnabled = name.isNotBlank() && symbol.isNotBlank() && category.isNotBlank(),
     )
 }
 

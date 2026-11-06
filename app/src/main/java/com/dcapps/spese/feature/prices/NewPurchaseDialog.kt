@@ -9,7 +9,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.Icon
@@ -28,6 +27,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.dcapps.spese.R
 import com.dcapps.spese.core.model.Purchase
+import com.dcapps.spese.ui.components.SpeseDialog
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
@@ -70,15 +70,11 @@ fun NewPurchaseDialog(
     val qty = qtyText.replace(",", ".").toDoubleOrNull()
     val valid = price != null && price > 0 && qty != null && qty > 0 && unitId != null
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            Text(
-                if (purchase == null) stringResource(R.string.purchase_new_title)
-                else stringResource(R.string.purchase_edit_title),
-            )
-        },
-        text = {
+    SpeseDialog(
+        title = if (purchase == null) stringResource(R.string.purchase_new_title)
+            else stringResource(R.string.purchase_edit_title),
+        onDismiss = onDismiss,
+        content = {
             Column(Modifier.verticalScroll(rememberScrollState())) {
                 OutlinedTextField(
                     value = priceText,
@@ -162,15 +158,9 @@ fun NewPurchaseDialog(
                 )
             }
         },
-        confirmButton = {
-            TextButton(
-                enabled = valid,
-                onClick = {
-                    onConfirm(price!!, qty!!, unitId!!, purchaseDate.format(isoFmt), store, notes)
-                },
-            ) { Text(stringResource(R.string.action_save)) }
-        },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
+        confirmText = stringResource(R.string.action_save),
+        onConfirm = { onConfirm(price!!, qty!!, unitId!!, purchaseDate.format(isoFmt), store, notes) },
+        confirmEnabled = valid,
     )
 
     if (showDatePicker) {
