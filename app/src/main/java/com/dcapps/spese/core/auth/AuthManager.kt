@@ -28,6 +28,19 @@ sealed interface AuthResult {
     data object Cancelled : AuthResult
 }
 
+/** Esito del ripristino sessione all'avvio (guest-first). */
+enum class RestoreResult {
+    /** Sessione ripristinata (online o da cache offline): utente loggato. */
+    LOGGED_IN,
+
+    /** Nessuna sessione Firebase: l'app entra come guest. */
+    NONE,
+
+    /** Firebase ha la sessione ma siamo offline e non c'è utente cachato: serve la scelta utente
+     *  ("Riprova accesso" / "Continua come ospite"). */
+    OFFLINE_NO_CACHE,
+}
+
 /**
  * Orchestratore dell'autenticazione:
  * 1. Credential Manager → Google ID token
@@ -40,6 +53,7 @@ class AuthManager @Inject constructor(
     private val firebaseAuth: FirebaseAuth,
     private val userRepository: UserRepository,
     private val session: SessionManager,
+    private val userCache: UserCache,
 ) {
 
     /** Esegue il login con Google. Richiede un [Context] di Activity per il bottom sheet. */
@@ -105,6 +119,7 @@ class AuthManager @Inject constructor(
         )) {
             is ApiResult.Success -> {
                 session.setUser(result.data)
+                userCache.save(result.data)   // per il login offline ai prossimi avvii
                 AuthResult.Success(result.data)
             }
             is ApiResult.Error -> {
@@ -119,14 +134,30 @@ class AuthManager @Inject constructor(
      * Ripristina la sessione all'avvio se Firebase ha già un utente loggato.
      * @return true se la sessione è stata ripristinata.
      */
-    suspend fun restoreSession(): Boolean {
-        val email = firebaseAuth.currentUser?.email ?: return false
+    suspend fun restoreSession(): RestoreResult {
+        // Nessuna sessione Firebase: mai loggato → l'app entra come guest.
+        val email = firebaseAuth.currentUser?.email ?: return RestoreResult.NONE
         return when (val result = userRepository.getByEmail(email)) {
             is ApiResult.Success -> {
                 session.setUser(result.data)
-                true
+                userCache.save(result.data)   // aggiorna il dato fresco
+                RestoreResult.LOGGED_IN
             }
-            is ApiResult.Error -> false
+            is ApiResult.Error -> {
+                // Offline (errore di RETE, non applicativo): prova la cache locale.
+                val networkError = result.cause is java.io.IOException || result.code == null
+                if (networkError) {
+                    val cached = userCache.load()
+                    if (cached != null && cached.email.equals(email, ignoreCase = true)) {
+                        session.setUser(cached)
+                        return RestoreResult.LOGGED_IN
+                    }
+                    // Era loggato ma offline e senza cache: l'utente deve scegliere.
+                    return RestoreResult.OFFLINE_NO_CACHE
+                }
+                // Errore applicativo reale (es. 404/500): niente guest automatico, torna al login.
+                RestoreResult.OFFLINE_NO_CACHE
+            }
         }
     }
 
@@ -136,6 +167,7 @@ class AuthManager @Inject constructor(
             CredentialManager.create(context)
                 .clearCredentialState(ClearCredentialStateRequest())
         }
+        userCache.clear()
         session.clear()
     }
 

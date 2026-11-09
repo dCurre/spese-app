@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.dcapps.spese.core.auth.SessionManager
 import com.dcapps.spese.core.data.CatalogRepository
 import com.dcapps.spese.core.data.PriceRepository
+import com.dcapps.spese.core.local.GUEST_OWNER_ID
 import com.dcapps.spese.core.model.CreatePurchaseRequest
 import com.dcapps.spese.core.model.UpdatePurchaseRequest
 import com.dcapps.spese.core.model.MeasurementUnit
@@ -17,10 +18,11 @@ import com.dcapps.spese.core.network.ApiResult
 import com.dcapps.spese.core.ui.SelectionController
 import com.dcapps.spese.core.ui.launchMutation
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -45,6 +47,7 @@ data class PriceDetailUiState(
     val deleted: Boolean = false,
 )
 
+@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class PriceDetailViewModel @Inject constructor(
     private val priceRepository: PriceRepository,
@@ -63,57 +66,64 @@ class PriceDetailViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(PriceDetailUiState(placeholderName = placeholderName))
     val uiState: StateFlow<PriceDetailUiState> = _uiState.asStateFlow()
 
+    // Granularità corrente: pilota il Flow dello storico (cambio = ri-osserva lo storico).
+    private val granularityFlow = MutableStateFlow(Granularity.MONTH)
+
     init {
-        load()
+        // Prodotto + acquisti: Flow reattivi da Room (local-first).
+        viewModelScope.launch {
+            priceRepository.observeProduct(productId)
+                .combine(priceRepository.observePurchases(productId)) { product, purchases ->
+                    product to purchases
+                }
+                .collect { (product, purchases) ->
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            product = product,
+                            purchases = purchases.map { p -> p.withUnitSymbol(it.units) },
+                        )
+                    }
+                }
+        }
+        // Storico: ri-osservato a ogni cambio di granularità.
+        viewModelScope.launch {
+            granularityFlow
+                .flatMapLatest { g -> priceRepository.observeHistory(productId, g.wire) }
+                .collect { history ->
+                    _uiState.update { it.copy(history = history, historyLoading = false) }
+                }
+        }
+        // Unità di misura: catalogo online (non local-first).
+        loadUnits()
     }
 
-    /**
-     * Ricarica tutti i dati della schermata. [showLoading] = true mostra lo spinner a tutta
-     * pagina (primo caricamento); i reload dopo una mutazione usano false ("reload silenzioso":
-     * il contenuto resta a schermo e si aggiorna, niente lampeggio).
-     */
-    fun load(showLoading: Boolean = true) {
-        if (showLoading) _uiState.update { it.copy(isLoading = true, error = null) }
-        viewModelScope.launch {
-            val gran = _uiState.value.granularity.wire
-            val productD = async { priceRepository.getProduct(productId) }
-            val purchasesD = async { priceRepository.getPurchases(productId) }
-            val historyD = async { priceRepository.getPriceHistory(productId, gran) }
+    /** load() resta per compat: in local-first ricarica solo il catalogo unità. */
+    fun load(showLoading: Boolean = true) = loadUnits()
 
-            val product = productD.await()
-            if (product is ApiResult.Error) {
-                _uiState.update { it.copy(isLoading = false, error = product.message) }
-                return@launch
-            }
-            val unitsD = async { catalogRepository.getMeasurementUnits() }
-            _uiState.update {
-                it.copy(
-                    isLoading = false,
-                    product = (product as ApiResult.Success).data,
-                    purchases = (purchasesD.await() as? ApiResult.Success)?.data ?: emptyList(),
-                    history = (historyD.await() as? ApiResult.Success)?.data?.data ?: emptyList(),
-                    units = (unitsD.await() as? ApiResult.Success)?.data ?: it.units,
-                )
+    private fun loadUnits() {
+        viewModelScope.launch {
+            val units = catalogRepository.getMeasurementUnits()
+            if (units is ApiResult.Success) {
+                _uiState.update { s ->
+                    s.copy(
+                        units = units.data,
+                        // Rienumera i simboli unità sugli acquisti già caricati.
+                        purchases = s.purchases.map { it.withUnitSymbol(units.data) },
+                    )
+                }
             }
         }
     }
 
     /**
-     * Cambio granularità del grafico: ricarica SOLO lo storico (1 chiamata, non tutta la
-     * schermata) con un loading locale → la pagina non sparisce e niente over-fetch.
+     * Cambio granularità del grafico: ri-osserva SOLO lo storico (il Flow dedicato), con un loading
+     * locale → la pagina non sparisce.
      */
     fun setGranularity(g: Granularity) {
         if (g == _uiState.value.granularity) return
         _uiState.update { it.copy(granularity = g, historyLoading = true) }
-        viewModelScope.launch {
-            val history = priceRepository.getPriceHistory(productId, g.wire)
-            _uiState.update {
-                it.copy(
-                    historyLoading = false,
-                    history = (history as? ApiResult.Success)?.data?.data ?: it.history,
-                )
-            }
-        }
+        granularityFlow.value = g
     }
 
     fun addPurchase(
@@ -124,10 +134,11 @@ class PriceDetailViewModel @Inject constructor(
         store: String?,
         notes: String?,
     ) {
-        val userId = session.currentUser.value?.id ?: return
+        // In local-first l'acquisto è locale: in guest non c'è utente reale → owner fittizio.
+        val userId = session.currentUser.value?.id ?: GUEST_OWNER_ID
         launchMutation(
             onError = { e -> _uiState.update { it.copy(message = e.message) } },
-            onSuccess = { load(showLoading = false) },
+            onSuccess = {}, // il Flow reattivo aggiorna gli acquisti/storico
             call = {
                 priceRepository.createPurchase(
                     CreatePurchaseRequest(
@@ -156,7 +167,7 @@ class PriceDetailViewModel @Inject constructor(
     ) {
         launchMutation(
             onError = { e -> _uiState.update { it.copy(message = e.message) } },
-            onSuccess = { load(showLoading = false) },
+            onSuccess = {},
             call = {
                 priceRepository.updatePurchase(
                     id,
@@ -178,7 +189,7 @@ class PriceDetailViewModel @Inject constructor(
         if (name.isBlank()) return
         launchMutation(
             onError = { e -> _uiState.update { it.copy(message = e.message) } },
-            onSuccess = { load(showLoading = false) },
+            onSuccess = {},
             call = {
                 priceRepository.updateProduct(
                     productId,
@@ -203,8 +214,8 @@ class PriceDetailViewModel @Inject constructor(
 
     fun deletePurchase(purchase: Purchase) {
         viewModelScope.launch {
-            priceRepository.deletePurchase(purchase.id)
-            load(showLoading = false)
+            val r = priceRepository.deletePurchase(purchase.id)
+            if (r is ApiResult.Error) _uiState.update { it.copy(message = r.message) }
         }
     }
 
@@ -219,9 +230,18 @@ class PriceDetailViewModel @Inject constructor(
             val r = priceRepository.deletePurchasesBulk(ids)
             selection.clear()
             if (r is ApiResult.Error) _uiState.update { it.copy(message = r.message) }
-            load(showLoading = false)
         }
     }
 
     fun clearMessage() = _uiState.update { it.copy(message = null) }
+}
+
+/**
+ * Local-first: gli acquisti salvati in Room non conoscono il simbolo dell'unità (solo l'id). Lo
+ * risolviamo dal catalogo unità così la UI mostra il simbolo come prima.
+ */
+private fun Purchase.withUnitSymbol(units: List<MeasurementUnit>): Purchase {
+    if (unitSymbol != null) return this
+    val sym = units.firstOrNull { it.id == unitId }?.symbol ?: return this
+    return copy(unitSymbol = sym)
 }

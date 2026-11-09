@@ -4,8 +4,13 @@ import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
@@ -26,10 +31,14 @@ import com.dcapps.spese.ui.components.SpeseFormBottomSheet
 fun CreateListDialog(
     onDismiss: () -> Unit,
     onCreate: (name: String, shared: Boolean) -> Unit,
+    // In guest l'opzione "condivisa" è lucchettata: il guest crea solo liste personali.
+    isGuest: Boolean = false,
+    onSharedLocked: () -> Unit = {},
     @StringRes titleRes: Int = R.string.lists_new,
 ) {
     var name by remember { mutableStateOf("") }
-    var shared by remember { mutableStateOf(true) }
+    // Guest: default a personale (la condivisa è lucchettata).
+    var shared by remember { mutableStateOf(!isGuest) }
 
     // Pannello dal basso (bottom sheet) invece del dialog centrale: aperto dal "+" della navbar.
     SpeseFormBottomSheet(
@@ -43,17 +52,33 @@ fun CreateListDialog(
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
             )
-            TypeOption(stringResource(R.string.lists_type_shared), selected = shared) { shared = true }
-            TypeOption(stringResource(R.string.lists_type_personal), selected = !shared) { shared = false }
+            TypeOption(
+                label = stringResource(R.string.lists_type_shared),
+                selected = shared,
+                locked = isGuest,
+                onSelect = { if (isGuest) onSharedLocked() else shared = true },
+            )
+            TypeOption(
+                label = stringResource(R.string.lists_type_personal),
+                selected = !shared,
+                locked = false,
+                onSelect = { shared = false },
+            )
         },
         confirmText = stringResource(R.string.action_create),
-        onConfirm = { onCreate(name, shared) },
+        // In guest forziamo personale a prescindere dallo stato (difesa extra).
+        onConfirm = { onCreate(name, if (isGuest) false else shared) },
         confirmEnabled = name.isNotBlank(),
     )
 }
 
 @Composable
-private fun TypeOption(label: String, selected: Boolean, onSelect: () -> Unit) {
+private fun TypeOption(label: String, selected: Boolean, locked: Boolean, onSelect: () -> Unit) {
+    val textColor = if (locked) {
+        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+    } else {
+        MaterialTheme.colorScheme.onSurface
+    }
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -61,7 +86,15 @@ private fun TypeOption(label: String, selected: Boolean, onSelect: () -> Unit) {
             .padding(vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        RadioButton(selected = selected, onClick = onSelect)
-        Text(label, modifier = Modifier.padding(start = 8.dp))
+        RadioButton(selected = selected, enabled = !locked, onClick = onSelect)
+        Text(label, modifier = Modifier.weight(1f).padding(start = 8.dp), color = textColor)
+        if (locked) {
+            Icon(
+                Icons.Default.Lock,
+                contentDescription = stringResource(R.string.cd_locked),
+                tint = textColor,
+                modifier = Modifier.size(18.dp),
+            )
+        }
     }
 }

@@ -50,6 +50,7 @@ import com.dcapps.spese.feature.profile.ProfileScreen
 import com.dcapps.spese.feature.profile.ProfileEditScreen
 import com.dcapps.spese.feature.profile.ProfileSettingsScreen
 import com.dcapps.spese.feature.profile.ProfileStatsScreen
+import com.dcapps.spese.feature.sync.SyncIndicator
 import com.dcapps.spese.feature.update.UpdateScreen
 import com.dcapps.spese.feature.update.UpdateViewModel
 import com.dcapps.spese.ui.components.MessageSnackbarEffect
@@ -137,6 +138,7 @@ fun SpeseNavHost(
             }
         },
     ) { innerPadding ->
+      Box(Modifier.fillMaxWidth()) {
         // Applica solo il padding inferiore (per la bottom bar): l'inset superiore
         // (status bar) lo gestiscono le TopAppBar delle singole schermate, altrimenti
         // verrebbe applicato due volte lasciando spazio vuoto sopra il titolo.
@@ -227,6 +229,15 @@ fun SpeseNavHost(
                 AboutScreen(onBack = { navController.popBackStack() })
             }
         }
+
+        // Indicatore stato sync, sovrapposto in alto a destra (non invasivo): spinner mentre
+        // sincronizza, badge d'errore toccabile se l'ultimo ciclo è fallito. Invisibile se IDLE.
+        SyncIndicator(
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(top = 6.dp, end = 10.dp),
+        )
+      }
     }
 
     // Popup di aggiornamento se il controllo manuale trova una versione nuova.

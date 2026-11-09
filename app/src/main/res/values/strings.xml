@@ -51,6 +51,7 @@
     <string name="profile_edit_name">Modifica nome</string>
     <string name="profile_surname">Cognome</string>
     <string name="profile_copy_email">Copia email</string>
+    <string name="profile_guest_hint">Stai usando l\'app come ospite. Accedi o registrati per salvare i tuoi dati sul tuo account.</string>
     <string name="profile_avatar">Avatar</string>
     <string name="profile_change_avatar">Cambia avatar</string>
     <string name="profile_previous_photo">Foto precedente</string>
@@ -90,6 +91,9 @@
     <string name="detail_share">Condividi</string>
     <string name="detail_participants">Partecipanti</string>
     <string name="detail_transfer_owner">Trasferisci proprietà</string>
+    <string name="guest_share_locked">Accedi con un account per condividere le liste.</string>
+    <string name="guest_shared_list_locked">Le liste condivise richiedono un account. Accedi per crearne una.</string>
+    <string name="cd_locked">Riservato agli utenti registrati</string>
     <string name="list_make_shared">Rendi condivisa</string>
     <string name="list_make_personal">Rendi personale</string>
     <string name="list_make_personal_title">Rendere personale?</string>
@@ -245,6 +249,21 @@
     <!-- Login -->
     <string name="signin_tagline">Gestisci spese condivise e liste della spesa</string>
     <string name="signin_google">Accedi con Google</string>
+    <string name="signin_continue_guest">Continua come ospite</string>
+    <string name="offline_title">Sei offline</string>
+    <string name="offline_message">Non riusciamo a raggiungere il server. Riprova l\'accesso quando torni online, oppure continua come ospite.</string>
+    <string name="offline_retry">Riprova accesso</string>
+
+    <!-- Upgrade guest → account: scelta sui dati locali -->
+    <string name="migration_title">Dati creati come ospite</string>
+    <string name="migration_message">Hai creato liste e dati mentre usavi l\'app come ospite. Vuoi aggiungerli al tuo account, oppure usare solo i dati già presenti online?</string>
+    <string name="migration_merge">Unisci al mio account</string>
+    <string name="migration_online_only">Solo dati online</string>
+    <string name="migration_in_progress">Sincronizzazione in corso…</string>
+
+    <!-- Indicatore stato sincronizzazione -->
+    <string name="sync_status_syncing">Sincronizzazione in corso</string>
+    <string name="sync_status_error">Sincronizzazione non riuscita</string>
 
     <!-- Informazioni (About) -->
     <string name="about_version">Versione %1$s</string>

@@ -1,88 +1,75 @@
 package com.dcapps.spese.core.data
 
-import com.dcapps.spese.core.model.BulkItemsRequest
-import com.dcapps.spese.core.model.CheckAllRequest
-import com.dcapps.spese.core.model.CheckRequest
+import com.dcapps.spese.core.local.ChecklistLocalDataSource
+import com.dcapps.spese.core.sync.ChecklistSyncEngine
 import com.dcapps.spese.core.model.CreateShoppingCategoryRequest
 import com.dcapps.spese.core.model.CreateShoppingItemRequest
-import com.dcapps.spese.core.model.ReorderRequest
 import com.dcapps.spese.core.model.UpdateShoppingCategoryRequest
 import com.dcapps.spese.core.model.UpdateShoppingItemRequest
 import com.dcapps.spese.core.network.ApiResult
-import com.dcapps.spese.core.network.SpeseApi
-import com.dcapps.spese.core.network.apiCall
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonNull
-import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.buildJsonObject
+import com.dcapps.spese.core.network.mapTo
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/** Accesso ai dati di articoli e categorie delle checklist. */
+/**
+ * Articoli e categorie delle checklist, LOCAL-FIRST: tutto su Room (per tutti). Il SyncEngine
+ * allinea col backend in background. Stesse firme di prima, stesso [ApiResult], così i ViewModel
+ * non cambiano.
+ */
 @Singleton
 class ShoppingItemRepository @Inject constructor(
-    private val api: SpeseApi,
-    private val json: Json,
+    private val local: ChecklistLocalDataSource,
+    private val syncEngine: ChecklistSyncEngine,
 ) {
     suspend fun create(body: CreateShoppingItemRequest): ApiResult<Long?> =
-        apiCall(json) { api.createShoppingItem(body).id }
+        afterWrite(local.addItem(body.shoppingListId, body.name, body.categoryId).mapTo<Long, Long?>(null))
 
     suspend fun update(id: Long, body: UpdateShoppingItemRequest): ApiResult<Unit> =
-        apiCall(json) { api.updateShoppingItem(id, body); Unit }
+        afterWrite(local.updateItem(id, body.name ?: "", body.quantity ?: 1, body.categoryId))
 
-    /**
-     * Aggiorna nome, quantità e categoria inviando `category_id` SEMPRE esplicito (anche null),
-     * così lo spostamento in "nessuna categoria" funziona nonostante explicitNulls=false.
-     */
+    /** Aggiorna nome, quantità e categoria (category_id esplicito, anche null = nessuna categoria). */
     suspend fun updateWithCategory(
         id: Long,
         name: String,
         quantity: Int,
         categoryId: Long?,
-    ): ApiResult<Unit> = apiCall(json) {
-        val body = buildJsonObject {
-            put("name", JsonPrimitive(name))
-            put("quantity", JsonPrimitive(quantity))
-            put("category_id", if (categoryId != null) JsonPrimitive(categoryId) else JsonNull)
-        }
-        api.updateShoppingItemRaw(id, body); Unit
+    ): ApiResult<Unit> = afterWrite(local.updateItem(id, name, quantity, categoryId))
+
+    suspend fun delete(id: Long): ApiResult<Unit> = afterWrite(local.deleteItem(id))
+
+    suspend fun deleteBulk(ids: List<Long>): ApiResult<Unit> {
+        ids.forEach { local.deleteItem(it) }
+        return afterWrite(ApiResult.Success(Unit))
     }
 
-    suspend fun delete(id: Long): ApiResult<Unit> =
-        apiCall(json) { api.deleteShoppingItem(id); Unit }
-
-    /** Cancellazione massiva di articoli in una sola chiamata (endpoint bulk con delete_ids). */
-    suspend fun deleteBulk(ids: List<Long>): ApiResult<Unit> =
-        apiCall(json) { api.bulkShoppingItems(BulkItemsRequest(deleteIds = ids)); Unit }
-
     suspend fun check(id: Long, checked: Boolean?): ApiResult<Boolean> =
-        apiCall(json) { api.checkShoppingItem(id, CheckRequest(checked)).checked }
+        afterWrite(local.setItemChecked(id, checked == true).mapTo(checked == true))
 
     suspend fun checkAll(listId: Long, checked: Boolean): ApiResult<Unit> =
-        apiCall(json) { api.checkAllShoppingItems(CheckAllRequest(listId, checked)); Unit }
+        afterWrite(local.setAllChecked(listId, checked))
 
     suspend fun reorder(listId: Long, orderedIds: List<Long>): ApiResult<Unit> =
-        apiCall(json) { api.reorderShoppingItems(ReorderRequest(listId, orderedIds)); Unit }
+        ApiResult.Success(Unit) // riordino locale non ancora gestito; no-op
 
     suspend fun createCategory(body: CreateShoppingCategoryRequest): ApiResult<Long?> =
-        apiCall(json) { api.createShoppingCategory(body).id }
+        afterWrite(local.addCategory(body.shoppingListId, body.name, body.parentId).mapTo<Long, Long?>(null))
 
     suspend fun updateCategory(id: Long, body: UpdateShoppingCategoryRequest): ApiResult<Unit> =
-        apiCall(json) { api.updateShoppingCategory(id, body); Unit }
+        afterWrite(local.updateCategory(id, listId = local.listIdOfCategory(id), name = body.name ?: "", parentId = null))
 
-    /** Aggiorna nome e categoria padre inviando `parent_id` SEMPRE esplicito (anche null = radice). */
+    /** Aggiorna nome e categoria padre (parent_id esplicito, anche null = radice). */
     suspend fun updateCategoryWithParent(
         id: Long,
         name: String,
         parentId: Long?,
-    ): ApiResult<Unit> = apiCall(json) {
-        val body = buildJsonObject {
-            put("name", JsonPrimitive(name))
-            put("parent_id", if (parentId != null) JsonPrimitive(parentId) else JsonNull)
-        }
-        api.updateShoppingCategoryRaw(id, body); Unit
-    }
+    ): ApiResult<Unit> =
+        afterWrite(local.updateCategory(id, listId = local.listIdOfCategory(id), name = name, parentId = parentId))
 
-    suspend fun deleteCategory(id: Long): ApiResult<Unit> =
-        apiCall(json) { api.deleteShoppingCategory(id); Unit }
+    suspend fun deleteCategory(id: Long): ApiResult<Unit> = afterWrite(local.deleteCategory(id))
+
+    /** Dopo una scrittura locale riuscita, richiede un sync (debounced). Passa oltre l'esito. */
+    private fun <T> afterWrite(result: ApiResult<T>): ApiResult<T> {
+        if (result is ApiResult.Success) syncEngine.requestSync()
+        return result
+    }
 }

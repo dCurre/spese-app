@@ -24,6 +24,15 @@ sealed interface ApiResult<out T> {
     }
 }
 
+/** Trasforma il valore di un Success, mantenendo gli Error invariati. */
+inline fun <T, R> ApiResult<T>.map(transform: (T) -> R): ApiResult<R> = when (this) {
+    is ApiResult.Success -> ApiResult.Success(transform(data))
+    is ApiResult.Error -> this
+}
+
+/** Sostituisce il valore di un Success con [value], mantenendo gli Error invariati. */
+fun <T, R> ApiResult<T>.mapTo(value: R): ApiResult<R> = map { value }
+
 /**
  * Esegue [block] convertendo eccezioni in [ApiResult.Error]. Estrae il messaggio dal corpo
  * `{"error": ...}` del backend quando presente.

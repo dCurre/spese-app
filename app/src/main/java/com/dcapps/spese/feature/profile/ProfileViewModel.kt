@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dcapps.spese.R
 import com.dcapps.spese.core.auth.AuthManager
+import com.dcapps.spese.core.auth.GuestProfile
 import com.dcapps.spese.core.auth.SessionManager
 import com.dcapps.spese.core.data.UserRepository
 import com.dcapps.spese.core.model.UpdateUserRequest
@@ -18,6 +19,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.io.File
 import javax.inject.Inject
 
 data class ProfileStats(
@@ -32,6 +34,14 @@ data class ProfileUiState(
     val statsLoaded: Boolean = false,
     val uploading: Boolean = false,
     val message: String? = null,
+    // Modalità ospite: nome/foto vengono dal profilo locale (GuestProfile), non da [user].
+    val isGuest: Boolean = false,
+    // Nome da mostrare: displayName dell'account, oppure nome ospite locale in guest.
+    val displayName: String = "",
+    // Foto da mostrare: profileImage dell'account, oppure URI foto locale in guest.
+    val photo: String? = null,
+    // Email dell'account (null in guest).
+    val email: String? = null,
 )
 
 @HiltViewModel
@@ -39,15 +49,44 @@ class ProfileViewModel @Inject constructor(
     private val userRepository: UserRepository,
     private val authManager: AuthManager,
     private val session: SessionManager,
+    private val guestProfile: GuestProfile,
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(ProfileUiState(user = session.currentUser.value))
+    private val _uiState = MutableStateFlow(
+        ProfileUiState(
+            user = session.currentUser.value,
+            isGuest = session.isGuest,
+            displayName = session.currentUser.value?.displayName ?: "",
+            photo = session.currentUser.value?.profileImage,
+            email = session.currentUser.value?.email,
+        ),
+    )
     val uiState: StateFlow<ProfileUiState> = _uiState.asStateFlow()
 
     val currentUser: StateFlow<User?> = session.currentUser
 
     init {
         loadStats()
+        loadGuestProfile()
+    }
+
+    /** In modalità ospite popola nome/foto dal profilo locale (GuestProfile). */
+    private fun loadGuestProfile() {
+        if (!session.isGuest) return
+        viewModelScope.launch {
+            // get() persiste il nome di default stabile alla prima lettura, poi osserva i cambiamenti.
+            guestProfile.get()
+            guestProfile.observe().collect { data ->
+                _uiState.update {
+                    it.copy(
+                        isGuest = true,
+                        displayName = data.displayName,
+                        photo = data.localPhotoUri,
+                        email = null,
+                    )
+                }
+            }
+        }
     }
 
     private fun loadStats() {
@@ -68,6 +107,9 @@ class ProfileViewModel @Inject constructor(
                     _uiState.update {
                         it.copy(
                             user = freshUser,
+                            displayName = freshUser.displayName,
+                            photo = freshUser.profileImage,
+                            email = freshUser.email,
                             statsLoaded = true,
                             stats = ProfileStats(
                                 listsOwned = lists.count { l -> l.userId == user.id },
@@ -83,14 +125,22 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
-    /** Modifica nome e cognome dell'utente. */
+    /** Modifica nome e cognome dell'utente. In modalità ospite scrive solo il profilo locale. */
     fun updateNameSurname(name: String, surname: String) {
+        if (session.isGuest) {
+            val display = listOf(name.trim(), surname.trim()).filter { it.isNotBlank() }.joinToString(" ")
+            viewModelScope.launch {
+                guestProfile.setName(display.ifBlank { guestProfile.get().displayName })
+                // Lo stato si aggiorna via observe() in loadGuestProfile().
+            }
+            return
+        }
         val user = session.currentUser.value ?: return
         launchMutation(
             onError = { e -> _uiState.update { it.copy(message = e.message) } },
             onSuccess = {
                 session.setUser(user.copy(name = name.trim(), surname = surname.trim()))
-                _uiState.update { it.copy(user = session.currentUser.value) }
+                _uiState.update { it.copy(user = session.currentUser.value, displayName = session.currentUser.value?.displayName ?: it.displayName) }
             },
             call = {
                 userRepository.update(
@@ -129,6 +179,27 @@ class ProfileViewModel @Inject constructor(
     }
 
     fun uploadAvatar(context: Context, uri: Uri) {
+        // Ospite: niente upload sul backend → copia la foto in locale (filesDir) e salva il percorso.
+        if (session.isGuest) {
+            viewModelScope.launch {
+                _uiState.update { it.copy(uploading = true, message = null) }
+                val savedPath = runCatching {
+                    val resolver = context.contentResolver
+                    val bytes = resolver.openInputStream(uri)?.use { it.readBytes() }
+                        ?: error("read failed")
+                    val file = File(context.filesDir, "guest_avatar.jpg")
+                    file.writeBytes(bytes)
+                    file.toURI().toString()
+                }.getOrNull()
+                if (savedPath == null) {
+                    _uiState.update { it.copy(uploading = false, message = context.getString(R.string.vm_image_read_error)) }
+                } else {
+                    guestProfile.setPhoto(savedPath)
+                    _uiState.update { it.copy(uploading = false) } // la foto si aggiorna via observe()
+                }
+            }
+            return
+        }
         val user = session.currentUser.value ?: return
         viewModelScope.launch {
             _uiState.update { it.copy(uploading = true, message = null) }

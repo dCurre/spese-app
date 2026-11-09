@@ -21,9 +21,6 @@ import com.dcapps.spese.core.model.UpdateShoppingListRequest
 import com.dcapps.spese.core.network.ApiResult
 import com.dcapps.spese.core.prefs.SortPreferences
 import com.dcapps.spese.core.auth.SessionManager
-import com.dcapps.spese.core.realtime.RealtimeService
-import com.dcapps.spese.core.realtime.RealtimeTable
-import com.dcapps.spese.core.realtime.longField
 import com.dcapps.spese.core.ui.SelectionController
 import com.dcapps.spese.core.ui.launchMutation
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -119,7 +116,6 @@ class ChecklistDetailViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val shoppingRepository: ShoppingRepository,
     private val itemRepository: ShoppingItemRepository,
-    private val realtimeService: RealtimeService,
     private val sortPreferences: SortPreferences,
     private val session: SessionManager,
     savedStateHandle: SavedStateHandle,
@@ -146,45 +142,36 @@ class ChecklistDetailViewModel @Inject constructor(
     private val collapsed = mutableSetOf<Long>()
 
     init {
-        load(showLoading = true)
+        // Local-first: osserva Room. Ogni modifica (locale o portata dal sync) rinfresca la UI.
         viewModelScope.launch {
-            realtimeService.watch(RealtimeTable.SHOPPING_ITEMS).collect { action ->
-                if (action.longField("shopping_list_id") == listId) load()
-            }
-        }
-        viewModelScope.launch {
-            realtimeService.watch(RealtimeTable.SHOPPING_CATEGORIES).collect { action ->
-                if (action.longField("shopping_list_id") == listId) load()
+            shoppingRepository.observeList(listId).collect { list ->
+                if (list != null) applyList(list)
+                else _uiState.update { it.copy(isLoading = false) }
             }
         }
     }
 
-    /**
-     * Ricarica la lista. [showLoading] = true mostra lo spinner a tutta pagina (solo primo
-     * caricamento / retry); i reload dopo una mutazione o da realtime usano false ("reload
-     * silenzioso": il contenuto resta a schermo, niente lampeggio né doppio refresh).
-     */
-    fun load(showLoading: Boolean = false) {
-        if (showLoading) _uiState.update { it.copy(isLoading = true, error = null) }
-        viewModelScope.launch {
-            when (val result = shoppingRepository.getList(listId)) {
-                is ApiResult.Success -> {
-                    _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            list = result.data,
-                            rows = flatten(result.data),
-                            categories = flattenCategories(result.data),
-                            allCollapsed = computeAllCollapsed(result.data),
-                            hasCategories = result.data.categories.isNotEmpty(),
-                        )
-                    }
-                }
-                is ApiResult.Error ->
-                    _uiState.update { it.copy(isLoading = false, error = result.message) }
-            }
+    /** Popola lo stato (rows/categorie/collasso) dalla lista osservata, in modalità non-edit. */
+    private fun applyList(list: ShoppingList) {
+        // Durante la modifica bulk non sovrascrivere l'editState con i dati osservati.
+        if (_uiState.value.editState != null) {
+            _uiState.update { it.copy(list = list) }
+            return
+        }
+        _uiState.update {
+            it.copy(
+                isLoading = false,
+                list = list,
+                rows = flatten(list),
+                categories = flattenCategories(list),
+                allCollapsed = computeAllCollapsed(list),
+                hasCategories = list.categories.isNotEmpty(),
+            )
         }
     }
+
+    /** Compat: con l'osservazione reattiva il reload manuale non serve più (no-op). */
+    fun load(showLoading: Boolean = false) { /* reattivo: niente da fare */ }
 
     /** Spunta/despunta un item in modo ottimistico, poi conferma col backend. */
     fun toggleItem(item: ShoppingItem) {
@@ -431,7 +418,11 @@ class ChecklistDetailViewModel @Inject constructor(
         _uiState.update { it.copy(editState = ChecklistEditState.from(list)) }
     }
 
-    fun cancelEdit() = _uiState.update { it.copy(editState = null) }
+    fun cancelEdit() {
+        _uiState.update { it.copy(editState = null) }
+        // Riapplica i dati correnti (durante l'edit l'osservazione non aggiornava rows).
+        _uiState.value.list?.let { applyList(it) }
+    }
 
     /** Applica una trasformazione allo stato di modifica locale (nessuna chiamata di rete). */
     fun editLocal(transform: (ChecklistEditState) -> ChecklistEditState) {
@@ -443,14 +434,16 @@ class ChecklistDetailViewModel @Inject constructor(
         val edit = _uiState.value.editState ?: return
         if (!edit.hasChanges) {
             _uiState.update { it.copy(editState = null) }
+            _uiState.value.list?.let { applyList(it) }
             return
         }
         _uiState.update { it.copy(saving = true) }
         viewModelScope.launch {
             when (val result = shoppingRepository.batchSave(listId, edit.toBatchRequest())) {
                 is ApiResult.Success -> {
+                    // Chiude l'edit; il batchSave ha scritto su Room → il Flow riemetterà e
+                    // applyList ripopolerà rows (ora che editState è null).
                     _uiState.update { it.copy(saving = false, editState = null) }
-                    load()
                 }
                 is ApiResult.Error ->
                     _uiState.update { it.copy(saving = false, message = result.message) }

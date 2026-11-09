@@ -18,6 +18,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Refresh
@@ -41,7 +42,9 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -91,6 +94,12 @@ fun ExpensesDetailScreen(
 
     val isShared = state.list?.type == ListType.SHARED
     val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+    // Messaggio mostrato quando un guest tocca un'azione di condivisione lucchettata.
+    val guestLockedMsg = stringResource(R.string.guest_share_locked)
+    val onGuestLocked: () -> Unit = {
+        scope.launch { snackbarHostState.showSnackbar(guestLockedMsg) }
+    }
 
     ErrorSnackbarEffect(
         state.message, snackbarHostState, viewModel::clearMessage,
@@ -126,6 +135,8 @@ fun ExpensesDetailScreen(
                         ExpensesListMenu(
                             isShared = isShared,
                             canChangeType = viewModel.isOwner,
+                            isGuest = viewModel.isGuest,
+                            onGuestLocked = onGuestLocked,
                             onShare = viewModel::share,
                             onParticipants = {
                                 viewModel.loadAvailableUsers()
@@ -303,6 +314,8 @@ private fun ShareLinkEffect(link: String, onShared: () -> Unit) {
 private fun ExpensesListMenu(
     isShared: Boolean,
     canChangeType: Boolean,
+    isGuest: Boolean,
+    onGuestLocked: () -> Unit,
     onShare: () -> Unit,
     onParticipants: () -> Unit,
     onTransfer: () -> Unit,
@@ -310,34 +323,78 @@ private fun ExpensesListMenu(
     onMakePersonal: () -> Unit,
 ) {
     // Mostra il menu se c'è almeno un'azione: condivisione (solo se condivisa) o cambio tipo (owner).
+    // In guest mostriamo comunque le voci di condivisione (lucchettate) quando la lista è condivisa.
     if (!isShared && !canChangeType) return
 
     OverflowMenu { dismiss ->
         if (isShared) {
-            DropdownMenuItem(
-                text = { Text(stringResource(R.string.detail_share)) },
-                onClick = { dismiss(); onShare() },
+            LockableMenuItem(
+                label = stringResource(R.string.detail_share),
+                locked = isGuest,
+                onClick = onShare,
+                onLocked = onGuestLocked,
+                dismiss = dismiss,
             )
-            DropdownMenuItem(
-                text = { Text(stringResource(R.string.detail_participants)) },
-                onClick = { dismiss(); onParticipants() },
+            LockableMenuItem(
+                label = stringResource(R.string.detail_participants),
+                locked = isGuest,
+                onClick = onParticipants,
+                onLocked = onGuestLocked,
+                dismiss = dismiss,
             )
-            DropdownMenuItem(
-                text = { Text(stringResource(R.string.detail_transfer_owner)) },
-                onClick = { dismiss(); onTransfer() },
+            LockableMenuItem(
+                label = stringResource(R.string.detail_transfer_owner),
+                locked = isGuest,
+                onClick = onTransfer,
+                onLocked = onGuestLocked,
+                dismiss = dismiss,
             )
         }
-        // Cambio tipo condivisa↔personale, solo per l'owner (issue #11).
+        // Cambio tipo condivisa↔personale, solo per l'owner (issue #11). In guest è lucchettato.
         if (canChangeType) {
-            DropdownMenuItem(
-                text = {
-                    Text(stringResource(
-                        if (isShared) R.string.list_make_personal else R.string.list_make_shared,
-                    ))
-                },
-                onClick = { dismiss(); if (isShared) onMakePersonal() else onMakeShared() },
+            LockableMenuItem(
+                label = stringResource(
+                    if (isShared) R.string.list_make_personal else R.string.list_make_shared,
+                ),
+                locked = isGuest,
+                onClick = { if (isShared) onMakePersonal() else onMakeShared() },
+                onLocked = onGuestLocked,
+                dismiss = dismiss,
             )
         }
+    }
+}
+
+/**
+ * Voce di menu che può essere "lucchettata" per il guest: resta visibile ma oscurata, con un'icona
+ * a lucchetto; il tap NON esegue l'azione reale ma invoca [onLocked] (es. invito ad accedere).
+ */
+@Composable
+private fun LockableMenuItem(
+    label: String,
+    locked: Boolean,
+    onClick: () -> Unit,
+    onLocked: () -> Unit,
+    dismiss: () -> Unit,
+) {
+    if (locked) {
+        val lockedColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+        DropdownMenuItem(
+            text = { Text(label, color = lockedColor) },
+            trailingIcon = {
+                Icon(
+                    Icons.Default.Lock,
+                    contentDescription = stringResource(R.string.cd_locked),
+                    tint = lockedColor,
+                )
+            },
+            onClick = { dismiss(); onLocked() },
+        )
+    } else {
+        DropdownMenuItem(
+            text = { Text(label) },
+            onClick = { dismiss(); onClick() },
+        )
     }
 }
 

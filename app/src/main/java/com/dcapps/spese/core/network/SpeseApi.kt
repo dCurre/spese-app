@@ -3,6 +3,14 @@ package com.dcapps.spese.core.network
 import com.dcapps.spese.core.model.AddParticipantRequest
 import com.dcapps.spese.core.model.BalanceResponse
 import com.dcapps.spese.core.model.BatchSaveRequest
+import com.dcapps.spese.core.model.BatchSyncRequest
+import com.dcapps.spese.core.model.BatchSyncResponse
+import com.dcapps.spese.core.model.ExpensesBatchSyncRequest
+import com.dcapps.spese.core.model.ExpensesBatchSyncResponse
+import com.dcapps.spese.core.model.ExpensesDeltaResponse
+import com.dcapps.spese.core.model.ProductsBatchSyncRequest
+import com.dcapps.spese.core.model.ProductsBatchSyncResponse
+import com.dcapps.spese.core.model.ProductsDeltaResponse
 import com.dcapps.spese.core.model.BulkDeleteRequest
 import com.dcapps.spese.core.model.BulkDeleteResponse
 import com.dcapps.spese.core.model.BulkItemsRequest
@@ -16,6 +24,7 @@ import com.dcapps.spese.core.model.CreatePurchaseRequest
 import com.dcapps.spese.core.model.CreateShoppingCategoryRequest
 import com.dcapps.spese.core.model.CreateShoppingItemRequest
 import com.dcapps.spese.core.model.CreateShoppingListRequest
+import com.dcapps.spese.core.model.DeltaResponse
 import com.dcapps.spese.core.model.CreateUserRequest
 import com.dcapps.spese.core.model.CreatedResponse
 import com.dcapps.spese.core.model.Expense
@@ -197,6 +206,39 @@ interface SpeseApi {
 
     @GET("api/shopping-lists/{id}")
     suspend fun getShoppingList(@Path("id") id: Long): ShoppingList
+
+    /** Delta sync (pull): entità modificate dopo `since` (incluse le deleted). */
+    @GET("api/shopping-lists/delta")
+    suspend fun getShoppingDelta(
+        @Query("user_id") userId: Long,
+        @Query("since") since: String?,
+    ): DeltaResponse
+
+    /** Push batch: create/update/delete misti in una transazione; ritorna la mappa temp_id→id. */
+    @POST("api/shopping-lists/batch-sync")
+    suspend fun batchSyncShopping(@Body body: BatchSyncRequest): BatchSyncResponse
+
+    /** Delta sync SPESE (pull): liste spese + spese modificate dopo `since` (incluse le deleted). */
+    @GET("api/expenses-lists/delta")
+    suspend fun getExpensesDelta(
+        @Query("user_id") userId: Long,
+        @Query("since") since: String?,
+    ): ExpensesDeltaResponse
+
+    /** Push batch SPESE: create/update/delete misti; ritorna la mappa temp_id→id. */
+    @POST("api/expenses-lists/batch-sync")
+    suspend fun batchSyncExpenses(@Body body: ExpensesBatchSyncRequest): ExpensesBatchSyncResponse
+
+    /** Delta sync PREZZI (pull): prodotti (globali) + acquisti del chiamante dopo `since`. */
+    @GET("api/products/delta")
+    suspend fun getProductsDelta(
+        @Query("user_id") userId: Long,
+        @Query("since") since: String?,
+    ): ProductsDeltaResponse
+
+    /** Push batch PREZZI: create/update/delete misti; ritorna la mappa temp_id→id. */
+    @POST("api/products/batch-sync")
+    suspend fun batchSyncProducts(@Body body: ProductsBatchSyncRequest): ProductsBatchSyncResponse
 
     @POST("api/shopping-lists")
     suspend fun createShoppingList(@Body body: CreateShoppingListRequest): CreatedResponse

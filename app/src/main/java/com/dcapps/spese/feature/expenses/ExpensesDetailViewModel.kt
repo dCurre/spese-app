@@ -6,9 +6,6 @@ import androidx.lifecycle.viewModelScope
 import com.dcapps.spese.core.auth.SessionManager
 import com.dcapps.spese.core.data.CatalogRepository
 import com.dcapps.spese.core.data.ExpensesRepository
-import com.dcapps.spese.core.realtime.RealtimeService
-import com.dcapps.spese.core.realtime.RealtimeTable
-import com.dcapps.spese.core.realtime.longField
 import com.dcapps.spese.core.model.BalanceEntry
 import com.dcapps.spese.core.model.BalanceTotal
 import com.dcapps.spese.core.model.CreateExpenseRequest
@@ -23,10 +20,10 @@ import com.dcapps.spese.core.network.ApiResult
 import com.dcapps.spese.core.ui.SelectionController
 import com.dcapps.spese.core.ui.launchMutation
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.math.BigDecimal
@@ -52,7 +49,7 @@ data class ExpensesDetailUiState(
     val availableUsers: List<User> = emptyList(),
     val shareLink: String? = null,
     val message: String? = null,
-    // Nome passato via nav-arg per mostrare subito il titolo corretto, prima che getList risponda.
+    // Nome passato via nav-arg per mostrare subito il titolo corretto, prima che i dati arrivino.
     val placeholderName: String? = null,
 ) {
     /** Nome da mostrare: quello reale se caricato, altrimenti il placeholder dal nav-arg. */
@@ -79,7 +76,6 @@ data class ExpensesDetailUiState(
 class ExpensesDetailViewModel @Inject constructor(
     private val expensesRepository: ExpensesRepository,
     private val catalogRepository: CatalogRepository,
-    private val realtimeService: RealtimeService,
     private val session: SessionManager,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
@@ -87,77 +83,47 @@ class ExpensesDetailViewModel @Inject constructor(
     val listId: Long = checkNotNull(savedStateHandle["listId"])
     private val navName: String? = savedStateHandle["name"]
 
+    /** true se la sessione è ospite: la UI oscura/lucchetta le azioni di condivisione. */
+    val isGuest: Boolean get() = session.isGuest
+
     private val _uiState = MutableStateFlow(ExpensesDetailUiState(placeholderName = navName))
     val uiState: StateFlow<ExpensesDetailUiState> = _uiState.asStateFlow()
 
     init {
-        load(showLoading = true)
-        observeRealtime()
+        // Local-first: osserva lista + spese da Room. Ogni modifica rinfresca la UI.
+        viewModelScope.launch {
+            expensesRepository.observeList(listId)
+                .combine(expensesRepository.observeExpenses(listId)) { list, expenses -> list to expenses }
+                .collect { (list, expenses) ->
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            error = null,
+                            list = list,
+                            participants = list?.participants ?: emptyList(),
+                            expenses = expenses,
+                        )
+                    }
+                    // Il saldo dipende dalle spese: ricalcolo (per ora vuoto in local-first).
+                    reloadBalance()
+                }
+        }
+        loadExpenseTypes()
     }
 
-    private fun observeRealtime() {
-        // Spese della lista: ricarica solo se l'evento riguarda questa lista.
+    /** Compat: con l'osservazione reattiva il reload manuale non serve più (no-op). */
+    fun load(showLoading: Boolean = false) { /* reattivo: niente da fare */ }
+
+    private fun loadExpenseTypes() {
         viewModelScope.launch {
-            realtimeService.watch(RealtimeTable.EXPENSES).collect { action ->
-                if (action.longField("expense_list_id") == listId) reloadExpenses()
-            }
-        }
-        // Partecipanti: ricarica il dettaglio solo per questa lista.
-        viewModelScope.launch {
-            realtimeService.watch(RealtimeTable.EXPENSES_LIST_PARTICIPANTS).collect { action ->
-                if (action.longField("expenses_list_id") == listId) load()
-            }
-        }
-    }
-
-    /**
-     * Ricarica il dettaglio lista. [showLoading] = true mostra lo spinner a tutta pagina (solo
-     * primo caricamento); i reload da realtime/mutazioni strutturali usano false (niente lampeggio).
-     */
-    fun load(showLoading: Boolean = false) {
-        if (showLoading) _uiState.update { it.copy(isLoading = true, error = null) }
-        viewModelScope.launch {
-            val listDeferred = async { expensesRepository.getList(listId) }
-            val expensesDeferred = async { expensesRepository.getExpenses(listId) }
-            val typesDeferred = async { catalogRepository.getExpenseTypes() }
-            val balanceDeferred = async { expensesRepository.getBalance(listId) }
-
-            val listResult = listDeferred.await()
-            val expensesResult = expensesDeferred.await()
-            val typesResult = typesDeferred.await()
-            val balanceResult = balanceDeferred.await()
-
-            if (listResult is ApiResult.Error) {
-                _uiState.update { it.copy(isLoading = false, error = listResult.message) }
-                return@launch
-            }
-            val list = (listResult as ApiResult.Success).data
-            val expenses = (expensesResult as? ApiResult.Success)?.data ?: emptyList()
-            val types = (typesResult as? ApiResult.Success)?.data ?: emptyList()
-            val balance = (balanceResult as? ApiResult.Success)?.data
-
-            _uiState.update {
-                it.copy(
-                    isLoading = false,
-                    error = null,
-                    list = list,
-                    participants = list.participants,
-                    expenses = expenses,
-                    expenseTypes = types,
-                    balanceTotals = balance?.totals ?: emptyList(),
-                    balanceEntries = balance?.balance ?: emptyList(),
-                )
+            (catalogRepository.getExpenseTypes() as? ApiResult.Success)?.let { res ->
+                _uiState.update { it.copy(expenseTypes = res.data) }
             }
         }
     }
 
-    private fun reloadExpenses() {
+    private fun reloadBalance() {
         viewModelScope.launch {
-            when (val result = expensesRepository.getExpenses(listId)) {
-                is ApiResult.Success -> _uiState.update { it.copy(expenses = result.data) }
-                is ApiResult.Error -> _uiState.update { it.copy(message = result.message) }
-            }
-            // Il saldo dipende dalle spese: ricaricalo.
             (expensesRepository.getBalance(listId) as? ApiResult.Success)?.let { bal ->
                 _uiState.update {
                     it.copy(balanceTotals = bal.data.totals, balanceEntries = bal.data.balance)
@@ -181,7 +147,7 @@ class ExpensesDetailViewModel @Inject constructor(
     ) {
         launchMutation(
             onError = { e -> _uiState.update { it.copy(message = e.message) } },
-            onSuccess = { reloadExpenses() },
+            onSuccess = { },
             call = {
                 expensesRepository.createExpense(
                     CreateExpenseRequest(
@@ -208,7 +174,7 @@ class ExpensesDetailViewModel @Inject constructor(
     ) {
         launchMutation(
             onError = { e -> _uiState.update { it.copy(message = e.message) } },
-            onSuccess = { reloadExpenses() },
+            onSuccess = { },
             call = {
                 expensesRepository.updateExpense(
                     id,
@@ -228,7 +194,7 @@ class ExpensesDetailViewModel @Inject constructor(
     fun deleteExpense(expense: Expense) {
         launchMutation(
             onError = { e -> _uiState.update { it.copy(message = e.message) } },
-            onSuccess = { reloadExpenses() },
+            onSuccess = { },
             call = { expensesRepository.deleteExpense(expense.id) },
         )
     }
@@ -244,13 +210,12 @@ class ExpensesDetailViewModel @Inject constructor(
             val r = expensesRepository.deleteExpensesBulk(ids)
             selection.clear()
             if (r is ApiResult.Error) _uiState.update { it.copy(message = r.message) }
-            reloadExpenses()
         }
     }
 
     fun clearMessage() = _uiState.update { it.copy(message = null) }
 
-    // --- Gestione lista (condivisione, partecipanti, ospiti, proprietà) ---
+    // --- Gestione lista (condivisione, partecipanti, ospiti, proprietà) — ONLINE ---
 
     fun share() {
         _uiState.update { it.copy(shareLink = "https://spese-dc.web.app/join?list=$listId") }
@@ -270,7 +235,7 @@ class ExpensesDetailViewModel @Inject constructor(
     fun addParticipant(userId: Long) {
         launchMutation(
             onError = { e -> _uiState.update { it.copy(message = e.message) } },
-            onSuccess = { load() },
+            onSuccess = { },
             call = { expensesRepository.addParticipant(listId, userId) },
         )
     }
@@ -279,7 +244,7 @@ class ExpensesDetailViewModel @Inject constructor(
         if (name.isBlank()) return
         launchMutation(
             onError = { e -> _uiState.update { it.copy(message = e.message) } },
-            onSuccess = { load() },
+            onSuccess = { },
             call = { expensesRepository.addGuest(listId, name) },
         )
     }
@@ -287,7 +252,7 @@ class ExpensesDetailViewModel @Inject constructor(
     fun removeParticipant(p: ExpensesListParticipant) {
         launchMutation(
             onError = { e -> _uiState.update { it.copy(message = e.message) } },
-            onSuccess = { load() },
+            onSuccess = { },
             call = {
                 if (p.isGuest) expensesRepository.removeGuest(listId, p.userId)
                 else expensesRepository.removeParticipant(listId, p.userId)
@@ -295,14 +260,13 @@ class ExpensesDetailViewModel @Inject constructor(
         )
     }
 
-    /** Rinomina la lista (unica proprietà modificabile lato backend oltre a `paid`). */
+    /** Rinomina la lista (dato local-first: scrive su Room, il Flow aggiorna la UI). */
     fun renameList(newName: String) {
         if (newName.isBlank()) return
-        launchMutation(
-            onError = { e -> _uiState.update { it.copy(message = e.message) } },
-            onSuccess = { load() },
-            call = { expensesRepository.updateList(listId, UpdateExpensesListRequest(name = newName.trim())) },
-        )
+        viewModelScope.launch {
+            val r = expensesRepository.updateList(listId, UpdateExpensesListRequest(name = newName.trim()))
+            if (r is ApiResult.Error) _uiState.update { it.copy(message = r.message) }
+        }
     }
 
     /** true se l'utente loggato è il proprietario (può cambiare il tipo della lista). (#11) */
@@ -311,15 +275,14 @@ class ExpensesDetailViewModel @Inject constructor(
             _uiState.value.list?.userId == session.currentUser.value?.id
 
     /**
-     * Cambia il tipo della lista spese (condivisa ↔ personale). Richiede requester_id (owner).
-     * Il passaggio a personale è DISTRUTTIVO: le spese passano all'owner e i partecipanti vengono
-     * rimossi. La conferma è a carico della UI. (issue #11)
+     * Cambia il tipo della lista spese (condivisa ↔ personale). Operazione ONLINE: richiede
+     * requester_id (owner), bloccata in guest. (issue #11)
      */
     fun setListType(shared: Boolean) {
         val requesterId = session.currentUser.value?.id ?: return
         launchMutation(
             onError = { e -> _uiState.update { it.copy(message = e.message) } },
-            onSuccess = { load() },
+            onSuccess = { },
             call = {
                 expensesRepository.updateList(
                     listId,
@@ -336,7 +299,7 @@ class ExpensesDetailViewModel @Inject constructor(
         val currentOwner = _uiState.value.list?.userId ?: return
         launchMutation(
             onError = { e -> _uiState.update { it.copy(message = e.message) } },
-            onSuccess = { load() },
+            onSuccess = { },
             call = { expensesRepository.transferOwner(listId, newOwnerId, currentOwner) },
         )
     }

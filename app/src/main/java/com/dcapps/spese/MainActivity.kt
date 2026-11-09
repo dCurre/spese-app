@@ -20,6 +20,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dcapps.spese.core.bugreport.CrashStore
 import com.dcapps.spese.core.locale.LocaleManager
 import com.dcapps.spese.feature.auth.AuthViewModel
+import com.dcapps.spese.feature.auth.MigrationChoiceDialog
+import com.dcapps.spese.feature.auth.OfflineChoiceScreen
+import com.dcapps.spese.feature.auth.StartDestination
 import com.dcapps.spese.feature.bugreport.BugReportDialog
 import com.dcapps.spese.feature.bugreport.BugReportGateViewModel
 import com.dcapps.spese.feature.bugreport.BugReportViewModel
@@ -96,21 +99,36 @@ private fun SpeseApp(viewModel: AuthViewModel = hiltViewModel()) {
     }
 
     SpeseTheme(preference = preference) {
-        when {
-            state.isRestoring -> Scaffold(Modifier.fillMaxSize()) { p ->
+        when (state.destination) {
+            StartDestination.RESTORING -> Scaffold(Modifier.fillMaxSize()) { p ->
                 LoadingScreen(Modifier.padding(p))
             }
-            user != null -> {
-                // Navigazione dell'area loggata (ogni schermata ha la propria Scaffold).
-                SpeseNavHost()
-            }
-            else -> Scaffold(Modifier.fillMaxSize()) { p ->
+            // APP vale sia per utente loggato sia per guest (local-first): entrambi usano il NavHost.
+            StartDestination.APP -> SpeseNavHost()
+            StartDestination.SIGN_IN -> Scaffold(Modifier.fillMaxSize()) { p ->
                 SignInScreen(
                     state = state,
                     onGoogleSignIn = { ctx -> viewModel.signIn(ctx) },
+                    onContinueAsGuest = { viewModel.continueAsGuest() },
                     modifier = Modifier.padding(p),
                 )
             }
+            StartDestination.OFFLINE_CHOICE -> Scaffold(Modifier.fillMaxSize()) { p ->
+                OfflineChoiceScreen(
+                    onRetry = { viewModel.retryRestore() },
+                    onContinueAsGuest = { viewModel.continueAsGuest() },
+                    modifier = Modifier.padding(p),
+                )
+            }
+        }
+
+        // Upgrade guest→account: dopo un login da ospite con dati locali, chiedi cosa farne.
+        if (state.showMigrationChoice) {
+            MigrationChoiceDialog(
+                inProgress = state.migrationInProgress,
+                onMerge = { viewModel.mergeGuestData() },
+                onOnlineOnly = { viewModel.discardGuestData() },
+            )
         }
 
         // Controllo aggiornamenti: mostra il popup se su GitHub c'è una versione maggiore.

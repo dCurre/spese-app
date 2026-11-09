@@ -15,6 +15,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -36,6 +37,7 @@ import com.dcapps.spese.R
 fun SignInScreen(
     state: AuthUiState,
     onGoogleSignIn: (android.content.Context) -> Unit,
+    onContinueAsGuest: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -66,6 +68,17 @@ fun SignInScreen(
             CircularProgressIndicator(modifier = Modifier.size(32.dp), color = Color.White)
         } else {
             GoogleSignInButton(onClick = { onGoogleSignIn(context) })
+            // Ingresso senza account (guest-first): usa l'app in locale, login opzionale dopo.
+            TextButton(
+                onClick = onContinueAsGuest,
+                modifier = Modifier.padding(top = 16.dp),
+            ) {
+                Text(
+                    text = stringResource(R.string.signin_continue_guest),
+                    color = Color.White,
+                    fontWeight = FontWeight.Medium,
+                )
+            }
         }
 
         state.error?.let { error ->

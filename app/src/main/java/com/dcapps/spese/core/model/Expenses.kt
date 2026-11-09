@@ -31,6 +31,10 @@ data class ExpensesList(
     @SerialName("participants_count") val participantsCount: Int? = null,
     @SerialName("expenses_count") val expensesCount: Int? = null,
     val participants: List<ExpensesListParticipant> = emptyList(),
+    // Campi delta sync (backend local-first).
+    @SerialName("client_id") val clientId: String? = null,
+    @SerialName("updated_at") @Serializable(InstantSerializer::class) val updatedAt: Instant? = null,
+    val deleted: Boolean = false,
 ) {
     val type: ListType get() = ListType.from(listType)
 }
@@ -83,6 +87,9 @@ data class Expense(
     @SerialName("expense_date") @Serializable(InstantSerializer::class) val expenseDate: Instant? = null,
     @SerialName("expense_type_id") val expenseTypeId: Long? = null,
     @SerialName("expense_type") val expenseType: String? = null,
+    // Campi delta sync (backend local-first).
+    @SerialName("client_id") val clientId: String? = null,
+    val deleted: Boolean = false,
 )
 
 @Serializable
@@ -167,4 +174,76 @@ data class BalanceResponse(
 data class UserWithExpensesListsResponse(
     val user: User,
     @SerialName("expenses_lists") val expensesLists: List<ExpensesList> = emptyList(),
+)
+
+// --- Delta sync (local-first) ---
+
+/** Risposta di GET /api/expenses-lists/delta: entità modificate dopo `since` (incluse deleted). */
+@Serializable
+data class ExpensesDeltaResponse(
+    @SerialName("server_time") val serverTime: String,
+    val lists: List<ExpensesList> = emptyList(),
+    val expenses: List<Expense> = emptyList(),
+)
+
+/** Blocco "create lista spese" per il batch-sync: temp_id referenzia la nuova lista dalle spese. */
+@Serializable
+data class SyncExpensesListCreate(
+    @SerialName("temp_id") val tempId: String,
+    @SerialName("client_id") val clientId: String,
+    val name: String,
+    @SerialName("list_type") val listType: String = "personal",
+    val paid: Boolean = false,
+)
+
+@Serializable
+data class SyncExpensesListUpdate(
+    val id: Long,
+    val name: String? = null,
+    val paid: Boolean? = null,
+)
+
+@Serializable
+data class SyncExpenseCreate(
+    @SerialName("temp_id") val tempId: String,
+    @SerialName("client_id") val clientId: String,
+    // list_id o list_temp_id (uno dei due): la lista può essere nuova (temp) o esistente.
+    @SerialName("expense_list_id") val listId: Long? = null,
+    @SerialName("list_temp_id") val listTempId: String? = null,
+    val name: String,
+    @Serializable(BigDecimalSerializer::class) val amount: BigDecimal,
+    @SerialName("expense_date") val expenseDate: String? = null,
+    @SerialName("expense_type_id") val expenseTypeId: Long? = null,
+)
+
+@Serializable
+data class SyncExpenseUpdate(
+    val id: Long,
+    val name: String? = null,
+    @Serializable(BigDecimalSerializer::class) val amount: BigDecimal? = null,
+    @SerialName("expense_date") val expenseDate: String? = null,
+    @SerialName("expense_type_id") val expenseTypeId: Long? = null,
+)
+
+@Serializable
+data class ExpensesBatchSyncRequest(
+    @SerialName("lists_create") val listsCreate: List<SyncExpensesListCreate> = emptyList(),
+    @SerialName("lists_update") val listsUpdate: List<SyncExpensesListUpdate> = emptyList(),
+    @SerialName("lists_delete") val listsDelete: List<Long> = emptyList(),
+    @SerialName("expenses_create") val expensesCreate: List<SyncExpenseCreate> = emptyList(),
+    @SerialName("expenses_update") val expensesUpdate: List<SyncExpenseUpdate> = emptyList(),
+    @SerialName("expenses_delete") val expensesDelete: List<Long> = emptyList(),
+)
+
+/** Mappa temp_id → id reale per ciascuna entità, restituita dal batch-sync spese. */
+@Serializable
+data class ExpensesSyncIdMap(
+    val lists: Map<String, Long> = emptyMap(),
+    val expenses: Map<String, Long> = emptyMap(),
+)
+
+@Serializable
+data class ExpensesBatchSyncResponse(
+    @SerialName("server_time") val serverTime: String,
+    @SerialName("id_map") val idMap: ExpensesSyncIdMap = ExpensesSyncIdMap(),
 )

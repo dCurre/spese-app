@@ -81,29 +81,23 @@ class PriceListViewModel @Inject constructor(
     val uiState: StateFlow<PriceListUiState> = _uiState.asStateFlow()
 
     init {
-        load(showLoading = true)
+        // Prodotti: Flow reattivo da Room (local-first) → la UI si aggiorna da sola a ogni modifica.
+        viewModelScope.launch {
+            priceRepository.observeProducts().collect { products ->
+                _uiState.update { it.copy(isLoading = false, products = products) }
+            }
+        }
+        // Unità di misura: catalogo online (non è un dato local-first).
+        loadUnits()
     }
 
-    /**
-     * Carica i prodotti. [showLoading] = true mostra lo spinner (solo primo caricamento); reload
-     * dopo una mutazione usa false (reload silenzioso, niente lampeggio dell'elenco).
-     */
-    fun load(showLoading: Boolean = false) {
-        if (showLoading) _uiState.update { it.copy(isLoading = true, error = null) }
+    /** load() resta per compat: in local-first ricarica solo il catalogo unità. */
+    fun load(showLoading: Boolean = false) = loadUnits()
+
+    private fun loadUnits() {
         viewModelScope.launch {
-            val products = priceRepository.getProducts()
             val units = catalogRepository.getMeasurementUnits()
-            if (products is ApiResult.Error) {
-                _uiState.update { it.copy(isLoading = false, error = products.message) }
-                return@launch
-            }
-            _uiState.update {
-                it.copy(
-                    isLoading = false,
-                    products = (products as ApiResult.Success).data,
-                    units = (units as? ApiResult.Success)?.data ?: emptyList(),
-                )
-            }
+            if (units is ApiResult.Success) _uiState.update { it.copy(units = units.data) }
         }
     }
 
@@ -125,7 +119,7 @@ class PriceListViewModel @Inject constructor(
         if (name.isBlank()) return
         launchMutation(
             onError = { e -> _uiState.update { it.copy(message = e.message) } },
-            onSuccess = { load() },
+            onSuccess = {}, // il Flow reattivo aggiorna la lista da solo
             call = {
                 priceRepository.createProduct(
                     CreateProductRequest(name = name.trim(), brand = brand?.takeIf { it.isNotBlank() }, defaultUnitId = defaultUnitId)
@@ -137,7 +131,7 @@ class PriceListViewModel @Inject constructor(
     fun deleteProduct(product: Product) {
         launchMutation(
             onError = { e -> _uiState.update { it.copy(message = e.message) } },
-            onSuccess = { load(showLoading = false) },
+            onSuccess = {}, // il Flow reattivo aggiorna la lista da solo
             call = { priceRepository.deleteProduct(product.id) },
         )
     }
@@ -154,7 +148,6 @@ class PriceListViewModel @Inject constructor(
             val r = priceRepository.deleteProductsBulk(ids)
             selection.clear()
             if (r is ApiResult.Error) _uiState.update { it.copy(message = r.message) }
-            load(showLoading = false)
         }
     }
 

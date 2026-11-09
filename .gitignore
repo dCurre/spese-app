@@ -29,6 +29,9 @@ app/google-services.json
 # Tool locale per chiudere le issue (usa il token da local.properties): non versionato
 scripts/close-issue.ps1
 
+# Documento di design temporaneo (guest/offline): si cancella a lavoro finito, non versionato
+.claude/DESIGN-guest-offline.md
+
 # Keystore e materiale di firma: MAI nel repo
 keystore-tmp/
 *.keystore

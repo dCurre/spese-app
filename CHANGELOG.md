@@ -3,6 +3,14 @@
 Note di rilascio in linguaggio comprensibile, mostrate nella schermata di aggiornamento dell'app.
 Ogni versione ha una sezione `## X.Y.Z` con un elenco puntato delle novità per l'utente.
 
+## 0.2.0
+- Ora puoi usare l'app subito, senza account: entri come ospite e crei liste spese, checklist e prezzi direttamente sul tuo telefono.
+- Tutto funziona anche offline: le tue modifiche sono immediate e vengono sincronizzate da sole quando torni online.
+- Quando accedi con Google puoi scegliere se unire i dati creati come ospite al tuo account oppure usare solo quelli già online.
+- Profilo ospite con nome e foto personalizzabili, salvati sul dispositivo finché non crei un account.
+- Le funzioni di condivisione (partecipanti, inviti, liste condivise) mostrano un lucchetto per gli ospiti: basta accedere con un account per usarle.
+- Nuovo indicatore di sincronizzazione e segnalazione automatica degli errori anche per le operazioni offline.
+
 ## 0.1.8
 - Miglioramenti interni, pulizia del codice e test automatici per maggiore stabilità.
 

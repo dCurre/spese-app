@@ -1,5 +1,6 @@
 package com.dcapps.spese.core.realtime
 
+import com.dcapps.spese.core.auth.SessionManager
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.realtime.HasOldRecord
 import io.github.jan.supabase.realtime.HasRecord
@@ -12,6 +13,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -38,6 +40,7 @@ enum class RealtimeTable(val tableName: String) {
 @Singleton
 class RealtimeService @Inject constructor(
     private val supabase: SupabaseClient,
+    private val session: SessionManager,
 ) {
     private val scope = CoroutineScope(SupervisorJob())
     private val schema = "spese"
@@ -51,13 +54,19 @@ class RealtimeService @Inject constructor(
     private val entries = mutableMapOf<RealtimeTable, Entry>()
     private val mutex = Mutex()
 
-    /** Osserva i cambiamenti su [table]. Il canale si chiude quando l'ultimo collector smette. */
-    fun watch(table: RealtimeTable): Flow<PostgresAction> = flow {
-        val entry = acquire(table)
-        try {
-            emitAll(entry.flow)
-        } finally {
-            release(table)
+    /**
+     * Osserva i cambiamenti su [table]. Il canale si chiude quando l'ultimo collector smette.
+     * In modalità GUEST non c'è backend: ritorna un flow vuoto (nessun canale Supabase aperto).
+     */
+    fun watch(table: RealtimeTable): Flow<PostgresAction> {
+        if (session.isGuest) return emptyFlow()
+        return flow {
+            val entry = acquire(table)
+            try {
+                emitAll(entry.flow)
+            } finally {
+                release(table)
+            }
         }
     }
 

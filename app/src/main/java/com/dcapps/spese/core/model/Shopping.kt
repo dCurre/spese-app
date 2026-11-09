@@ -16,6 +16,10 @@ data class ShoppingItem(
     val checked: Boolean = false,
     @SerialName("sort_order") val sortOrder: Int = 0,
     @SerialName("created_at") @Serializable(InstantSerializer::class) val createdAt: Instant? = null,
+    // Campi delta sync (backend local-first).
+    @SerialName("client_id") val clientId: String? = null,
+    @SerialName("updated_at") @Serializable(InstantSerializer::class) val updatedAt: Instant? = null,
+    val deleted: Boolean = false,
 )
 
 /** Categoria (albero: può avere sottocategorie e item). */
@@ -27,6 +31,9 @@ data class ShoppingCategory(
     val name: String = "",
     @SerialName("sort_order") val sortOrder: Int = 0,
     @SerialName("created_at") @Serializable(InstantSerializer::class) val createdAt: Instant? = null,
+    @SerialName("client_id") val clientId: String? = null,
+    @SerialName("updated_at") @Serializable(InstantSerializer::class) val updatedAt: Instant? = null,
+    val deleted: Boolean = false,
     val items: List<ShoppingItem> = emptyList(),
     val children: List<ShoppingCategory> = emptyList(),
 )
@@ -57,6 +64,9 @@ data class ShoppingList(
     @SerialName("items_count") val itemsCount: Int? = null,
     @SerialName("checked_count") val checkedCount: Int? = null,
     @SerialName("participants_count") val participantsCount: Int? = null,
+    @SerialName("client_id") val clientId: String? = null,
+    @SerialName("updated_at") @Serializable(InstantSerializer::class) val updatedAt: Instant? = null,
+    val deleted: Boolean = false,
     val participants: List<ShoppingListParticipant> = emptyList(),
     val categories: List<ShoppingCategory> = emptyList(),
     val items: List<ShoppingItem> = emptyList(),
@@ -209,4 +219,107 @@ data class BatchSaveRequest(
     @SerialName("items_update") val itemsUpdate: List<BatchItemUpdate> = emptyList(),
     @SerialName("items_delete") val itemsDelete: List<Long> = emptyList(),
     @SerialName("items_create") val itemsCreate: List<BatchItemCreate> = emptyList(),
+)
+
+// --- Delta sync (local-first) ---
+
+/** Risposta di GET /api/shopping-lists/delta: entità modificate dopo `since` (incluse deleted). */
+@Serializable
+data class DeltaResponse(
+    @SerialName("server_time") val serverTime: String,
+    val lists: List<ShoppingList> = emptyList(),
+    val categories: List<ShoppingCategory> = emptyList(),
+    val items: List<ShoppingItem> = emptyList(),
+)
+
+// --- Push: batch-sync (create/update/delete misti cross-lista in una transazione) ---
+
+/** Blocco "create lista" per il batch-sync: temp_id referenzia la nuova lista dai figli. */
+@Serializable
+data class SyncListCreate(
+    @SerialName("temp_id") val tempId: String,
+    @SerialName("client_id") val clientId: String,
+    val name: String,
+    @SerialName("list_type") val listType: String = "personal",
+    val completed: Boolean = false,
+    val starred: Boolean = false,
+)
+
+@Serializable
+data class SyncListUpdate(
+    val id: Long,
+    val name: String? = null,
+    val completed: Boolean? = null,
+    val starred: Boolean? = null,
+)
+
+@Serializable
+data class SyncCategoryCreate(
+    @SerialName("temp_id") val tempId: String,
+    @SerialName("client_id") val clientId: String,
+    // list_id o list_temp_id (uno dei due): la lista può essere nuova (temp) o esistente.
+    @SerialName("list_id") val listId: Long? = null,
+    @SerialName("list_temp_id") val listTempId: String? = null,
+    @SerialName("parent_id") val parentId: Long? = null,
+    @SerialName("parent_temp_id") val parentTempId: String? = null,
+    val name: String,
+    @SerialName("sort_order") val sortOrder: Int = 0,
+)
+
+@Serializable
+data class SyncCategoryUpdate(
+    val id: Long,
+    val name: String? = null,
+    @SerialName("parent_id") val parentId: Long? = null,
+    @SerialName("sort_order") val sortOrder: Int? = null,
+)
+
+@Serializable
+data class SyncItemCreate(
+    @SerialName("temp_id") val tempId: String,
+    @SerialName("client_id") val clientId: String,
+    @SerialName("list_id") val listId: Long? = null,
+    @SerialName("list_temp_id") val listTempId: String? = null,
+    @SerialName("category_id") val categoryId: Long? = null,
+    @SerialName("category_temp_id") val categoryTempId: String? = null,
+    val name: String,
+    val quantity: Int = 1,
+    val checked: Boolean = false,
+    @SerialName("sort_order") val sortOrder: Int = 0,
+)
+
+@Serializable
+data class SyncItemUpdate(
+    val id: Long,
+    val name: String? = null,
+    val quantity: Int? = null,
+    val checked: Boolean? = null,
+    @SerialName("category_id") val categoryId: Long? = null,
+)
+
+@Serializable
+data class BatchSyncRequest(
+    @SerialName("lists_create") val listsCreate: List<SyncListCreate> = emptyList(),
+    @SerialName("lists_update") val listsUpdate: List<SyncListUpdate> = emptyList(),
+    @SerialName("lists_delete") val listsDelete: List<Long> = emptyList(),
+    @SerialName("categories_create") val categoriesCreate: List<SyncCategoryCreate> = emptyList(),
+    @SerialName("categories_update") val categoriesUpdate: List<SyncCategoryUpdate> = emptyList(),
+    @SerialName("categories_delete") val categoriesDelete: List<Long> = emptyList(),
+    @SerialName("items_create") val itemsCreate: List<SyncItemCreate> = emptyList(),
+    @SerialName("items_update") val itemsUpdate: List<SyncItemUpdate> = emptyList(),
+    @SerialName("items_delete") val itemsDelete: List<Long> = emptyList(),
+)
+
+/** Mappa temp_id → id reale per ciascuna entità, restituita dal batch-sync. */
+@Serializable
+data class SyncIdMap(
+    val lists: Map<String, Long> = emptyMap(),
+    val categories: Map<String, Long> = emptyMap(),
+    val items: Map<String, Long> = emptyMap(),
+)
+
+@Serializable
+data class BatchSyncResponse(
+    @SerialName("server_time") val serverTime: String,
+    @SerialName("id_map") val idMap: SyncIdMap = SyncIdMap(),
 )

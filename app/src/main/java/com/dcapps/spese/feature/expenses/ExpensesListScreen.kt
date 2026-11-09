@@ -42,7 +42,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -78,6 +80,9 @@ fun ExpensesListScreen(
     var listToDelete by remember { mutableStateOf<ExpensesList?>(null) }
     var showDeleteSelected by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+    // Messaggio quando un guest prova a creare una lista condivisa (opzione lucchettata).
+    val sharedLockedMsg = stringResource(R.string.guest_shared_list_locked)
 
     ErrorSnackbarEffect(state.message, snackbarHostState, viewModel::clearMessage)
 
@@ -155,6 +160,10 @@ fun ExpensesListScreen(
             onCreate = { name, shared ->
                 viewModel.createList(name, shared)
                 showCreateDialog = false
+            },
+            isGuest = viewModel.isGuest,
+            onSharedLocked = {
+                scope.launch { snackbarHostState.showSnackbar(sharedLockedMsg) }
             },
         )
     }

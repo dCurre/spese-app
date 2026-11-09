@@ -51,6 +51,7 @@
     <string name="profile_edit_name">Edit name</string>
     <string name="profile_surname">Surname</string>
     <string name="profile_copy_email">Copy email</string>
+    <string name="profile_guest_hint">You\'re using the app as a guest. Sign in or register to save your data to your account.</string>
     <string name="profile_avatar">Avatar</string>
     <string name="profile_change_avatar">Change avatar</string>
     <string name="profile_previous_photo">Previous photo</string>
@@ -90,6 +91,9 @@
     <string name="detail_share">Share</string>
     <string name="detail_participants">Participants</string>
     <string name="detail_transfer_owner">Transfer ownership</string>
+    <string name="guest_share_locked">Sign in with an account to share lists.</string>
+    <string name="guest_shared_list_locked">Shared lists require an account. Sign in to create one.</string>
+    <string name="cd_locked">For registered users only</string>
     <string name="list_make_shared">Make shared</string>
     <string name="list_make_personal">Make personal</string>
     <string name="list_make_personal_title">Make it personal?</string>
@@ -245,6 +249,21 @@
     <!-- Sign in -->
     <string name="signin_tagline">Manage shared expenses and shopping lists</string>
     <string name="signin_google">Sign in with Google</string>
+    <string name="signin_continue_guest">Continue as guest</string>
+    <string name="offline_title">You\'re offline</string>
+    <string name="offline_message">We can\'t reach the server. Retry sign-in when you\'re back online, or continue as a guest.</string>
+    <string name="offline_retry">Retry sign-in</string>
+
+    <!-- Guest → account upgrade: choice about local data -->
+    <string name="migration_title">Data created as a guest</string>
+    <string name="migration_message">You created lists and data while using the app as a guest. Do you want to add them to your account, or use only the data already online?</string>
+    <string name="migration_merge">Merge into my account</string>
+    <string name="migration_online_only">Online data only</string>
+    <string name="migration_in_progress">Syncing…</string>
+
+    <!-- Sync status indicator -->
+    <string name="sync_status_syncing">Syncing</string>
+    <string name="sync_status_error">Sync failed</string>
 
     <!-- About -->
     <string name="about_version">Version %1$s</string>

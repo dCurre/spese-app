@@ -101,7 +101,7 @@ fun ProfileEditScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Box(contentAlignment = Alignment.BottomEnd) {
-                    val img = user?.profileImage
+                    val img = state.photo
                     if (!img.isNullOrBlank()) {
                         AsyncImage(
                             model = img,
@@ -162,7 +162,7 @@ fun ProfileEditScreen(
                 modifier = Modifier.fillMaxWidth().padding(top = 24.dp),
             ) {
                 Text(
-                    user?.displayName ?: "",
+                    state.displayName,
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.weight(1f),
@@ -172,37 +172,47 @@ fun ProfileEditScreen(
                 }
             }
 
-            // Email con azione di copia (allineata a sinistra).
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
+            if (state.isGuest) {
+                // Ospite: niente email/logout → invito a registrarsi/accedere.
                 Text(
-                    user?.email ?: "",
+                    stringResource(R.string.profile_guest_hint),
                     style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.weight(1f),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
                 )
-                IconButton(onClick = {
-                    val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE)
-                        as android.content.ClipboardManager
-                    clipboard.setPrimaryClip(
-                        android.content.ClipData.newPlainText("email", user?.email ?: ""),
+            } else {
+                // Email con azione di copia (allineata a sinistra).
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(
+                        state.email ?: "",
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.weight(1f),
                     )
-                }) {
-                    Icon(
-                        Icons.Default.ContentCopy,
-                        contentDescription = stringResource(R.string.profile_copy_email),
-                        modifier = Modifier.size(16.dp),
-                    )
+                    IconButton(onClick = {
+                        val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE)
+                            as android.content.ClipboardManager
+                        clipboard.setPrimaryClip(
+                            android.content.ClipData.newPlainText("email", state.email ?: ""),
+                        )
+                    }) {
+                        Icon(
+                            Icons.Default.ContentCopy,
+                            contentDescription = stringResource(R.string.profile_copy_email),
+                            modifier = Modifier.size(16.dp),
+                        )
+                    }
                 }
-            }
 
-            OutlinedButton(
-                onClick = { viewModel.signOut(context) },
-                modifier = Modifier.fillMaxWidth().padding(top = 32.dp),
-            ) {
-                Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = null, modifier = Modifier.size(18.dp))
-                Text(stringResource(R.string.profile_logout), modifier = Modifier.padding(start = 8.dp))
+                OutlinedButton(
+                    onClick = { viewModel.signOut(context) },
+                    modifier = Modifier.fillMaxWidth().padding(top = 32.dp),
+                ) {
+                    Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Text(stringResource(R.string.profile_logout), modifier = Modifier.padding(start = 8.dp))
+                }
             }
         }
     }

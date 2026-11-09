@@ -57,7 +57,6 @@ import com.dcapps.spese.ui.components.ErrorSnackbarEffect
 import com.dcapps.spese.ui.components.ErrorState
 import com.dcapps.spese.ui.components.IconCount
 import com.dcapps.spese.ui.components.ListRowContent
-import com.dcapps.spese.ui.components.RefreshOnResume
 import com.dcapps.spese.ui.components.RowDivider
 import com.dcapps.spese.ui.components.SortBar
 import com.dcapps.spese.ui.components.SortOption
@@ -92,9 +91,7 @@ fun ChecklistScreen(
     // In modalità selezione, il tasto Indietro annulla la selezione invece di uscire.
     BackHandler(enabled = sel.selectionMode) { viewModel.selection.clear() }
 
-    // Rinfresca al ritorno dal dettaglio: spuntare/cancellare articoli cambia i conteggi
-    // ma non emette eventi realtime sulla tabella delle liste.
-    RefreshOnResume { viewModel.load() }
+    // (Local-first: nessun refresh al ritorno — la UI osserva Room e si aggiorna da sola.)
 
     Scaffold(
         topBar = {

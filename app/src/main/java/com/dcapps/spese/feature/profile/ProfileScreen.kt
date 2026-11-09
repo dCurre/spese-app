@@ -63,6 +63,7 @@ fun ProfileScreen(
     viewModel: ProfileViewModel = hiltViewModel(),
 ) {
     val user by viewModel.currentUser.collectAsStateWithLifecycle()
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
     val isAdmin = user?.role == "admin" || user?.role == "superadmin"
     var showFeedback by remember { mutableStateOf(false) }
 
@@ -86,7 +87,7 @@ fun ProfileScreen(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
                 horizontalAlignment = Alignment.Start,
             ) {
-                val img = user?.profileImage
+                val img = state.photo
                 if (!img.isNullOrBlank()) {
                     AsyncImage(
                         model = img,
@@ -113,7 +114,7 @@ fun ProfileScreen(
                         .padding(top = 12.dp, bottom = 4.dp, end = 8.dp),
                 ) {
                     Text(
-                        user?.displayName ?: "",
+                        state.displayName,
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
                     )

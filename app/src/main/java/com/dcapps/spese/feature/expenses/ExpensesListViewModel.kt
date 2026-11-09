@@ -1,14 +1,10 @@
 package com.dcapps.spese.feature.expenses
 
-import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.dcapps.spese.R
 import com.dcapps.spese.core.auth.SessionManager
 import com.dcapps.spese.core.data.ExpensesRepository
 import com.dcapps.spese.core.data.UserRepository
-import com.dcapps.spese.core.realtime.RealtimeService
-import com.dcapps.spese.core.realtime.RealtimeTable
 import com.dcapps.spese.core.model.CreateExpensesListRequest
 import com.dcapps.spese.core.model.ExpensesList
 import com.dcapps.spese.core.model.UpdateExpensesListRequest
@@ -18,7 +14,6 @@ import com.dcapps.spese.core.prefs.SortPreferences
 import com.dcapps.spese.core.ui.SelectionController
 import com.dcapps.spese.core.ui.launchMutation
 import dagger.hilt.android.lifecycle.HiltViewModel
-import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -42,10 +37,8 @@ data class ExpensesListUiState(
 
 @HiltViewModel
 class ExpensesListViewModel @Inject constructor(
-    @ApplicationContext private val context: Context,
     private val expensesRepository: ExpensesRepository,
     private val userRepository: UserRepository,
-    private val realtimeService: RealtimeService,
     private val session: SessionManager,
     private val sortPreferences: SortPreferences,
 ) : ViewModel() {
@@ -57,50 +50,29 @@ class ExpensesListViewModel @Inject constructor(
             sort = savedSort?.criterion?.let { runCatching { ListSort.valueOf(it) }.getOrNull() }
                 ?: ListSort.DATE,
             sortAsc = savedSort?.ascending ?: false,
+            paidListsShown = session.currentUser.value?.paidListShown ?: true,
         ),
     )
     val uiState: StateFlow<ExpensesListUiState> = _uiState.asStateFlow()
 
+    /** true se la sessione è ospite: in creazione, l'opzione "condivisa" è lucchettata. */
+    val isGuest: Boolean get() = session.isGuest
+
     private var allLists: List<ExpensesList> = emptyList()
 
     init {
-        load(showLoading = true)
+        // Local-first: osserva Room. Ogni modifica (locale o portata dal sync) rinfresca la UI.
         viewModelScope.launch {
-            realtimeService.watch(RealtimeTable.EXPENSES_LISTS).collect { load() }
-        }
-    }
-
-    /**
-     * Carica le liste. [showLoading] = true mostra lo spinner (solo primo caricamento); reload
-     * da realtime/mutazioni usano false (reload silenzioso, niente lampeggio dell'elenco).
-     */
-    fun load(showLoading: Boolean = false) {
-        val email = session.currentUser.value?.email
-        if (email.isNullOrBlank()) {
-            _uiState.update { it.copy(isLoading = false, error = context.getString(R.string.vm_user_unavailable)) }
-            return
-        }
-        if (showLoading) _uiState.update { it.copy(isLoading = true, error = null) }
-        viewModelScope.launch {
-            when (val result = expensesRepository.getUserWithLists(email)) {
-                is ApiResult.Success -> {
-                    // Aggiorna l'utente in sessione (come fa la webapp).
-                    session.setUser(result.data.user)
-                    allLists = result.data.expensesLists
-                    _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            error = null,
-                            paidListsShown = result.data.user.paidListShown,
-                        )
-                    }
-                    recompute()
-                }
-                is ApiResult.Error ->
-                    _uiState.update { it.copy(isLoading = false, error = result.message) }
+            expensesRepository.observeLists().collect { lists ->
+                allLists = lists
+                _uiState.update { it.copy(isLoading = false, error = null) }
+                recompute()
             }
         }
     }
+
+    /** Compat: con l'osservazione reattiva il refresh manuale non serve più (no-op). */
+    fun load(showLoading: Boolean = false) { /* reattivo: niente da fare */ }
 
     fun onQueryChange(query: String) {
         _uiState.update { it.copy(query = query) }
@@ -117,9 +89,10 @@ class ExpensesListViewModel @Inject constructor(
     }
 
     fun togglePaidListsShown() {
-        val user = session.currentUser.value ?: return
         val newValue = !_uiState.value.paidListsShown
         _uiState.update { it.copy(paidListsShown = newValue) }
+        // Preferenza UI: se loggato la si persiste sull'utente lato backend; in guest resta locale.
+        val user = session.currentUser.value ?: return
         viewModelScope.launch {
             userRepository.update(user.id, UpdateUserRequest(paidListShown = newValue))
             session.setUser(user.copy(paidListShown = newValue))
@@ -127,43 +100,32 @@ class ExpensesListViewModel @Inject constructor(
     }
 
     fun createList(name: String, shared: Boolean) {
-        val user = session.currentUser.value ?: return
         if (name.isBlank()) return
+        val userId = session.currentUser.value?.id ?: 0L
         val listType = if (shared) "shared" else "personal"
-        // Non usa launchMutation: nel ramo Success serve attendere addParticipant PRIMA di load()
-        // (lavoro suspend sequenziale), che un onSuccess non-suspend non garantirebbe.
-        viewModelScope.launch {
-            when (val created = expensesRepository.createList(
-                CreateExpensesListRequest(name = name.trim(), userId = user.id, listType = listType)
-            )) {
-                is ApiResult.Success -> {
-                    val newId = created.data
-                    if (shared && newId != null) {
-                        expensesRepository.addParticipant(newId, user.id)
-                    }
-                    load()
-                }
-                is ApiResult.Error ->
-                    _uiState.update { it.copy(message = created.message) }
-            }
-        }
+        // Local-first: la create scrive su Room; il Flow osservato aggiorna la UI da solo.
+        launchMutation(
+            onError = { e -> _uiState.update { it.copy(message = e.message) } },
+            onSuccess = { },
+            call = {
+                expensesRepository.createList(
+                    CreateExpensesListRequest(name = name.trim(), userId = userId, listType = listType),
+                )
+            },
+        )
     }
 
     fun deleteList(list: ExpensesList) {
         launchMutation(
             onError = { e -> _uiState.update { it.copy(message = e.message) } },
-            onSuccess = { load() },
+            onSuccess = { },
             call = { expensesRepository.deleteList(list.id) },
         )
     }
 
     fun setPaid(list: ExpensesList, paid: Boolean) {
         viewModelScope.launch {
-            expensesRepository.updateList(
-                list.id,
-                UpdateExpensesListRequest(paid = paid),
-            )
-            load()
+            expensesRepository.updateList(list.id, UpdateExpensesListRequest(paid = paid))
         }
     }
 
@@ -178,7 +140,6 @@ class ExpensesListViewModel @Inject constructor(
             val r = expensesRepository.deleteListsBulk(ids)
             selection.clear()
             if (r is ApiResult.Error) _uiState.update { it.copy(message = r.message) }
-            load(showLoading = false)
         }
     }
 

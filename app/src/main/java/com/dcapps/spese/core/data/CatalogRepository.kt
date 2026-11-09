@@ -13,13 +13,18 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Dati di catalogo (tipi spesa, unità di misura, ruoli). Con cache in memoria: questi dati
- * cambiano raramente e il backend non pagina.
+ * Dati di catalogo (tipi spesa, unità di misura, ruoli). Cache a due livelli: memoria (questi dati
+ * cambiano raramente e il backend non pagina) + disco ([CatalogStore], DataStore) per l'uso OFFLINE.
+ *
+ * Ogni getter prova, nell'ordine: cache in memoria → rete (e, se riesce, aggiorna memoria + disco) →
+ * fallback al disco se la rete fallisce. Se anche il disco è vuoto (primo avvio offline), ritorna
+ * l'errore di rete originale (KO "connessione assente"). Nessun seed finto.
  */
 @Singleton
 class CatalogRepository @Inject constructor(
     private val api: SpeseApi,
     private val json: Json,
+    private val store: CatalogStore,
 ) {
     private var expenseTypesCache: List<ExpenseType>? = null
     private var unitsCache: List<MeasurementUnit>? = null
@@ -27,20 +32,39 @@ class CatalogRepository @Inject constructor(
 
     suspend fun getExpenseTypes(forceRefresh: Boolean = false): ApiResult<List<ExpenseType>> {
         expenseTypesCache?.let { if (!forceRefresh) return ApiResult.Success(it) }
-        return apiCall(json) { api.getExpenseTypes().expenseTypes }
-            .also { if (it is ApiResult.Success) expenseTypesCache = it.data }
+        val network = apiCall(json) { api.getExpenseTypes().expenseTypes }
+        if (network is ApiResult.Success) {
+            expenseTypesCache = network.data
+            store.saveExpenseTypes(network.data)
+            return network
+        }
+        // Rete fallita: prova il disco (uso offline).
+        store.loadExpenseTypes()?.let { expenseTypesCache = it; return ApiResult.Success(it) }
+        return network
     }
 
     suspend fun getMeasurementUnits(forceRefresh: Boolean = false): ApiResult<List<MeasurementUnit>> {
         unitsCache?.let { if (!forceRefresh) return ApiResult.Success(it) }
-        return apiCall(json) { api.getMeasurementUnits().measurementUnits }
-            .also { if (it is ApiResult.Success) unitsCache = it.data }
+        val network = apiCall(json) { api.getMeasurementUnits().measurementUnits }
+        if (network is ApiResult.Success) {
+            unitsCache = network.data
+            store.saveUnits(network.data)
+            return network
+        }
+        store.loadUnits()?.let { unitsCache = it; return ApiResult.Success(it) }
+        return network
     }
 
     suspend fun getUserRoles(forceRefresh: Boolean = false): ApiResult<List<UserRole>> {
         rolesCache?.let { if (!forceRefresh) return ApiResult.Success(it) }
-        return apiCall(json) { api.getUserRoles().userRoles }
-            .also { if (it is ApiResult.Success) rolesCache = it.data }
+        val network = apiCall(json) { api.getUserRoles().userRoles }
+        if (network is ApiResult.Success) {
+            rolesCache = network.data
+            store.saveRoles(network.data)
+            return network
+        }
+        store.loadRoles()?.let { rolesCache = it; return ApiResult.Success(it) }
+        return network
     }
 
     // --- CRUD (admin). Invalidano la cache corrispondente. ---

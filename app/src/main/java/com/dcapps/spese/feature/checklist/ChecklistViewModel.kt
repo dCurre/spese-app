@@ -1,9 +1,7 @@
 package com.dcapps.spese.feature.checklist
 
-import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.dcapps.spese.R
 import com.dcapps.spese.core.auth.SessionManager
 import com.dcapps.spese.core.data.ShoppingRepository
 import com.dcapps.spese.core.model.CreateShoppingListRequest
@@ -11,12 +9,9 @@ import com.dcapps.spese.core.model.ShoppingList
 import com.dcapps.spese.core.model.UpdateShoppingListRequest
 import com.dcapps.spese.core.network.ApiResult
 import com.dcapps.spese.core.prefs.SortPreferences
-import com.dcapps.spese.core.realtime.RealtimeService
-import com.dcapps.spese.core.realtime.RealtimeTable
 import com.dcapps.spese.core.ui.SelectionController
 import com.dcapps.spese.core.ui.launchMutation
 import dagger.hilt.android.lifecycle.HiltViewModel
-import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -40,9 +35,7 @@ data class ChecklistUiState(
 
 @HiltViewModel
 class ChecklistViewModel @Inject constructor(
-    @ApplicationContext private val context: Context,
     private val shoppingRepository: ShoppingRepository,
-    private val realtimeService: RealtimeService,
     private val session: SessionManager,
     private val sortPreferences: SortPreferences,
 ) : ViewModel() {
@@ -61,35 +54,18 @@ class ChecklistViewModel @Inject constructor(
     private var allLists: List<ShoppingList> = emptyList()
 
     init {
-        load(showLoading = true)
+        // Local-first: osserva Room. Ogni modifica (locale o portata dal sync) rinfresca la UI.
         viewModelScope.launch {
-            realtimeService.watch(RealtimeTable.SHOPPING_LISTS).collect { load() }
-        }
-    }
-
-    /**
-     * Carica le liste. [showLoading] = true mostra lo spinner (solo primo caricamento); reload
-     * da realtime/mutazioni usano false (reload silenzioso, niente lampeggio dell'elenco).
-     */
-    fun load(showLoading: Boolean = false) {
-        val userId = session.currentUser.value?.id
-        if (userId == null) {
-            _uiState.update { it.copy(isLoading = false, error = context.getString(R.string.vm_user_unavailable)) }
-            return
-        }
-        if (showLoading) _uiState.update { it.copy(isLoading = true, error = null) }
-        viewModelScope.launch {
-            when (val result = shoppingRepository.getByUser(userId)) {
-                is ApiResult.Success -> {
-                    allLists = result.data
-                    _uiState.update { it.copy(isLoading = false, error = null) }
-                    recompute()
-                }
-                is ApiResult.Error ->
-                    _uiState.update { it.copy(isLoading = false, error = result.message) }
+            shoppingRepository.observeLists().collect { lists ->
+                allLists = lists
+                _uiState.update { it.copy(isLoading = false, error = null) }
+                recompute()
             }
         }
     }
+
+    /** Compat: con l'osservazione reattiva il refresh manuale non serve più (no-op). */
+    fun load(showLoading: Boolean = false) { /* reattivo: niente da fare */ }
 
     fun onQueryChange(q: String) {
         _uiState.update { it.copy(query = q) }
@@ -108,9 +84,10 @@ class ChecklistViewModel @Inject constructor(
     fun create(name: String, shared: Boolean) {
         val userId = session.currentUser.value?.id ?: return
         if (name.isBlank()) return
+        // Local-first: la create scrive su Room; il Flow osservato aggiorna la UI da solo.
         launchMutation(
             onError = { e -> _uiState.update { it.copy(message = e.message) } },
-            onSuccess = { load() },
+            onSuccess = { },
             call = {
                 shoppingRepository.create(
                     CreateShoppingListRequest(
@@ -126,14 +103,13 @@ class ChecklistViewModel @Inject constructor(
     fun toggleStarred(list: ShoppingList) {
         viewModelScope.launch {
             shoppingRepository.update(list.id, UpdateShoppingListRequest(starred = !list.starred))
-            load()
         }
     }
 
     fun delete(list: ShoppingList) {
         launchMutation(
             onError = { e -> _uiState.update { it.copy(message = e.message) } },
-            onSuccess = { load() },
+            onSuccess = { },
             call = { shoppingRepository.delete(list.id) },
         )
     }
@@ -149,7 +125,6 @@ class ChecklistViewModel @Inject constructor(
             val r = shoppingRepository.deleteBulk(ids)
             selection.clear()
             if (r is ApiResult.Error) _uiState.update { it.copy(message = r.message) }
-            load(showLoading = false)
         }
     }
 
