@@ -14,6 +14,7 @@ import com.dcapps.spese.core.prefs.SortPreferences
 import com.dcapps.spese.core.realtime.RealtimeService
 import com.dcapps.spese.core.realtime.RealtimeTable
 import com.dcapps.spese.core.ui.SelectionController
+import com.dcapps.spese.core.ui.launchMutation
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -107,19 +108,19 @@ class ChecklistViewModel @Inject constructor(
     fun create(name: String, shared: Boolean) {
         val userId = session.currentUser.value?.id ?: return
         if (name.isBlank()) return
-        viewModelScope.launch {
-            val result = shoppingRepository.create(
-                CreateShoppingListRequest(
-                    name = name.trim(),
-                    ownerId = userId,
-                    listType = if (shared) "shared" else "personal",
+        launchMutation(
+            onError = { e -> _uiState.update { it.copy(message = e.message) } },
+            onSuccess = { load() },
+            call = {
+                shoppingRepository.create(
+                    CreateShoppingListRequest(
+                        name = name.trim(),
+                        ownerId = userId,
+                        listType = if (shared) "shared" else "personal",
+                    )
                 )
-            )
-            when (result) {
-                is ApiResult.Success -> load()
-                is ApiResult.Error -> _uiState.update { it.copy(message = result.message) }
-            }
-        }
+            },
+        )
     }
 
     fun toggleStarred(list: ShoppingList) {
@@ -130,12 +131,11 @@ class ChecklistViewModel @Inject constructor(
     }
 
     fun delete(list: ShoppingList) {
-        viewModelScope.launch {
-            when (val result = shoppingRepository.delete(list.id)) {
-                is ApiResult.Success -> load()
-                is ApiResult.Error -> _uiState.update { it.copy(message = result.message) }
-            }
-        }
+        launchMutation(
+            onError = { e -> _uiState.update { it.copy(message = e.message) } },
+            onSuccess = { load() },
+            call = { shoppingRepository.delete(list.id) },
+        )
     }
 
     // --- Selezione multipla (issue #10) ---

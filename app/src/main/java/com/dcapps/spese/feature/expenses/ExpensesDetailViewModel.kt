@@ -21,6 +21,7 @@ import com.dcapps.spese.core.model.UpdateExpensesListRequest
 import com.dcapps.spese.core.model.User
 import com.dcapps.spese.core.network.ApiResult
 import com.dcapps.spese.core.ui.SelectionController
+import com.dcapps.spese.core.ui.launchMutation
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -178,22 +179,22 @@ class ExpensesDetailViewModel @Inject constructor(
         date: Instant,
         expenseTypeId: Long?,
     ) {
-        viewModelScope.launch {
-            val result = expensesRepository.createExpense(
-                CreateExpenseRequest(
-                    name = name.trim(),
-                    amount = amount,
-                    expenseOwnerUserId = ownerUserId,
-                    expenseListId = listId,
-                    expenseDate = date.toApiDate(),
-                    expenseTypeId = expenseTypeId,
+        launchMutation(
+            onError = { e -> _uiState.update { it.copy(message = e.message) } },
+            onSuccess = { reloadExpenses() },
+            call = {
+                expensesRepository.createExpense(
+                    CreateExpenseRequest(
+                        name = name.trim(),
+                        amount = amount,
+                        expenseOwnerUserId = ownerUserId,
+                        expenseListId = listId,
+                        expenseDate = date.toApiDate(),
+                        expenseTypeId = expenseTypeId,
+                    )
                 )
-            )
-            when (result) {
-                is ApiResult.Success -> reloadExpenses()
-                is ApiResult.Error -> _uiState.update { it.copy(message = result.message) }
-            }
-        }
+            },
+        )
     }
 
     fun updateExpense(
@@ -205,32 +206,31 @@ class ExpensesDetailViewModel @Inject constructor(
         expenseTypeId: Long?,
         modifiedBy: Long?,
     ) {
-        viewModelScope.launch {
-            val result = expensesRepository.updateExpense(
-                id,
-                UpdateExpenseRequest(
-                    name = name.trim(),
-                    amount = amount,
-                    expenseDate = date.toApiDate(),
-                    expenseOwnerUserId = ownerUserId,
-                    expenseTypeId = expenseTypeId,
-                    modifiedBy = modifiedBy,
-                ),
-            )
-            when (result) {
-                is ApiResult.Success -> reloadExpenses()
-                is ApiResult.Error -> _uiState.update { it.copy(message = result.message) }
-            }
-        }
+        launchMutation(
+            onError = { e -> _uiState.update { it.copy(message = e.message) } },
+            onSuccess = { reloadExpenses() },
+            call = {
+                expensesRepository.updateExpense(
+                    id,
+                    UpdateExpenseRequest(
+                        name = name.trim(),
+                        amount = amount,
+                        expenseDate = date.toApiDate(),
+                        expenseOwnerUserId = ownerUserId,
+                        expenseTypeId = expenseTypeId,
+                        modifiedBy = modifiedBy,
+                    ),
+                )
+            },
+        )
     }
 
     fun deleteExpense(expense: Expense) {
-        viewModelScope.launch {
-            when (val result = expensesRepository.deleteExpense(expense.id)) {
-                is ApiResult.Success -> reloadExpenses()
-                is ApiResult.Error -> _uiState.update { it.copy(message = result.message) }
-            }
-        }
+        launchMutation(
+            onError = { e -> _uiState.update { it.copy(message = e.message) } },
+            onSuccess = { reloadExpenses() },
+            call = { expensesRepository.deleteExpense(expense.id) },
+        )
     }
 
     // --- Selezione multipla (issue #10) ---
@@ -268,51 +268,41 @@ class ExpensesDetailViewModel @Inject constructor(
     }
 
     fun addParticipant(userId: Long) {
-        viewModelScope.launch {
-            when (val r = expensesRepository.addParticipant(listId, userId)) {
-                is ApiResult.Success -> load()
-                is ApiResult.Error -> _uiState.update { it.copy(message = r.message) }
-            }
-        }
+        launchMutation(
+            onError = { e -> _uiState.update { it.copy(message = e.message) } },
+            onSuccess = { load() },
+            call = { expensesRepository.addParticipant(listId, userId) },
+        )
     }
 
     fun addGuest(name: String) {
         if (name.isBlank()) return
-        viewModelScope.launch {
-            when (val r = expensesRepository.addGuest(listId, name)) {
-                is ApiResult.Success -> load()
-                is ApiResult.Error -> _uiState.update { it.copy(message = r.message) }
-            }
-        }
+        launchMutation(
+            onError = { e -> _uiState.update { it.copy(message = e.message) } },
+            onSuccess = { load() },
+            call = { expensesRepository.addGuest(listId, name) },
+        )
     }
 
     fun removeParticipant(p: ExpensesListParticipant) {
-        viewModelScope.launch {
-            val r = if (p.isGuest) {
-                expensesRepository.removeGuest(listId, p.userId)
-            } else {
-                expensesRepository.removeParticipant(listId, p.userId)
-            }
-            when (r) {
-                is ApiResult.Success -> load()
-                is ApiResult.Error -> _uiState.update { it.copy(message = r.message) }
-            }
-        }
+        launchMutation(
+            onError = { e -> _uiState.update { it.copy(message = e.message) } },
+            onSuccess = { load() },
+            call = {
+                if (p.isGuest) expensesRepository.removeGuest(listId, p.userId)
+                else expensesRepository.removeParticipant(listId, p.userId)
+            },
+        )
     }
 
     /** Rinomina la lista (unica proprietà modificabile lato backend oltre a `paid`). */
     fun renameList(newName: String) {
         if (newName.isBlank()) return
-        viewModelScope.launch {
-            val r = expensesRepository.updateList(
-                listId,
-                UpdateExpensesListRequest(name = newName.trim()),
-            )
-            when (r) {
-                is ApiResult.Success -> load()
-                is ApiResult.Error -> _uiState.update { it.copy(message = r.message) }
-            }
-        }
+        launchMutation(
+            onError = { e -> _uiState.update { it.copy(message = e.message) } },
+            onSuccess = { load() },
+            call = { expensesRepository.updateList(listId, UpdateExpensesListRequest(name = newName.trim())) },
+        )
     }
 
     /** true se l'utente loggato è il proprietario (può cambiare il tipo della lista). (#11) */
@@ -327,29 +317,28 @@ class ExpensesDetailViewModel @Inject constructor(
      */
     fun setListType(shared: Boolean) {
         val requesterId = session.currentUser.value?.id ?: return
-        viewModelScope.launch {
-            val r = expensesRepository.updateList(
-                listId,
-                UpdateExpensesListRequest(
-                    listType = if (shared) "shared" else "personal",
-                    requesterId = requesterId,
-                ),
-            )
-            when (r) {
-                is ApiResult.Success -> load()
-                is ApiResult.Error -> _uiState.update { it.copy(message = r.message) }
-            }
-        }
+        launchMutation(
+            onError = { e -> _uiState.update { it.copy(message = e.message) } },
+            onSuccess = { load() },
+            call = {
+                expensesRepository.updateList(
+                    listId,
+                    UpdateExpensesListRequest(
+                        listType = if (shared) "shared" else "personal",
+                        requesterId = requesterId,
+                    ),
+                )
+            },
+        )
     }
 
     fun transferOwner(newOwnerId: Long) {
         val currentOwner = _uiState.value.list?.userId ?: return
-        viewModelScope.launch {
-            when (val r = expensesRepository.transferOwner(listId, newOwnerId, currentOwner)) {
-                is ApiResult.Success -> load()
-                is ApiResult.Error -> _uiState.update { it.copy(message = r.message) }
-            }
-        }
+        launchMutation(
+            onError = { e -> _uiState.update { it.copy(message = e.message) } },
+            onSuccess = { load() },
+            call = { expensesRepository.transferOwner(listId, newOwnerId, currentOwner) },
+        )
     }
 
     private fun Instant.toApiDate(): String =

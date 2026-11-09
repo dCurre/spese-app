@@ -10,6 +10,7 @@ import com.dcapps.spese.core.model.MeasurementUnit
 import com.dcapps.spese.core.model.User
 import com.dcapps.spese.core.model.UserRole
 import com.dcapps.spese.core.network.ApiResult
+import com.dcapps.spese.core.ui.launchMutation
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -94,12 +95,10 @@ class AdminViewModel @Inject constructor(
 
     /** Esegue una mutazione e ricarica; mostra l'eventuale errore. */
     private fun mutate(suspendCall: suspend () -> ApiResult<Unit>) {
-        viewModelScope.launch {
-            when (val r = suspendCall()) {
-                is ApiResult.Success -> load()
-                is ApiResult.Error ->
-                    _uiState.update { it.copy(message = r.message, messageReportable = !r.isExpected) }
-            }
-        }
+        launchMutation(
+            onError = { e -> _uiState.update { it.copy(message = e.message, messageReportable = !e.isExpected) } },
+            onSuccess = { load() },
+            call = suspendCall,
+        )
     }
 }

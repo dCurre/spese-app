@@ -25,6 +25,7 @@ import com.dcapps.spese.core.realtime.RealtimeService
 import com.dcapps.spese.core.realtime.RealtimeTable
 import com.dcapps.spese.core.realtime.longField
 import com.dcapps.spese.core.ui.SelectionController
+import com.dcapps.spese.core.ui.launchMutation
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -223,19 +224,19 @@ class ChecklistDetailViewModel @Inject constructor(
             }
             return
         }
-        viewModelScope.launch {
-            val result = itemRepository.create(
-                CreateShoppingItemRequest(
-                    shoppingListId = listId,
-                    name = trimmed,
-                    categoryId = categoryId,
+        launchMutation(
+            onError = { e -> _uiState.update { it.copy(message = e.message) } },
+            onSuccess = { load() },
+            call = {
+                itemRepository.create(
+                    CreateShoppingItemRequest(
+                        shoppingListId = listId,
+                        name = trimmed,
+                        categoryId = categoryId,
+                    )
                 )
-            )
-            when (result) {
-                is ApiResult.Success -> load()
-                is ApiResult.Error -> _uiState.update { it.copy(message = result.message) }
-            }
-        }
+            },
+        )
     }
 
     /** Esiste già un articolo con questo nome (ovunque nell'albero, case-insensitive)? */
@@ -264,19 +265,19 @@ class ChecklistDetailViewModel @Inject constructor(
 
     fun addCategory(name: String, parentId: Long?) {
         if (name.isBlank()) return
-        viewModelScope.launch {
-            val result = itemRepository.createCategory(
-                CreateShoppingCategoryRequest(
-                    shoppingListId = listId,
-                    name = name.trim(),
-                    parentId = parentId,
+        launchMutation(
+            onError = { e -> _uiState.update { it.copy(message = e.message) } },
+            onSuccess = { load() },
+            call = {
+                itemRepository.createCategory(
+                    CreateShoppingCategoryRequest(
+                        shoppingListId = listId,
+                        name = name.trim(),
+                        parentId = parentId,
+                    )
                 )
-            )
-            when (result) {
-                is ApiResult.Success -> load()
-                is ApiResult.Error -> _uiState.update { it.copy(message = result.message) }
-            }
-        }
+            },
+        )
     }
 
     /** Modifica nome e categoria padre. parentId null = categoria principale (radice). */
@@ -311,12 +312,11 @@ class ChecklistDetailViewModel @Inject constructor(
 
     /** Elimina l'intera checklist; al successo imposta [deleted] così la UI torna indietro. */
     fun deleteList() {
-        viewModelScope.launch {
-            when (val result = shoppingRepository.delete(listId)) {
-                is ApiResult.Success -> _uiState.update { it.copy(deleted = true) }
-                is ApiResult.Error -> _uiState.update { it.copy(message = result.message) }
-            }
-        }
+        launchMutation(
+            onError = { e -> _uiState.update { it.copy(message = e.message) } },
+            onSuccess = { _uiState.update { it.copy(deleted = true) } },
+            call = { shoppingRepository.delete(listId) },
+        )
     }
 
     /** Spunta o despunta tutti gli articoli della lista. */
@@ -376,12 +376,11 @@ class ChecklistDetailViewModel @Inject constructor(
 
     /** Genera (o recupera) il link di invito della checklist. */
     fun generateInviteToken() {
-        viewModelScope.launch {
-            when (val result = shoppingRepository.createInviteToken(listId)) {
-                is ApiResult.Success -> _uiState.update { it.copy(inviteToken = result.data) }
-                is ApiResult.Error -> _uiState.update { it.copy(message = result.message) }
-            }
-        }
+        launchMutation(
+            onError = { e -> _uiState.update { it.copy(message = e.message) } },
+            onSuccess = { token -> _uiState.update { it.copy(inviteToken = token) } },
+            call = { shoppingRepository.createInviteToken(listId) },
+        )
     }
 
     fun clearInviteToken() = _uiState.update { it.copy(inviteToken = null) }
@@ -416,63 +415,13 @@ class ChecklistDetailViewModel @Inject constructor(
      * Salva tutto in un'unica chiamata batch-save.
      */
     fun importFromText(text: String) {
-        val lines = text.lines().map { it.trim() }.filter { it.isNotBlank() }
-        if (lines.isEmpty()) return
-        var tempId = 1L
-        val catsCreate = mutableListOf<BatchCategoryCreate>()
-        val itemsCreate = mutableListOf<BatchItemCreate>()
-        var currentCatTemp: String? = null
-        // Marcatori di spunta a inizio riga.
-        val checkedPrefixes = listOf("[v]", "[x]", "[X]", "✓", "☑", "[✓]")
-        val uncheckedPrefixes = listOf("[ ]", "○", "☐", "-", "[]")
-
-        lines.forEach { raw ->
-            if (raw.endsWith(":")) {
-                val name = raw.dropLast(1).trim()
-                if (name.isNotEmpty()) {
-                    val t = "t${tempId++}"
-                    catsCreate += BatchCategoryCreate(tempId = t, name = name)
-                    currentCatTemp = t
-                }
-            } else {
-                var checked = false
-                var body = raw
-                checkedPrefixes.firstOrNull { body.startsWith(it) }?.let {
-                    checked = true; body = body.removePrefix(it).trim()
-                }
-                if (!checked) {
-                    uncheckedPrefixes.firstOrNull { body.startsWith(it) }?.let {
-                        body = body.removePrefix(it).trim()
-                    }
-                }
-                // Quantità opzionale in coda: "Mele x3" / "Mele ×3".
-                var quantity = 1
-                Regex("\\s[x×](\\d+)$").find(body)?.let { m ->
-                    quantity = m.groupValues[1].toIntOrNull()?.coerceAtLeast(1) ?: 1
-                    body = body.removeRange(m.range).trim()
-                }
-                val name = body.trim()
-                if (name.isNotEmpty()) {
-                    itemsCreate += BatchItemCreate(
-                        name = name,
-                        quantity = quantity,
-                        checked = checked,
-                        categoryTempId = currentCatTemp,
-                    )
-                }
-            }
-        }
-        if (catsCreate.isEmpty() && itemsCreate.isEmpty()) return
-        viewModelScope.launch {
-            val req = BatchSaveRequest(
-                categoriesCreate = catsCreate,
-                itemsCreate = itemsCreate,
-            )
-            when (val r = shoppingRepository.batchSave(listId, req)) {
-                is ApiResult.Success -> load()
-                is ApiResult.Error -> _uiState.update { it.copy(message = r.message) }
-            }
-        }
+        // Parsing puro estratto in ChecklistImport (testabile a unità); qui resta solo il salvataggio.
+        val req = ChecklistImport.parse(text) ?: return
+        launchMutation(
+            onError = { e -> _uiState.update { it.copy(message = e.message) } },
+            onSuccess = { load() },
+            call = { shoppingRepository.batchSave(listId, req) },
+        )
     }
 
     // --- Modalità modifica con salvataggio in batch ---

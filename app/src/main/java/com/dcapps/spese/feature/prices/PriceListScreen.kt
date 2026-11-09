@@ -62,6 +62,7 @@ import com.dcapps.spese.ui.components.RefreshOnResume
 import com.dcapps.spese.ui.components.RowDivider
 import com.dcapps.spese.ui.components.SwipeToDeleteRow
 import com.dcapps.spese.ui.components.IconCount
+import com.dcapps.spese.ui.components.ListRowContent
 import com.dcapps.spese.ui.components.SortBar
 import com.dcapps.spese.ui.components.SortOption
 import com.dcapps.spese.ui.components.SpeseSearchField
@@ -176,14 +177,10 @@ fun PriceListScreen(
                                 onLongClick = { viewModel.selection.start(product.id) },
                                 onToggle = { viewModel.selection.toggle(product.id) },
                             ) {
-                                Column(Modifier.weight(1f)) {
-                                    Text(product.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                                    // Sottotitolo: marca · unità · (icona scontrino + n° acquisti).
-                                    Row(
-                                        modifier = Modifier.padding(top = 2.dp),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                                    ) {
+                                ListRowContent(
+                                    title = product.name,
+                                    subtitle = {
+                                        // Sottotitolo: marca · unità · (icona scontrino + n° acquisti).
                                         val subtitle = listOfNotNull(
                                             product.brand?.takeIf { it.isNotBlank() },
                                             product.defaultUnitSymbol?.let { stringResource(R.string.prices_unit, it) },
@@ -196,36 +193,37 @@ fun PriceListScreen(
                                             text = "${product.purchaseCount}",
                                             contentDescription = stringResource(R.string.prices_count_cd),
                                         )
-                                    }
-                                }
-                                // Minimo storico a destra, centrato in altezza: "min" piccolo sopra,
-                                // valore con unità (prezzo al litro/ml/…) sotto.
-                                product.minPrice?.let { min ->
-                                    val unit = product.defaultUnitSymbol ?: "u"
-                                    Column(
-                                        horizontalAlignment = Alignment.End,
-                                        modifier = Modifier.padding(end = 8.dp),
-                                    ) {
-                                        Text(
-                                            stringResource(R.string.prices_min_label),
-                                            style = MaterialTheme.typography.labelSmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        )
-                                        Text(
-                                            stringResource(R.string.prices_min_value, min, unit),
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            fontWeight = FontWeight.Bold,
-                                            color = SpeseTheme.colors.credit,
-                                        )
-                                    }
-                                }
-                                if (!sel.selectionMode) {
-                                    Icon(
-                                        Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
-                                }
+                                    },
+                                    trailing = {
+                                        // Minimo storico a destra: "min" piccolo sopra, valore con unità sotto.
+                                        product.minPrice?.let { min ->
+                                            val unit = product.defaultUnitSymbol ?: "u"
+                                            Column(
+                                                horizontalAlignment = Alignment.End,
+                                                modifier = Modifier.padding(end = 8.dp),
+                                            ) {
+                                                Text(
+                                                    stringResource(R.string.prices_min_label),
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                )
+                                                Text(
+                                                    stringResource(R.string.prices_min_value, min, unit),
+                                                    style = MaterialTheme.typography.bodyMedium,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = SpeseTheme.colors.credit,
+                                                )
+                                            }
+                                        }
+                                        if (!sel.selectionMode) {
+                                            Icon(
+                                                Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                                                contentDescription = null,
+                                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            )
+                                        }
+                                    },
+                                )
                             }
                         }
                         // In selezione niente swipe-to-delete (si elimina dalla barra contestuale).

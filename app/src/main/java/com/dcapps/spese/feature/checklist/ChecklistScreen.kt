@@ -56,6 +56,7 @@ import com.dcapps.spese.ui.components.ConfirmDialog
 import com.dcapps.spese.ui.components.ErrorSnackbarEffect
 import com.dcapps.spese.ui.components.ErrorState
 import com.dcapps.spese.ui.components.IconCount
+import com.dcapps.spese.ui.components.ListRowContent
 import com.dcapps.spese.ui.components.RefreshOnResume
 import com.dcapps.spese.ui.components.RowDivider
 import com.dcapps.spese.ui.components.SortBar
@@ -277,17 +278,13 @@ private fun RowScope.ChecklistRowContent(
     selectionMode: Boolean,
     onStar: () -> Unit,
 ) {
-    Column(Modifier.weight(1f)) {
-        Text(list.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-        val total = list.itemsCount ?: 0
-        val checked = list.checkedCount ?: 0
-        val isShared = list.listType == "shared"
-        val countLabel = if (total > 0) "$checked/$total" else null
-        Row(
-            modifier = Modifier.padding(top = 4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
+    val total = list.itemsCount ?: 0
+    val checked = list.checkedCount ?: 0
+    val isShared = list.listType == "shared"
+    val countLabel = if (total > 0) "$checked/$total" else null
+    ListRowContent(
+        title = list.name,
+        subtitle = {
             SpeseBadge(
                 text = if (isShared) stringResource(R.string.lists_type_shared)
                     else stringResource(R.string.lists_type_personal),
@@ -302,15 +299,17 @@ private fun RowScope.ChecklistRowContent(
                     contentDescription = stringResource(R.string.checklist_items_cd),
                 )
             }
-        }
-    }
-    if (!selectionMode) {
-        IconButton(onClick = onStar) {
-            if (list.starred) {
-                Icon(Icons.Default.Star, contentDescription = stringResource(R.string.checklist_star_remove), tint = SpeseTheme.colors.accent)
-            } else {
-                Icon(Icons.Outlined.StarBorder, contentDescription = stringResource(R.string.checklist_star_add), tint = SpeseTheme.colors.accent)
+        },
+        trailing = if (!selectionMode) {
+            {
+                IconButton(onClick = onStar) {
+                    if (list.starred) {
+                        Icon(Icons.Default.Star, contentDescription = stringResource(R.string.checklist_star_remove), tint = SpeseTheme.colors.accent)
+                    } else {
+                        Icon(Icons.Outlined.StarBorder, contentDescription = stringResource(R.string.checklist_star_add), tint = SpeseTheme.colors.accent)
+                    }
+                }
             }
-        }
-    }
+        } else null,
+    )
 }

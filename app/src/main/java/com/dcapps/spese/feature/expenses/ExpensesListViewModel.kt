@@ -16,6 +16,7 @@ import com.dcapps.spese.core.model.UpdateUserRequest
 import com.dcapps.spese.core.network.ApiResult
 import com.dcapps.spese.core.prefs.SortPreferences
 import com.dcapps.spese.core.ui.SelectionController
+import com.dcapps.spese.core.ui.launchMutation
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -128,8 +129,10 @@ class ExpensesListViewModel @Inject constructor(
     fun createList(name: String, shared: Boolean) {
         val user = session.currentUser.value ?: return
         if (name.isBlank()) return
+        val listType = if (shared) "shared" else "personal"
+        // Non usa launchMutation: nel ramo Success serve attendere addParticipant PRIMA di load()
+        // (lavoro suspend sequenziale), che un onSuccess non-suspend non garantirebbe.
         viewModelScope.launch {
-            val listType = if (shared) "shared" else "personal"
             when (val created = expensesRepository.createList(
                 CreateExpensesListRequest(name = name.trim(), userId = user.id, listType = listType)
             )) {
@@ -147,12 +150,11 @@ class ExpensesListViewModel @Inject constructor(
     }
 
     fun deleteList(list: ExpensesList) {
-        viewModelScope.launch {
-            when (val result = expensesRepository.deleteList(list.id)) {
-                is ApiResult.Success -> load()
-                is ApiResult.Error -> _uiState.update { it.copy(message = result.message) }
-            }
-        }
+        launchMutation(
+            onError = { e -> _uiState.update { it.copy(message = e.message) } },
+            onSuccess = { load() },
+            call = { expensesRepository.deleteList(list.id) },
+        )
     }
 
     fun setPaid(list: ExpensesList, paid: Boolean) {

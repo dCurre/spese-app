@@ -11,6 +11,7 @@ import com.dcapps.spese.core.data.UserRepository
 import com.dcapps.spese.core.model.UpdateUserRequest
 import com.dcapps.spese.core.model.User
 import com.dcapps.spese.core.network.ApiResult
+import com.dcapps.spese.core.ui.launchMutation
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -85,22 +86,19 @@ class ProfileViewModel @Inject constructor(
     /** Modifica nome e cognome dell'utente. */
     fun updateNameSurname(name: String, surname: String) {
         val user = session.currentUser.value ?: return
-        viewModelScope.launch {
-            val result = userRepository.update(
-                user.id,
-                UpdateUserRequest(
-                    name = name.trim(),
-                    surname = surname.trim(),
-                ),
-            )
-            when (result) {
-                is ApiResult.Success -> {
-                    session.setUser(user.copy(name = name.trim(), surname = surname.trim()))
-                    _uiState.update { it.copy(user = session.currentUser.value) }
-                }
-                is ApiResult.Error -> _uiState.update { it.copy(message = result.message) }
-            }
-        }
+        launchMutation(
+            onError = { e -> _uiState.update { it.copy(message = e.message) } },
+            onSuccess = {
+                session.setUser(user.copy(name = name.trim(), surname = surname.trim()))
+                _uiState.update { it.copy(user = session.currentUser.value) }
+            },
+            call = {
+                userRepository.update(
+                    user.id,
+                    UpdateUserRequest(name = name.trim(), surname = surname.trim()),
+                )
+            },
+        )
     }
 
     fun setTheme(theme: String) {
@@ -167,20 +165,16 @@ class ProfileViewModel @Inject constructor(
 
     fun selectAvatar(url: String) {
         val user = session.currentUser.value ?: return
-        viewModelScope.launch {
-            when (val result = userRepository.selectProfileImage(user.id, url)) {
-                is ApiResult.Success -> {
-                    session.setUser(
-                        user.copy(
-                            profileImage = result.data.url,
-                            profileImagesHistory = result.data.history,
-                        )
-                    )
-                    _uiState.update { it.copy(user = session.currentUser.value) }
-                }
-                is ApiResult.Error -> _uiState.update { it.copy(message = result.message) }
-            }
-        }
+        launchMutation(
+            onError = { e -> _uiState.update { it.copy(message = e.message) } },
+            onSuccess = { data ->
+                session.setUser(
+                    user.copy(profileImage = data.url, profileImagesHistory = data.history)
+                )
+                _uiState.update { it.copy(user = session.currentUser.value) }
+            },
+            call = { userRepository.selectProfileImage(user.id, url) },
+        )
     }
 
     fun signOut(context: Context) {

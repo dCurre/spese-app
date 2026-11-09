@@ -7,6 +7,7 @@ import androidx.compose.foundation.clickable
 import com.dcapps.spese.ui.components.ErrorState
 import com.dcapps.spese.ui.components.RefreshOnResume
 import com.dcapps.spese.ui.components.IconCount
+import com.dcapps.spese.ui.components.ListRowContent
 import com.dcapps.spese.ui.components.RowDivider
 import com.dcapps.spese.ui.components.SelectableRow
 import com.dcapps.spese.ui.components.SelectionTopBar
@@ -258,7 +259,7 @@ private fun SelectableListRow(
             onLongClick = { onLongPress(list) },
             onToggle = { onToggleSelect(list) },
         ) {
-            ListRowContent(list)
+            ExpensesRowContent(list)
         }
     }
     if (sel.selectionMode) {
@@ -282,15 +283,11 @@ private fun SectionHeader(text: String) {
 
 /** Contenuto della riga lista (dentro lo scope di [SelectableRow], che fornisce Row/click/checkbox). */
 @Composable
-private fun RowScope.ListRowContent(list: ExpensesList) {
-    Column(Modifier.weight(1f)) {
-        Text(list.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-        val isShared = list.type == ListType.SHARED
-        Row(
-            modifier = Modifier.padding(top = 4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
+private fun RowScope.ExpensesRowContent(list: ExpensesList) {
+    val isShared = list.type == ListType.SHARED
+    ListRowContent(
+        title = list.name,
+        subtitle = {
             // Tipo lista come badge colorato (Condivisa = accent, Personale = neutro).
             SpeseBadge(
                 text = if (isShared) stringResource(R.string.lists_type_shared)
@@ -315,7 +312,7 @@ private fun RowScope.ListRowContent(list: ExpensesList) {
                     )
                 }
             }
-        }
-    }
+        },
+    )
 }
 

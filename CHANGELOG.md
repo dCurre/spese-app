@@ -3,6 +3,9 @@
 Note di rilascio in linguaggio comprensibile, mostrate nella schermata di aggiornamento dell'app.
 Ogni versione ha una sezione `## X.Y.Z` con un elenco puntato delle novità per l'utente.
 
+## 0.1.8
+- Miglioramenti interni, pulizia del codice e test automatici per maggiore stabilità.
+
 ## 0.1.7
 - Ora puoi eliminare più elementi insieme in tutte le liste: tieni premuto su una riga per attivare la selezione multipla.
 - Aggiunta la ✕ per svuotare rapidamente la barra di ricerca.

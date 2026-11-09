@@ -1,15 +1,13 @@
 package com.dcapps.spese.feature.feedback
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import com.dcapps.spese.core.feedback.FeedbackRepository
-import com.dcapps.spese.core.network.ApiResult
+import com.dcapps.spese.core.ui.launchMutation
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 data class FeedbackUiState(
@@ -37,15 +35,12 @@ class FeedbackViewModel @Inject constructor(
             return
         }
         if (state.description.isBlank() || state.sending) return
-        viewModelScope.launch {
-            _uiState.update { it.copy(sending = true, error = null) }
-            when (val r = repository.report(state.description)) {
-                is ApiResult.Success ->
-                    _uiState.update { it.copy(sending = false, resultUrl = r.data) }
-                is ApiResult.Error ->
-                    _uiState.update { it.copy(sending = false, error = r.message) }
-            }
-        }
+        _uiState.update { it.copy(sending = true, error = null) }
+        launchMutation(
+            onError = { e -> _uiState.update { it.copy(sending = false, error = e.message) } },
+            onSuccess = { url -> _uiState.update { it.copy(sending = false, resultUrl = url) } },
+            call = { repository.report(state.description) },
+        )
     }
 
     /** Reset dello stato quando si riapre la modale. */

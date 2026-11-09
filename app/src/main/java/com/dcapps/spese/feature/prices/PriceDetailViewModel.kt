@@ -15,6 +15,7 @@ import com.dcapps.spese.core.model.Purchase
 import com.dcapps.spese.core.model.UpdateProductRequest
 import com.dcapps.spese.core.network.ApiResult
 import com.dcapps.spese.core.ui.SelectionController
+import com.dcapps.spese.core.ui.launchMutation
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -124,24 +125,24 @@ class PriceDetailViewModel @Inject constructor(
         notes: String?,
     ) {
         val userId = session.currentUser.value?.id ?: return
-        viewModelScope.launch {
-            val result = priceRepository.createPurchase(
-                CreatePurchaseRequest(
-                    productId = productId,
-                    userId = userId,
-                    purchasedAt = purchasedAt,
-                    price = price,
-                    quantity = quantity,
-                    unitId = unitId,
-                    store = store?.takeIf { it.isNotBlank() },
-                    notes = notes?.takeIf { it.isNotBlank() },
+        launchMutation(
+            onError = { e -> _uiState.update { it.copy(message = e.message) } },
+            onSuccess = { load(showLoading = false) },
+            call = {
+                priceRepository.createPurchase(
+                    CreatePurchaseRequest(
+                        productId = productId,
+                        userId = userId,
+                        purchasedAt = purchasedAt,
+                        price = price,
+                        quantity = quantity,
+                        unitId = unitId,
+                        store = store?.takeIf { it.isNotBlank() },
+                        notes = notes?.takeIf { it.isNotBlank() },
+                    )
                 )
-            )
-            when (result) {
-                is ApiResult.Success -> load(showLoading = false)
-                is ApiResult.Error -> _uiState.update { it.copy(message = result.message) }
-            }
-        }
+            },
+        )
     }
 
     fun updatePurchase(
@@ -153,52 +154,51 @@ class PriceDetailViewModel @Inject constructor(
         store: String?,
         notes: String?,
     ) {
-        viewModelScope.launch {
-            val result = priceRepository.updatePurchase(
-                id,
-                UpdatePurchaseRequest(
-                    purchasedAt = purchasedAt,
-                    price = price,
-                    quantity = quantity,
-                    unitId = unitId,
-                    store = store?.takeIf { it.isNotBlank() },
-                    notes = notes?.takeIf { it.isNotBlank() },
-                ),
-            )
-            when (result) {
-                is ApiResult.Success -> load(showLoading = false)
-                is ApiResult.Error -> _uiState.update { it.copy(message = result.message) }
-            }
-        }
+        launchMutation(
+            onError = { e -> _uiState.update { it.copy(message = e.message) } },
+            onSuccess = { load(showLoading = false) },
+            call = {
+                priceRepository.updatePurchase(
+                    id,
+                    UpdatePurchaseRequest(
+                        purchasedAt = purchasedAt,
+                        price = price,
+                        quantity = quantity,
+                        unitId = unitId,
+                        store = store?.takeIf { it.isNotBlank() },
+                        notes = notes?.takeIf { it.isNotBlank() },
+                    ),
+                )
+            },
+        )
     }
 
     /** Modifica le proprietà del prodotto (nome, marca, unità predefinita). */
     fun updateProduct(name: String, brand: String?, defaultUnitId: Long?) {
         if (name.isBlank()) return
-        viewModelScope.launch {
-            val result = priceRepository.updateProduct(
-                productId,
-                UpdateProductRequest(
-                    name = name.trim(),
-                    brand = brand?.takeIf { it.isNotBlank() },
-                    defaultUnitId = defaultUnitId,
-                ),
-            )
-            when (result) {
-                is ApiResult.Success -> load(showLoading = false)
-                is ApiResult.Error -> _uiState.update { it.copy(message = result.message) }
-            }
-        }
+        launchMutation(
+            onError = { e -> _uiState.update { it.copy(message = e.message) } },
+            onSuccess = { load(showLoading = false) },
+            call = {
+                priceRepository.updateProduct(
+                    productId,
+                    UpdateProductRequest(
+                        name = name.trim(),
+                        brand = brand?.takeIf { it.isNotBlank() },
+                        defaultUnitId = defaultUnitId,
+                    ),
+                )
+            },
+        )
     }
 
     /** Elimina il prodotto e tutti i suoi acquisti. */
     fun deleteProduct() {
-        viewModelScope.launch {
-            when (val result = priceRepository.deleteProduct(productId)) {
-                is ApiResult.Success -> _uiState.update { it.copy(deleted = true) }
-                is ApiResult.Error -> _uiState.update { it.copy(message = result.message) }
-            }
-        }
+        launchMutation(
+            onError = { e -> _uiState.update { it.copy(message = e.message) } },
+            onSuccess = { _uiState.update { it.copy(deleted = true) } },
+            call = { priceRepository.deleteProduct(productId) },
+        )
     }
 
     fun deletePurchase(purchase: Purchase) {

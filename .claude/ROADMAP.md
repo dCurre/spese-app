@@ -17,24 +17,10 @@ da fare: aggiornare qui (spuntare / rimuovere quando completato).
     (DataStore/Prefs) e, quando Firebase ha già la sessione e il backend è irraggiungibile *per
     rete* (non per errore applicativo), entrare con l'utente cachato invece di bloccare.
 
-- [ ] **Test automatici (unit) — ampliare.** Fatti: `SemVer`, `BigDecimalSerializer`,
-  `InstantSerializer` (in `app/src/test`). Restano da coprire: diff del batch-save checklist,
-  parsing import (Samsung Notes), statistiche prodotto. Agganciare l'esecuzione al CI così un push
-  che rompe la logica non diventa release.
-
-- [ ] **Refactor boilerplate ViewModel (mutazioni).** Il pattern `viewModelScope.launch { when
-  (repo.xxx()) { Success -> load(); Error -> message } }` è ripetuto 15+ volte in 8 VM. Estrarre
-  un helper/BaseViewModel, ma prima standardizzare i campi `message`/`error`/`isLoading` degli
-  UiState (oggi ogni VM ha il proprio data class). Rischio medio: da fare in sessione dedicata.
-- [ ] **Row-elenco a slot (ListRow condiviso).** Lo scaffold riga-elenco (Row clickable + Column
-  nome/sottotitolo + trailing) ricorre in ChecklistScreen/ExpensesListScreen/PriceListScreen con
-  trailing diversi (star, badge, chevron). Estraibile come componente a slot. Rischio medio.
-
-- [ ] **Restyling estetico dell'app — rifiniture rimaste.** Base fatta (stile "Ledger verde":
-  temi light/dark/legacy, liste a righe, colori semantici consolidati in token). Restano eventuali
-  rifiniture viste sull'APK e l'estensione dello stile a schermate minori/dialog se necessario.
-  Fatto: sistema colori a TOKEN (`ThemeTokens` in `Color.kt`) + builder unico token→ColorScheme
-  (`Theme.kt`) + 3 colonne di valori (light/dark/legacy), come la lingua.
+- [ ] **Test automatici (unit) — coda.** Fatti: `SemVer`, serializer, **diff batch-save checklist
+  (`ChecklistEditState`), parsing import (`ChecklistImport`), changelog (`Changelog`)**; lo step
+  unit test è **agganciato al CI** (blocca la release se falliscono). Resta da coprire, se si vuole:
+  statistiche prodotto (prezzo min/ultimo/variazione) — andrebbe prima estratta in funzione pura.
 
 ## Fuori scope / escluse
 

@@ -58,6 +58,10 @@ jobs:
       - name: Rendi gradlew eseguibile
         run: chmod +x gradlew
 
+      - name: Unit test
+        # Se i test falliscono, la release NON viene pubblicata (il job si ferma qui).
+        run: ./gradlew :app:testReleaseUnitTest --no-daemon
+
       - name: Build APK release firmato
         env:
           RELEASE_STORE_FILE: ${{ runner.temp }}/release.keystore

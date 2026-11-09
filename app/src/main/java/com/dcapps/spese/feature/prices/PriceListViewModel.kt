@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.dcapps.spese.core.data.CatalogRepository
 import com.dcapps.spese.core.prefs.SortPreferences
 import com.dcapps.spese.core.ui.SelectionController
+import com.dcapps.spese.core.ui.launchMutation
 import com.dcapps.spese.core.data.PriceRepository
 import com.dcapps.spese.core.model.CreateProductRequest
 import com.dcapps.spese.core.model.MeasurementUnit
@@ -122,24 +123,23 @@ class PriceListViewModel @Inject constructor(
 
     fun createProduct(name: String, brand: String?, defaultUnitId: Long?) {
         if (name.isBlank()) return
-        viewModelScope.launch {
-            val result = priceRepository.createProduct(
-                CreateProductRequest(name = name.trim(), brand = brand?.takeIf { it.isNotBlank() }, defaultUnitId = defaultUnitId)
-            )
-            when (result) {
-                is ApiResult.Success -> load()
-                is ApiResult.Error -> _uiState.update { it.copy(message = result.message) }
-            }
-        }
+        launchMutation(
+            onError = { e -> _uiState.update { it.copy(message = e.message) } },
+            onSuccess = { load() },
+            call = {
+                priceRepository.createProduct(
+                    CreateProductRequest(name = name.trim(), brand = brand?.takeIf { it.isNotBlank() }, defaultUnitId = defaultUnitId)
+                )
+            },
+        )
     }
 
     fun deleteProduct(product: Product) {
-        viewModelScope.launch {
-            when (val result = priceRepository.deleteProduct(product.id)) {
-                is ApiResult.Success -> load(showLoading = false)
-                is ApiResult.Error -> _uiState.update { it.copy(message = result.message) }
-            }
-        }
+        launchMutation(
+            onError = { e -> _uiState.update { it.copy(message = e.message) } },
+            onSuccess = { load(showLoading = false) },
+            call = { priceRepository.deleteProduct(product.id) },
+        )
     }
 
     // --- Selezione multipla (issue #10) ---
