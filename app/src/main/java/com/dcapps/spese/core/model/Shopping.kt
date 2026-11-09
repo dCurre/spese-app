@@ -83,6 +83,8 @@ data class UpdateShoppingListRequest(
     val completed: Boolean? = null,
     @SerialName("list_type") val listType: String? = null,
     val starred: Boolean? = null,
+    // Cambio tipo (issue #11): obbligatorio insieme a listType (il backend valida l'owner).
+    @SerialName("requester_id") val requesterId: Long? = null,
 )
 
 @Serializable

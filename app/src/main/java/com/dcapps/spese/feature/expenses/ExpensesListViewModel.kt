@@ -14,6 +14,7 @@ import com.dcapps.spese.core.model.ExpensesList
 import com.dcapps.spese.core.model.UpdateExpensesListRequest
 import com.dcapps.spese.core.model.UpdateUserRequest
 import com.dcapps.spese.core.network.ApiResult
+import com.dcapps.spese.core.prefs.SortPreferences
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -44,9 +45,18 @@ class ExpensesListViewModel @Inject constructor(
     private val userRepository: UserRepository,
     private val realtimeService: RealtimeService,
     private val session: SessionManager,
+    private val sortPreferences: SortPreferences,
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(ExpensesListUiState())
+    // Ordinamento ricordato dall'ultima volta (issue #9).
+    private val savedSort = sortPreferences.get(SortPreferences.EXPENSES)
+    private val _uiState = MutableStateFlow(
+        ExpensesListUiState(
+            sort = savedSort?.criterion?.let { runCatching { ListSort.valueOf(it) }.getOrNull() }
+                ?: ListSort.DATE,
+            sortAsc = savedSort?.ascending ?: false,
+        ),
+    )
     val uiState: StateFlow<ExpensesListUiState> = _uiState.asStateFlow()
 
     private var allLists: List<ExpensesList> = emptyList()
@@ -99,6 +109,8 @@ class ExpensesListViewModel @Inject constructor(
         _uiState.update {
             if (it.sort == sort) it.copy(sortAsc = !it.sortAsc) else it.copy(sort = sort, sortAsc = false)
         }
+        // Ricorda la scelta per la prossima apertura (issue #9).
+        _uiState.value.let { sortPreferences.set(SortPreferences.EXPENSES, it.sort.name, it.sortAsc) }
         recompute()
     }
 

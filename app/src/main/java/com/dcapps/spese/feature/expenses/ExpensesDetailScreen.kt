@@ -79,6 +79,7 @@ fun ExpensesDetailScreen(
     var showParticipants by remember { mutableStateOf(false) }
     var showTransfer by remember { mutableStateOf(false) }
     var showRename by remember { mutableStateOf(false) }
+    var showMakePersonal by remember { mutableStateOf(false) }
     var repeating by remember { mutableStateOf(false) }
     var expenseToDelete by remember { mutableStateOf<Expense?>(null) }
 
@@ -108,6 +109,7 @@ fun ExpensesDetailScreen(
                 actions = {
                     ExpensesListMenu(
                         isShared = isShared,
+                        canChangeType = viewModel.isOwner,
                         onShare = viewModel::share,
                         onParticipants = {
                             viewModel.loadAvailableUsers()
@@ -117,6 +119,8 @@ fun ExpensesDetailScreen(
                             viewModel.loadAvailableUsers()
                             showTransfer = true
                         },
+                        onMakeShared = { viewModel.setListType(true) },
+                        onMakePersonal = { showMakePersonal = true },
                     )
                 },
             )
@@ -209,6 +213,17 @@ fun ExpensesDetailScreen(
             onConfirm = { viewModel.renameList(it); showRename = false },
         )
     }
+
+    // Conferma passaggio a personale: DISTRUTTIVO (spese all'owner + partecipanti rimossi). (#11)
+    if (showMakePersonal) {
+        ConfirmDialog(
+            title = stringResource(R.string.list_make_personal_title),
+            message = stringResource(R.string.expenses_make_personal_message),
+            confirmText = stringResource(R.string.list_make_personal),
+            onConfirm = { viewModel.setListType(false) },
+            onDismiss = { showMakePersonal = false },
+        )
+    }
 }
 
 @Composable
@@ -255,27 +270,42 @@ private fun ShareLinkEffect(link: String, onShared: () -> Unit) {
 @Composable
 private fun ExpensesListMenu(
     isShared: Boolean,
+    canChangeType: Boolean,
     onShare: () -> Unit,
     onParticipants: () -> Unit,
     onTransfer: () -> Unit,
+    onMakeShared: () -> Unit,
+    onMakePersonal: () -> Unit,
 ) {
-    // Il menu "⋮" contiene solo azioni di condivisione: se la lista non è condivisa non c'è
-    // nulla da mostrare (la rinomina è passata alla matita accanto al titolo).
-    if (!isShared) return
+    // Mostra il menu se c'è almeno un'azione: condivisione (solo se condivisa) o cambio tipo (owner).
+    if (!isShared && !canChangeType) return
 
     OverflowMenu { dismiss ->
-        DropdownMenuItem(
-            text = { Text(stringResource(R.string.detail_share)) },
-            onClick = { dismiss(); onShare() },
-        )
-        DropdownMenuItem(
-            text = { Text(stringResource(R.string.detail_participants)) },
-            onClick = { dismiss(); onParticipants() },
-        )
-        DropdownMenuItem(
-            text = { Text(stringResource(R.string.detail_transfer_owner)) },
-            onClick = { dismiss(); onTransfer() },
-        )
+        if (isShared) {
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.detail_share)) },
+                onClick = { dismiss(); onShare() },
+            )
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.detail_participants)) },
+                onClick = { dismiss(); onParticipants() },
+            )
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.detail_transfer_owner)) },
+                onClick = { dismiss(); onTransfer() },
+            )
+        }
+        // Cambio tipo condivisa↔personale, solo per l'owner (issue #11).
+        if (canChangeType) {
+            DropdownMenuItem(
+                text = {
+                    Text(stringResource(
+                        if (isShared) R.string.list_make_personal else R.string.list_make_shared,
+                    ))
+                },
+                onClick = { dismiss(); if (isShared) onMakePersonal() else onMakeShared() },
+            )
+        }
     }
 }
 

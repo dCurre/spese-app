@@ -124,6 +124,10 @@ data class CreateExpensesListRequest(
 data class UpdateExpensesListRequest(
     val name: String? = null,
     val paid: Boolean? = null,
+    // Cambio tipo (issue #11): "shared" | "personal". Se presente, requesterId è OBBLIGATORIO
+    // (il backend valida che sia l'owner). Passaggio a "personal" è distruttivo.
+    @SerialName("list_type") val listType: String? = null,
+    @SerialName("requester_id") val requesterId: Long? = null,
 )
 
 @Serializable

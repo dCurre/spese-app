@@ -10,6 +10,7 @@ import com.dcapps.spese.core.model.CreateShoppingListRequest
 import com.dcapps.spese.core.model.ShoppingList
 import com.dcapps.spese.core.model.UpdateShoppingListRequest
 import com.dcapps.spese.core.network.ApiResult
+import com.dcapps.spese.core.prefs.SortPreferences
 import com.dcapps.spese.core.realtime.RealtimeService
 import com.dcapps.spese.core.realtime.RealtimeTable
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -41,9 +42,18 @@ class ChecklistViewModel @Inject constructor(
     private val shoppingRepository: ShoppingRepository,
     private val realtimeService: RealtimeService,
     private val session: SessionManager,
+    private val sortPreferences: SortPreferences,
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(ChecklistUiState())
+    // Ordinamento ricordato dall'ultima volta (issue #9).
+    private val savedSort = sortPreferences.get(SortPreferences.CHECKLIST_LISTS)
+    private val _uiState = MutableStateFlow(
+        ChecklistUiState(
+            sort = savedSort?.criterion?.let { runCatching { ChecklistSort.valueOf(it) }.getOrNull() }
+                ?: ChecklistSort.DATE,
+            sortAsc = savedSort?.ascending ?: false,
+        ),
+    )
     val uiState: StateFlow<ChecklistUiState> = _uiState.asStateFlow()
 
     private var allLists: List<ShoppingList> = emptyList()
@@ -88,6 +98,8 @@ class ChecklistViewModel @Inject constructor(
         _uiState.update {
             if (it.sort == sort) it.copy(sortAsc = !it.sortAsc) else it.copy(sort = sort, sortAsc = false)
         }
+        // Ricorda la scelta per la prossima apertura (issue #9).
+        _uiState.value.let { sortPreferences.set(SortPreferences.CHECKLIST_LISTS, it.sort.name, it.sortAsc) }
         recompute()
     }
 

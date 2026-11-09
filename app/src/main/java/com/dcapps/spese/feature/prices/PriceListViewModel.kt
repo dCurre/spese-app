@@ -3,6 +3,7 @@ package com.dcapps.spese.feature.prices
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dcapps.spese.core.data.CatalogRepository
+import com.dcapps.spese.core.prefs.SortPreferences
 import com.dcapps.spese.core.data.PriceRepository
 import com.dcapps.spese.core.model.CreateProductRequest
 import com.dcapps.spese.core.model.MeasurementUnit
@@ -30,6 +31,9 @@ data class PriceListUiState(
     // Filtro per marca: insieme di marche selezionate; vuoto = tutte le marche.
     val brandFilter: Set<String> = emptySet(),
     val message: String? = null,
+    // Selezione multipla (issue #10): attiva dopo long-press, insieme di id prodotti selezionati.
+    val selectionMode: Boolean = false,
+    val selectedIds: Set<Long> = emptySet(),
 ) {
     /** Marche presenti tra i prodotti (per il selettore filtro), ordinate alfabeticamente. */
     val availableBrands: List<String>
@@ -63,9 +67,18 @@ data class PriceListUiState(
 class PriceListViewModel @Inject constructor(
     private val priceRepository: PriceRepository,
     private val catalogRepository: CatalogRepository,
+    private val sortPreferences: SortPreferences,
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(PriceListUiState())
+    // Ordinamento ricordato dall'ultima volta (issue #9).
+    private val savedSort = sortPreferences.get(SortPreferences.PRICES)
+    private val _uiState = MutableStateFlow(
+        PriceListUiState(
+            sort = savedSort?.criterion?.let { runCatching { ProductSort.valueOf(it) }.getOrNull() }
+                ?: ProductSort.NAME,
+            sortAsc = savedSort?.ascending ?: true,
+        ),
+    )
     val uiState: StateFlow<PriceListUiState> = _uiState.asStateFlow()
 
     init {
@@ -98,8 +111,12 @@ class PriceListViewModel @Inject constructor(
     fun onQueryChange(q: String) = _uiState.update { it.copy(query = q) }
 
     /** Sceglie il criterio di ordinamento; ritoccare quello attivo inverte la direzione. */
-    fun onSortChange(sort: ProductSort) = _uiState.update {
-        if (it.sort == sort) it.copy(sortAsc = !it.sortAsc) else it.copy(sort = sort, sortAsc = true)
+    fun onSortChange(sort: ProductSort) {
+        _uiState.update {
+            if (it.sort == sort) it.copy(sortAsc = !it.sortAsc) else it.copy(sort = sort, sortAsc = true)
+        }
+        // Ricorda la scelta per la prossima apertura (issue #9).
+        _uiState.value.let { sortPreferences.set(SortPreferences.PRICES, it.sort.name, it.sortAsc) }
     }
 
     /** Imposta le marche selezionate (insieme vuoto = tutte). */
@@ -124,6 +141,36 @@ class PriceListViewModel @Inject constructor(
                 is ApiResult.Success -> load(showLoading = false)
                 is ApiResult.Error -> _uiState.update { it.copy(message = result.message) }
             }
+        }
+    }
+
+    // --- Selezione multipla (issue #10) ---
+
+    /** Entra in modalità selezione (long-press) selezionando subito il prodotto premuto. */
+    fun startSelection(product: Product) =
+        _uiState.update { it.copy(selectionMode = true, selectedIds = setOf(product.id)) }
+
+    /** Seleziona/deseleziona un prodotto; se la selezione si svuota, esce dalla modalità. */
+    fun toggleSelection(product: Product) = _uiState.update {
+        val next = if (product.id in it.selectedIds) it.selectedIds - product.id else it.selectedIds + product.id
+        it.copy(selectedIds = next, selectionMode = next.isNotEmpty())
+    }
+
+    /** Annulla la selezione e torna alla modalità normale. */
+    fun clearSelection() = _uiState.update { it.copy(selectionMode = false, selectedIds = emptySet()) }
+
+    /** Elimina tutti i prodotti selezionati, poi esce dalla modalità selezione. */
+    fun deleteSelected() {
+        val ids = _uiState.value.selectedIds
+        if (ids.isEmpty()) return
+        viewModelScope.launch {
+            var firstError: String? = null
+            ids.forEach { id ->
+                val r = priceRepository.deleteProduct(id)
+                if (r is ApiResult.Error && firstError == null) firstError = r.message
+            }
+            _uiState.update { it.copy(selectionMode = false, selectedIds = emptySet(), message = firstError) }
+            load(showLoading = false)
         }
     }
 

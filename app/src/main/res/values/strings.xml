@@ -4,6 +4,7 @@
     <!-- Comuni -->
     <string name="action_save">Salva</string>
     <string name="action_cancel">Annulla</string>
+    <string name="action_clear_search">Svuota ricerca</string>
     <string name="action_delete">Elimina</string>
     <string name="action_edit">Modifica</string>
     <string name="action_create">Crea</string>
@@ -87,6 +88,11 @@
     <string name="detail_share">Condividi</string>
     <string name="detail_participants">Partecipanti</string>
     <string name="detail_transfer_owner">Trasferisci proprietà</string>
+    <string name="list_make_shared">Rendi condivisa</string>
+    <string name="list_make_personal">Rendi personale</string>
+    <string name="list_make_personal_title">Rendere personale?</string>
+    <string name="checklist_make_personal_message">La checklist diventerà personale e tutti i partecipanti verranno rimossi. Continuare?</string>
+    <string name="expenses_make_personal_message">La lista diventerà personale: tutte le spese passeranno a te e i partecipanti verranno rimossi. L\'operazione non è reversibile. Continuare?</string>
     <string name="detail_total">Totale</string>
     <string name="detail_search_expense">Cerca spesa</string>
     <string name="detail_empty">Nessuna spesa. Aggiungine una con il +.</string>
@@ -99,6 +105,9 @@
     <!-- Dettaglio prodotto -->
     <string name="product_detail_fallback">Prodotto</string>
     <string name="product_delete_title">Elimina prodotto</string>
+    <string name="selection_count">%1$d selezionati</string>
+    <string name="products_delete_selected_title">Elimina prodotti</string>
+    <string name="products_delete_selected_message">Vuoi eliminare %1$d prodotti selezionati?</string>
     <string name="product_delete_message">Vuoi eliminare \"%1$s\" e tutti i suoi acquisti?</string>
     <string name="product_price_trend">Andamento prezzo</string>
     <string name="chart_insufficient_data">Dati insufficienti per il grafico</string>
@@ -239,6 +248,10 @@
     <string name="cd_sort_order">Ordine</string>
     <string name="cd_sort_checked">Spuntati</string>
     <string name="cd_no_results">Nessun articolo corrisponde alla ricerca.</string>
+    <string name="cd_create_searched">Crea «%1$s»</string>
+    <string name="cd_duplicate_title">Articolo già presente</string>
+    <string name="cd_duplicate_message">«%1$s» esiste già in questa lista. Vuoi aggiungerlo comunque?</string>
+    <string name="cd_duplicate_add_anyway">Aggiungi comunque</string>
     <string name="cd_export_chooser">Esporta checklist</string>
     <string name="cd_share_text">Unisciti alla mia checklist: %1$s</string>
     <string name="cd_delete_item_message">Vuoi eliminare \"%1$s\"?</string>

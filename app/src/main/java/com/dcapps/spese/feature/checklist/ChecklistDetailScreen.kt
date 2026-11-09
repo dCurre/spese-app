@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -93,6 +94,7 @@ fun ChecklistDetailScreen(
     var showImport by remember { mutableStateOf(false) }
     var showDeleteList by remember { mutableStateOf(false) }
     var showRename by remember { mutableStateOf(false) }
+    var showMakePersonal by remember { mutableStateOf(false) }
 
     val snackbarHostState = remember { SnackbarHostState() }
     ErrorSnackbarEffect(
@@ -156,6 +158,11 @@ fun ChecklistDetailScreen(
                         ChecklistOverflowMenu(
                             viewModel,
                             hasItems = state.hasItems,
+                            // Cambio tipo solo per l'owner (issue #11).
+                            canChangeType = viewModel.isOwner,
+                            isShared = state.isShared,
+                            onMakeShared = { viewModel.setListType(true) },
+                            onMakePersonal = { showMakePersonal = true },
                             onBulkEdit = { viewModel.enterEditMode() },
                             onExport = {
                                 val text = viewModel.buildExportText()
@@ -259,11 +266,30 @@ fun ChecklistDetailScreen(
                     }
                     if (state.rows.isEmpty()) {
                         item {
-                            Text(
-                                stringResource(R.string.cd_no_results),
-                                style = MaterialTheme.typography.bodyMedium,
-                                modifier = Modifier.padding(16.dp),
-                            )
+                            Column(Modifier.padding(16.dp)) {
+                                Text(
+                                    stringResource(R.string.cd_no_results),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                )
+                                // Se la ricerca non trova nulla, proponi di creare l'articolo cercato. (issue #6)
+                                if (state.query.isNotBlank()) {
+                                    TextButton(
+                                        onClick = {
+                                            viewModel.addItem(state.query, null)
+                                            viewModel.onQueryChange("")
+                                        },
+                                        contentPadding = PaddingValues(0.dp),
+                                    ) {
+                                        Icon(
+                                            Icons.Default.Add,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(18.dp),
+                                        )
+                                        Spacer(Modifier.width(4.dp))
+                                        Text(stringResource(R.string.cd_create_searched, state.query.trim()))
+                                    }
+                                }
+                            }
                         }
                     }
                     items(state.rows, key = { rowKey(it) }) { row ->
@@ -364,6 +390,28 @@ fun ChecklistDetailScreen(
             onConfirm = { viewModel.renameList(it); showRename = false },
         )
     }
+
+    // Conferma passaggio a personale (distruttivo: rimuove i partecipanti). (issue #11)
+    if (showMakePersonal) {
+        ConfirmDialog(
+            title = stringResource(R.string.list_make_personal_title),
+            message = stringResource(R.string.checklist_make_personal_message),
+            confirmText = stringResource(R.string.list_make_personal),
+            onConfirm = { viewModel.setListType(false) },
+            onDismiss = { showMakePersonal = false },
+        )
+    }
+
+    // Conferma aggiunta di un articolo che esiste già (issue #7).
+    state.duplicateItemName?.let { dupName ->
+        ConfirmDialog(
+            title = stringResource(R.string.cd_duplicate_title),
+            message = stringResource(R.string.cd_duplicate_message, dupName),
+            confirmText = stringResource(R.string.cd_duplicate_add_anyway),
+            onConfirm = { viewModel.confirmAddDuplicate() },
+            onDismiss = { viewModel.dismissDuplicate() },
+        )
+    }
 }
 
 @Composable
@@ -438,6 +486,10 @@ private fun LaunchedShare(token: String, onShared: () -> Unit) {
 private fun ChecklistOverflowMenu(
     viewModel: ChecklistDetailViewModel,
     hasItems: Boolean,
+    canChangeType: Boolean,
+    isShared: Boolean,
+    onMakeShared: () -> Unit,
+    onMakePersonal: () -> Unit,
     onBulkEdit: () -> Unit,
     onExport: () -> Unit,
     onImport: () -> Unit,
@@ -449,6 +501,17 @@ private fun ChecklistOverflowMenu(
             text = { Text(stringResource(R.string.cd_edit_list)) },
             onClick = { dismiss(); onBulkEdit() },
         )
+        // Cambio tipo condivisa↔personale, solo per l'owner (issue #11).
+        if (canChangeType) {
+            DropdownMenuItem(
+                text = {
+                    Text(stringResource(
+                        if (isShared) R.string.list_make_personal else R.string.list_make_shared,
+                    ))
+                },
+                onClick = { dismiss(); if (isShared) onMakePersonal() else onMakeShared() },
+            )
+        }
         // Spunta/despunta tutto come due voci separate (solo se ci sono articoli).
         if (hasItems) {
             DropdownMenuItem(

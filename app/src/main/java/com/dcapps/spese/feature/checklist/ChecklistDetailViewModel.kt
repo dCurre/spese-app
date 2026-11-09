@@ -17,6 +17,8 @@ import com.dcapps.spese.core.model.UpdateShoppingCategoryRequest
 import com.dcapps.spese.core.model.UpdateShoppingItemRequest
 import com.dcapps.spese.core.model.UpdateShoppingListRequest
 import com.dcapps.spese.core.network.ApiResult
+import com.dcapps.spese.core.prefs.SortPreferences
+import com.dcapps.spese.core.auth.SessionManager
 import com.dcapps.spese.core.realtime.RealtimeService
 import com.dcapps.spese.core.realtime.RealtimeTable
 import com.dcapps.spese.core.realtime.longField
@@ -77,11 +79,18 @@ data class ChecklistDetailUiState(
     // getList risponda (evita flicker del nome / stella con stato sbagliato).
     val placeholderName: String? = null,
     val placeholderStarred: Boolean = false,
+    // Impostato quando si prova ad aggiungere un articolo che esiste già (issue #7): la UI chiede
+    // conferma; confirmAddDuplicate() lo crea comunque, dismissDuplicate() annulla.
+    val duplicateItemName: String? = null,
+    val duplicateItemCategoryId: Long? = null,
 ) {
     val isEditing: Boolean get() = editState != null
 
     /** Nome da mostrare: quello reale se caricato, altrimenti il placeholder dal nav-arg. */
     val displayName: String? get() = list?.name ?: placeholderName?.takeIf { it.isNotBlank() }
+
+    /** La checklist è condivisa? (issue #11) */
+    val isShared: Boolean get() = list?.listType == "shared"
 
     /** La checklist è nei preferiti? Usa il valore reale se caricato, altrimenti il placeholder. */
     val starred: Boolean get() = list?.starred ?: placeholderStarred
@@ -107,6 +116,8 @@ class ChecklistDetailViewModel @Inject constructor(
     private val shoppingRepository: ShoppingRepository,
     private val itemRepository: ShoppingItemRepository,
     private val realtimeService: RealtimeService,
+    private val sortPreferences: SortPreferences,
+    private val session: SessionManager,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
@@ -114,8 +125,16 @@ class ChecklistDetailViewModel @Inject constructor(
     private val navName: String? = savedStateHandle["name"]
     private val navStarred: Boolean = savedStateHandle["starred"] ?: false
 
+    // Ordinamento ricordato dall'ultima volta (issue #9).
+    private val savedSort = sortPreferences.get(SortPreferences.CHECKLIST_ITEMS)
     private val _uiState = MutableStateFlow(
-        ChecklistDetailUiState(placeholderName = navName, placeholderStarred = navStarred),
+        ChecklistDetailUiState(
+            placeholderName = navName,
+            placeholderStarred = navStarred,
+            sort = savedSort?.criterion?.let { runCatching { ChecklistItemSort.valueOf(it) }.getOrNull() }
+                ?: ChecklistItemSort.ORDER,
+            sortAsc = savedSort?.ascending ?: true,
+        ),
     )
     val uiState: StateFlow<ChecklistDetailUiState> = _uiState.asStateFlow()
 
@@ -185,13 +204,23 @@ class ChecklistDetailViewModel @Inject constructor(
         }
     }
 
-    fun addItem(name: String, categoryId: Long?) {
-        if (name.isBlank()) return
+    /**
+     * Aggiunge un articolo. Se [force] è false e un articolo con lo stesso nome esiste già (ovunque
+     * nella lista, confronto case-insensitive), NON lo crea e segnala il duplicato: la UI può
+     * chiedere conferma e richiamare con force=true. (issue #7)
+     */
+    fun addItem(name: String, categoryId: Long?, force: Boolean = false) {
+        val trimmed = name.trim()
+        if (trimmed.isBlank()) return
+        if (!force && itemExists(trimmed)) {
+            _uiState.update { it.copy(duplicateItemName = trimmed, duplicateItemCategoryId = categoryId) }
+            return
+        }
         viewModelScope.launch {
             val result = itemRepository.create(
                 CreateShoppingItemRequest(
                     shoppingListId = listId,
-                    name = name.trim(),
+                    name = trimmed,
                     categoryId = categoryId,
                 )
             )
@@ -201,6 +230,25 @@ class ChecklistDetailViewModel @Inject constructor(
             }
         }
     }
+
+    /** Esiste già un articolo con questo nome (ovunque nell'albero, case-insensitive)? */
+    private fun itemExists(name: String): Boolean {
+        val list = _uiState.value.list ?: return false
+        fun collect(cats: List<ShoppingCategory>): List<ShoppingItem> =
+            cats.flatMap { it.items + collect(it.children) }
+        return (list.items + collect(list.categories)).any { it.name.trim().equals(name, ignoreCase = true) }
+    }
+
+    /** L'utente ha confermato di voler aggiungere comunque il duplicato. */
+    fun confirmAddDuplicate() {
+        val name = _uiState.value.duplicateItemName ?: return
+        val catId = _uiState.value.duplicateItemCategoryId
+        _uiState.update { it.copy(duplicateItemName = null, duplicateItemCategoryId = null) }
+        addItem(name, catId, force = true)
+    }
+
+    fun dismissDuplicate() =
+        _uiState.update { it.copy(duplicateItemName = null, duplicateItemCategoryId = null) }
 
     fun deleteItem(item: ShoppingItem) {
         viewModelScope.launch {
@@ -288,6 +336,31 @@ class ChecklistDetailViewModel @Inject constructor(
         if (newName.isBlank()) return
         viewModelScope.launch {
             val r = shoppingRepository.update(listId, UpdateShoppingListRequest(name = newName.trim()))
+            if (r is ApiResult.Error) _uiState.update { it.copy(message = r.message) }
+            load(showLoading = false)
+        }
+    }
+
+    /** true se l'utente loggato è il proprietario della checklist (può cambiarne il tipo). (#11) */
+    val isOwner: Boolean
+        get() = _uiState.value.list?.ownerId != null &&
+            _uiState.value.list?.ownerId == session.currentUser.value?.id
+
+    /**
+     * Cambia il tipo della checklist (condivisa ↔ personale). Richiede requester_id (owner).
+     * Il passaggio a personale è distruttivo (rimuove i partecipanti): la conferma è a carico
+     * della UI. (issue #11)
+     */
+    fun setListType(shared: Boolean) {
+        val requesterId = session.currentUser.value?.id ?: return
+        viewModelScope.launch {
+            val r = shoppingRepository.update(
+                listId,
+                UpdateShoppingListRequest(
+                    listType = if (shared) "shared" else "personal",
+                    requesterId = requesterId,
+                ),
+            )
             if (r is ApiResult.Error) _uiState.update { it.copy(message = r.message) }
             load(showLoading = false)
         }
@@ -547,6 +620,8 @@ class ChecklistDetailViewModel @Inject constructor(
             val asc = if (s.sort == sort) !s.sortAsc else true
             s.copy(sort = sort, sortAsc = asc)
         }
+        // Ricorda la scelta per la prossima apertura (issue #9).
+        _uiState.value.let { sortPreferences.set(SortPreferences.CHECKLIST_ITEMS, it.sort.name, it.sortAsc) }
         _uiState.value.list?.let { list -> _uiState.update { it.copy(rows = flatten(list)) } }
     }
 

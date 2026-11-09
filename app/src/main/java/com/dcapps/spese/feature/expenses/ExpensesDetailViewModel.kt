@@ -3,6 +3,7 @@ package com.dcapps.spese.feature.expenses
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.dcapps.spese.core.auth.SessionManager
 import com.dcapps.spese.core.data.CatalogRepository
 import com.dcapps.spese.core.data.ExpensesRepository
 import com.dcapps.spese.core.realtime.RealtimeService
@@ -77,6 +78,7 @@ class ExpensesDetailViewModel @Inject constructor(
     private val expensesRepository: ExpensesRepository,
     private val catalogRepository: CatalogRepository,
     private val realtimeService: RealtimeService,
+    private val session: SessionManager,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
@@ -289,6 +291,33 @@ class ExpensesDetailViewModel @Inject constructor(
             val r = expensesRepository.updateList(
                 listId,
                 UpdateExpensesListRequest(name = newName.trim()),
+            )
+            when (r) {
+                is ApiResult.Success -> load()
+                is ApiResult.Error -> _uiState.update { it.copy(message = r.message) }
+            }
+        }
+    }
+
+    /** true se l'utente loggato è il proprietario (può cambiare il tipo della lista). (#11) */
+    val isOwner: Boolean
+        get() = _uiState.value.list?.userId != null &&
+            _uiState.value.list?.userId == session.currentUser.value?.id
+
+    /**
+     * Cambia il tipo della lista spese (condivisa ↔ personale). Richiede requester_id (owner).
+     * Il passaggio a personale è DISTRUTTIVO: le spese passano all'owner e i partecipanti vengono
+     * rimossi. La conferma è a carico della UI. (issue #11)
+     */
+    fun setListType(shared: Boolean) {
+        val requesterId = session.currentUser.value?.id ?: return
+        viewModelScope.launch {
+            val r = expensesRepository.updateList(
+                listId,
+                UpdateExpensesListRequest(
+                    listType = if (shared) "shared" else "personal",
+                    requesterId = requesterId,
+                ),
             )
             when (r) {
                 is ApiResult.Success -> load()

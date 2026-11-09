@@ -4,6 +4,7 @@
     <!-- Common -->
     <string name="action_save">Save</string>
     <string name="action_cancel">Cancel</string>
+    <string name="action_clear_search">Clear search</string>
     <string name="action_delete">Delete</string>
     <string name="action_edit">Edit</string>
     <string name="action_create">Create</string>
@@ -87,6 +88,11 @@
     <string name="detail_share">Share</string>
     <string name="detail_participants">Participants</string>
     <string name="detail_transfer_owner">Transfer ownership</string>
+    <string name="list_make_shared">Make shared</string>
+    <string name="list_make_personal">Make personal</string>
+    <string name="list_make_personal_title">Make it personal?</string>
+    <string name="checklist_make_personal_message">The checklist will become personal and all participants will be removed. Continue?</string>
+    <string name="expenses_make_personal_message">The list will become personal: all expenses will be reassigned to you and participants removed. This cannot be undone. Continue?</string>
     <string name="detail_total">Total</string>
     <string name="detail_search_expense">Search expense</string>
     <string name="detail_empty">No expenses. Add one with +.</string>
@@ -99,6 +105,9 @@
     <!-- Product detail -->
     <string name="product_detail_fallback">Product</string>
     <string name="product_delete_title">Delete product</string>
+    <string name="selection_count">%1$d selected</string>
+    <string name="products_delete_selected_title">Delete products</string>
+    <string name="products_delete_selected_message">Delete %1$d selected products?</string>
     <string name="product_delete_message">Delete \"%1$s\" and all its purchases?</string>
     <string name="product_price_trend">Price trend</string>
     <string name="chart_insufficient_data">Not enough data for the chart</string>
@@ -239,6 +248,10 @@
     <string name="cd_sort_order">Order</string>
     <string name="cd_sort_checked">Checked</string>
     <string name="cd_no_results">No item matches your search.</string>
+    <string name="cd_create_searched">Create “%1$s”</string>
+    <string name="cd_duplicate_title">Item already present</string>
+    <string name="cd_duplicate_message">“%1$s” already exists in this list. Add it anyway?</string>
+    <string name="cd_duplicate_add_anyway">Add anyway</string>
     <string name="cd_export_chooser">Export checklist</string>
     <string name="cd_share_text">Join my checklist: %1$s</string>
     <string name="cd_delete_item_message">Delete \"%1$s\"?</string>

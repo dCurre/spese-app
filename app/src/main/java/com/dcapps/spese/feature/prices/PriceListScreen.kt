@@ -1,7 +1,10 @@
 package com.dcapps.spese.feature.prices
 
 import androidx.compose.foundation.background
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,6 +18,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.ReceiptLong
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Badge
@@ -63,7 +68,7 @@ import com.dcapps.spese.ui.components.SpeseSearchField
 import com.dcapps.spese.ui.components.SpeseTopAppBar
 import com.dcapps.spese.ui.theme.SpeseTheme
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun PriceListScreen(
     onOpenProduct: (Product) -> Unit,
@@ -72,6 +77,7 @@ fun PriceListScreen(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     var showCreate by remember { mutableStateOf(false) }
     var productToDelete by remember { mutableStateOf<Product?>(null) }
+    var showDeleteSelected by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
     ErrorSnackbarEffect(
         state.message, snackbarHostState, viewModel::clearMessage,
@@ -81,11 +87,40 @@ fun PriceListScreen(
         showCreate = true
     }
 
+    // In modalità selezione, il tasto Indietro annulla la selezione invece di uscire.
+    androidx.activity.compose.BackHandler(enabled = state.selectionMode) { viewModel.clearSelection() }
+
     // Rinfresca al ritorno dal dettaglio prodotto (es. nuovi acquisti → conteggio/minimo prezzo).
     RefreshOnResume { viewModel.load() }
 
     Scaffold(
-        topBar = { SpeseTopAppBar(title = stringResource(R.string.prices_title)) },
+        topBar = {
+            if (state.selectionMode) {
+                // Barra contestuale di selezione: conteggio + elimina, X per annullare. (issue #10)
+                SpeseTopAppBar(
+                    title = stringResource(R.string.selection_count, state.selectedIds.size),
+                    navigationIcon = {
+                        IconButton(onClick = { viewModel.clearSelection() }) {
+                            Icon(Icons.Default.Close, contentDescription = stringResource(R.string.action_cancel))
+                        }
+                    },
+                    actions = {
+                        IconButton(
+                            onClick = { showDeleteSelected = true },
+                            enabled = state.selectedIds.isNotEmpty(),
+                        ) {
+                            Icon(
+                                Icons.Default.Delete,
+                                contentDescription = stringResource(R.string.action_delete),
+                                tint = SpeseTheme.colors.danger,
+                            )
+                        }
+                    },
+                )
+            } else {
+                SpeseTopAppBar(title = stringResource(R.string.prices_title))
+            }
+        },
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { innerPadding ->
         PullToRefreshBox(
@@ -144,15 +179,33 @@ fun PriceListScreen(
                         }
                     }
                     items(state.visibleProducts, key = { it.id }) { product ->
-                        SwipeToDeleteRow(onRequestDelete = { productToDelete = product }) {
+                        val selected = product.id in state.selectedIds
+                        // Contenuto riga: condiviso tra modalità normale e selezione.
+                        val rowContent: @Composable () -> Unit = {
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .background(MaterialTheme.colorScheme.background)
-                                    .clickable { onOpenProduct(product) }
+                                    .background(
+                                        if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+                                        else MaterialTheme.colorScheme.background,
+                                    )
+                                    .combinedClickable(
+                                        onClick = {
+                                            if (state.selectionMode) viewModel.toggleSelection(product)
+                                            else onOpenProduct(product)
+                                        },
+                                        onLongClick = { viewModel.startSelection(product) },
+                                    )
                                     .padding(horizontal = 16.dp, vertical = 12.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
+                                if (state.selectionMode) {
+                                    Checkbox(
+                                        checked = selected,
+                                        onCheckedChange = { viewModel.toggleSelection(product) },
+                                        modifier = Modifier.padding(end = 8.dp),
+                                    )
+                                }
                                 Column(Modifier.weight(1f)) {
                                     Text(product.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                                     // Sottotitolo: marca · unità · (icona scontrino + n° acquisti).
@@ -196,12 +249,20 @@ fun PriceListScreen(
                                         )
                                     }
                                 }
-                                Icon(
-                                    Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
+                                if (!state.selectionMode) {
+                                    Icon(
+                                        Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
                             }
+                        }
+                        // In selezione niente swipe-to-delete (si elimina dalla barra contestuale).
+                        if (state.selectionMode) {
+                            rowContent()
+                        } else {
+                            SwipeToDeleteRow(onRequestDelete = { productToDelete = product }) { rowContent() }
                         }
                         RowDivider()
                     }
@@ -227,6 +288,16 @@ fun PriceListScreen(
             message = stringResource(R.string.product_delete_message, product.name),
             onConfirm = { viewModel.deleteProduct(product) },
             onDismiss = { productToDelete = null },
+        )
+    }
+
+    // Conferma eliminazione multipla (issue #10).
+    if (showDeleteSelected) {
+        ConfirmDialog(
+            title = stringResource(R.string.products_delete_selected_title),
+            message = stringResource(R.string.products_delete_selected_message, state.selectedIds.size),
+            onConfirm = { viewModel.deleteSelected() },
+            onDismiss = { showDeleteSelected = false },
         )
     }
 }
