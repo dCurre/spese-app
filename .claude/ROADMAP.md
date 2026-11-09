@@ -36,19 +36,6 @@ da fare: aggiornare qui (spuntare / rimuovere quando completato).
   Fatto: sistema colori a TOKEN (`ThemeTokens` in `Color.kt`) + builder unico token→ColorScheme
   (`Theme.kt`) + 3 colonne di valori (light/dark/legacy), come la lingua.
 
-## UI / UX — rifiniture
-
-- [ ] **Conteggio prezzi per prodotto nell'elenco.** Mostrare quanti prezzi registrati per ogni
-  prodotto nell'elenco (con icona). **Bloccato dal backend:** `GET /api/products` non restituisce
-  il conteggio e il backend è intoccabile. Da fare solo se il backend verrà esteso.
-- [ ] **Contrasto dei bordi** delle label nelle modali — da verificare sull'APK dopo
-  l'introduzione di `SpeseDialog` (shape/elevation/surface); se serve, usare `dialogBorder()`
-  già predisposto in `SpeseDialog.kt`.
-- [ ] **Sezione partecipanti** — oggi è una modale, ripensarla.
-- [ ] **Azione "Elimina" nei dialog di modifica** — pattern finale da definire. Ora in
-  ItemEditDialog / ExpenseDialog / CategoryEditDialog / NewPurchaseDialog è un cestino (danger)
-  accanto al titolo: decidere se è il pattern definitivo per tutte le modali di modifica.
-
 ## Fuori scope / escluse
 
 - Notifiche push → richiederebbero modifiche al backend (intoccabile).

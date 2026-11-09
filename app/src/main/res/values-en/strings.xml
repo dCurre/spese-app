@@ -5,6 +5,7 @@
     <string name="action_save">Save</string>
     <string name="action_cancel">Cancel</string>
     <string name="action_clear_search">Clear search</string>
+    <string name="action_got_it">Got it</string>
     <string name="action_delete">Delete</string>
     <string name="action_edit">Edit</string>
     <string name="action_create">Create</string>
@@ -232,7 +233,7 @@
     <string name="update_action">Update</string>
     <string name="update_allow_install">Allow installation</string>
     <string name="update_later">Later</string>
-    <string name="update_full_changelog">Full changelog</string>
+    <string name="update_whats_new">What\'s new</string>
 
     <!-- Snackbar -->
     <string name="snackbar_report">Report</string>

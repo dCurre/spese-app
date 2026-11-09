@@ -33,11 +33,11 @@ import androidx.compose.ui.unit.dp
 import com.dcapps.spese.R
 import com.dcapps.spese.core.model.ExpensesListParticipant
 import com.dcapps.spese.core.model.User
-import com.dcapps.spese.ui.components.SpeseDialog
+import com.dcapps.spese.ui.components.SpeseBottomSheet
 
 /**
- * Dialog di gestione partecipanti: elenco attuale (con rimozione), aggiunta di un utente
- * registrato e creazione di un ospite senza account.
+ * Gestione partecipanti come bottom sheet: elenco attuale (con rimozione), aggiunta di un utente
+ * registrato e creazione di un ospite senza account. Si chiude con swipe-giù / tap-fuori / back.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -52,12 +52,11 @@ fun ParticipantsDialog(
 ) {
     var guestName by remember { mutableStateOf("") }
 
-    SpeseDialog(
+    SpeseBottomSheet(
         title = stringResource(R.string.detail_participants),
         onDismiss = onDismiss,
-        icon = Icons.Outlined.Group,
-        content = {
-            Column(Modifier.verticalScroll(rememberScrollState())) {
+    ) {
+        Column(Modifier.verticalScroll(rememberScrollState()).heightIn(max = 480.dp)) {
                 // Elenco partecipanti attuali.
                 participants.forEach { p ->
                     Row(
@@ -125,10 +124,5 @@ fun ParticipantsDialog(
                     ) { Text(stringResource(R.string.action_create)) }
                 }
             }
-        },
-        confirmText = stringResource(R.string.action_close),
-        onConfirm = onDismiss,
-        // Dialog di sola gestione: niente "Annulla", solo "Chiudi".
-        dismissButton = {},
-    )
-}
+        }
+    }

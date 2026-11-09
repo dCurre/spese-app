@@ -77,6 +77,8 @@ data class ChecklistDetailUiState(
     val editState: ChecklistEditState? = null,
     val saving: Boolean = false,
     val message: String? = null,
+    // false per messaggi informativi (es. articolo già esistente): la snackbar non offre "Segnala".
+    val messageReportable: Boolean = true,
     // Impostato dopo l'eliminazione della lista: la UI torna indietro.
     val deleted: Boolean = false,
     // Placeholder passati via nav-arg per mostrare subito titolo e stella corretti prima che
@@ -213,7 +215,12 @@ class ChecklistDetailViewModel @Inject constructor(
         val trimmed = name.trim()
         if (trimmed.isBlank()) return
         if (itemExists(trimmed)) {
-            _uiState.update { it.copy(message = context.getString(R.string.cd_duplicate_toast, trimmed)) }
+            _uiState.update {
+                it.copy(
+                    message = context.getString(R.string.cd_duplicate_toast, trimmed),
+                    messageReportable = false,
+                )
+            }
             return
         }
         viewModelScope.launch {
@@ -517,7 +524,7 @@ class ChecklistDetailViewModel @Inject constructor(
         }
     }
 
-    fun clearMessage() = _uiState.update { it.copy(message = null) }
+    fun clearMessage() = _uiState.update { it.copy(message = null, messageReportable = true) }
 
     /** Tutte le categorie in lista piatta (per i selettori), con nome indentato per livello. */
     private fun flattenCategories(list: ShoppingList): List<ShoppingCategory> {

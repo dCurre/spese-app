@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -56,6 +57,10 @@ fun SpeseDialog(
     confirmEnabled: Boolean = true,
     destructive: Boolean = false,
     dismissText: String = stringResource(R.string.action_cancel),
+    // Azione distruttiva "Elimina" in BASSO A SINISTRA (separata dalle azioni primarie a destra):
+    // è il posto per l'elimina nei dialog di modifica, invece del cestino nell'header.
+    onDelete: (() -> Unit)? = null,
+    deleteText: String = stringResource(R.string.action_delete),
     confirmButton: (@Composable () -> Unit)? = null,
     dismissButton: (@Composable () -> Unit)? = null,
 ) {
@@ -102,26 +107,57 @@ fun SpeseDialog(
         },
         text = { Column { content() } },
         confirmButton = {
-            when {
-                confirmButton != null -> confirmButton()
-                confirmText != null && onConfirm != null -> SpeseConfirmButton(
-                    text = confirmText,
-                    onClick = onConfirm,
-                    enabled = confirmEnabled,
-                    destructive = destructive,
-                )
+            if (onDelete != null) {
+                // Riga bottoni completa: "Elimina" (rosso) a sinistra, Annulla + conferma a destra.
+                // AlertDialog allinea i suoi slot a destra, quindi costruiamo qui l'intera riga.
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    TextButton(
+                        onClick = onDelete,
+                        colors = ButtonDefaults.textButtonColors(contentColor = SpeseTheme.colors.danger),
+                    ) { Text(deleteText) }
+                    Spacer(Modifier.weight(1f))
+                    TextButton(
+                        onClick = onDismiss,
+                        colors = ButtonDefaults.textButtonColors(
+                            contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        ),
+                    ) { Text(dismissText) }
+                    if (confirmText != null && onConfirm != null) {
+                        SpeseConfirmButton(
+                            text = confirmText,
+                            onClick = onConfirm,
+                            enabled = confirmEnabled,
+                            destructive = destructive,
+                        )
+                    }
+                }
+            } else {
+                when {
+                    confirmButton != null -> confirmButton()
+                    confirmText != null && onConfirm != null -> SpeseConfirmButton(
+                        text = confirmText,
+                        onClick = onConfirm,
+                        enabled = confirmEnabled,
+                        destructive = destructive,
+                    )
+                }
             }
         },
-        dismissButton = {
-            when {
-                dismissButton != null -> dismissButton()
-                // Annulla/dismiss NEUTRO (grigio), non verde: il verde è riservato alla conferma.
-                else -> TextButton(
-                    onClick = onDismiss,
-                    colors = ButtonDefaults.textButtonColors(
-                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                    ),
-                ) { Text(dismissText) }
+        dismissButton = if (onDelete != null) null else {
+            {
+                when {
+                    dismissButton != null -> dismissButton()
+                    // Annulla/dismiss NEUTRO (grigio), non verde: il verde è riservato alla conferma.
+                    else -> TextButton(
+                        onClick = onDismiss,
+                        colors = ButtonDefaults.textButtonColors(
+                            contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        ),
+                    ) { Text(dismissText) }
+                }
             }
         },
         // Bordo più contrastato dei default Material (migliora leggibilità del contorno modale).

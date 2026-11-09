@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -33,6 +34,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.dcapps.spese.R
+import com.dcapps.spese.core.update.ChangelogEntry
 import com.dcapps.spese.core.update.UpdateInfo
 
 /**
@@ -73,12 +75,12 @@ fun UpdateScreen(
             }
         }
 
-        // Contenuto centrale: titolo + versione + changelog (scrollabile).
+        // Contenuto centrale: titolo + versione + changelog. Lo scroll è SOLO nel box changelog
+        // (altezza fissa), così la colonna esterna resta corta e i bottoni non vengono spinti via.
         Column(
             modifier = Modifier
                 .align(Alignment.Center)
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState()),
+                .fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(
@@ -93,19 +95,24 @@ fun UpdateScreen(
                 color = onBg,
                 modifier = Modifier.padding(top = 12.dp),
             )
-            if (info.changelog.isNotBlank()) {
-                Text(
-                    info.changelog,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = onBg.copy(alpha = 0.9f),
-                    modifier = Modifier.padding(top = 16.dp),
-                )
-            }
-            info.releaseUrl?.let { url ->
-                TextButton(onClick = {
-                    context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
-                }) {
-                    Text(stringResource(R.string.update_full_changelog), color = onBg)
+            // Novità: box scorrevole ad ALTEZZA FISSA, così un changelog lungo non spinge via i
+            // bottoni. Mostra le note per versione (dalla installata esclusa alla disponibile).
+            if (info.entries.isNotEmpty()) {
+                ChangelogBox(info.entries, onBg)
+            } else if (info.changelog.isNotBlank()) {
+                // Fallback: body grezzo della release, comunque dentro un box scorrevole.
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 16.dp)
+                        .heightIn(max = 220.dp)
+                        .verticalScroll(rememberScrollState()),
+                ) {
+                    Text(
+                        info.changelog,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = onBg.copy(alpha = 0.9f),
+                    )
                 }
             }
             if (state.downloading) {
@@ -167,6 +174,46 @@ fun UpdateScreen(
                 TextButton(onClick = onDismiss) {
                     Text(stringResource(R.string.update_later), color = onBg)
                 }
+            }
+        }
+    }
+}
+
+/**
+ * Box scorrevole ad altezza fissa con le novità per versione (titolo "Novità" + sezioni
+ * "versione" ed elenco puntato). Altezza limitata così un changelog lungo non spinge via i bottoni.
+ */
+@Composable
+private fun ChangelogBox(entries: List<ChangelogEntry>, onBg: Color) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 16.dp)
+            .heightIn(max = 240.dp)
+            .verticalScroll(rememberScrollState()),
+    ) {
+        Text(
+            stringResource(R.string.update_whats_new),
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = onBg,
+            modifier = Modifier.padding(bottom = 8.dp),
+        )
+        entries.forEach { entry ->
+            Text(
+                entry.version.toString(),
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+                color = onBg,
+                modifier = Modifier.padding(top = 8.dp, bottom = 2.dp),
+            )
+            entry.lines.forEach { line ->
+                Text(
+                    "•  $line",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = onBg.copy(alpha = 0.9f),
+                    modifier = Modifier.padding(start = 4.dp, top = 2.dp),
+                )
             }
         }
     }

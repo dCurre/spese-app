@@ -96,18 +96,8 @@ fun ExpenseDialog(
             else stringResource(R.string.detail_new_expense),
         onDismiss = onDismiss,
         icon = Icons.Outlined.Receipt,
-        // In modifica l'elimina è un cestino (danger) accanto al titolo; in basso Salva/Annulla.
-        titleAction = if (isEdit && onDelete != null) {
-            {
-                IconButton(onClick = onDelete) {
-                    Icon(
-                        Icons.Default.Delete,
-                        contentDescription = stringResource(R.string.action_delete),
-                        tint = SpeseTheme.colors.danger,
-                    )
-                }
-            }
-        } else null,
+        // In modifica: elimina in basso a sinistra (danger), separato da Annulla/Salva a destra.
+        onDelete = if (isEdit) onDelete else null,
         content = {
             Column(Modifier.verticalScroll(rememberScrollState())) {
                 // Nome con autocomplete dai nomi di spese già presenti.

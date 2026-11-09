@@ -4,10 +4,13 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dcapps.spese.R
+import com.dcapps.spese.BuildConfig
 import com.dcapps.spese.core.update.ApkInstaller
+import com.dcapps.spese.core.update.ChangelogEntry
 import com.dcapps.spese.core.update.DownloadState
 import com.dcapps.spese.core.update.UpdateInfo
 import com.dcapps.spese.core.update.UpdateRepository
+import com.dcapps.spese.core.update.WhatsNewStore
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,8 +29,11 @@ data class UpdateUiState(
     val checking: Boolean = false,
     // Messaggio per il controllo manuale (es. "Nessun aggiornamento disponibile").
     val checkMessage: String? = null,
+    // Novità da mostrare DOPO l'update (primo avvio sulla nuova versione): se non vuota, modale.
+    val whatsNew: List<ChangelogEntry> = emptyList(),
 ) {
     val showDialog: Boolean get() = info != null && !dismissed
+    val showWhatsNew: Boolean get() = whatsNew.isNotEmpty()
 }
 
 @HiltViewModel
@@ -35,6 +41,7 @@ class UpdateViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val updateRepository: UpdateRepository,
     private val apkInstaller: ApkInstaller,
+    private val whatsNewStore: WhatsNewStore,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(UpdateUiState())
@@ -42,6 +49,31 @@ class UpdateViewModel @Inject constructor(
 
     init {
         checkForUpdate()
+        checkWhatsNew()
+    }
+
+    /**
+     * All'avvio: se siamo sulla prima esecuzione dopo un aggiornamento, prepara le novità da
+     * mostrare in una modale. Al primo install non mostra nulla (registra solo la versione).
+     */
+    private fun checkWhatsNew() {
+        val current = BuildConfig.VERSION_NAME
+        val lastShown = whatsNewStore.lastShown()
+        if (lastShown == null) {
+            // Primo avvio in assoluto: niente novità, ricorda la versione corrente.
+            whatsNewStore.setLastShown(current)
+            return
+        }
+        viewModelScope.launch {
+            val entries = updateRepository.whatsNewSince(lastShown)
+            if (entries.isNotEmpty()) _uiState.update { it.copy(whatsNew = entries) }
+        }
+    }
+
+    /** Chiude la modale novità e registra la versione corrente come "già vista". */
+    fun dismissWhatsNew() {
+        whatsNewStore.setLastShown(BuildConfig.VERSION_NAME)
+        _uiState.update { it.copy(whatsNew = emptyList()) }
     }
 
     /** Controllo silenzioso (all'avvio e al ritorno in foreground). */

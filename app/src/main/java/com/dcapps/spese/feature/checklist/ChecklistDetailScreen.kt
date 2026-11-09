@@ -106,6 +106,7 @@ fun ChecklistDetailScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     ErrorSnackbarEffect(
         state.message, snackbarHostState, viewModel::clearMessage,
+        reportable = state.messageReportable,
     )
 
     // Torna indietro quando la checklist viene eliminata.
@@ -750,16 +751,8 @@ private fun CategoryEditDialog(
         title = stringResource(R.string.cd_category_title),
         onDismiss = onDismiss,
         icon = Icons.Default.CreateNewFolder,
-        // Elimina come cestino (danger) accanto al titolo; in basso Salva/Annulla.
-        titleAction = {
-            IconButton(onClick = onDelete) {
-                Icon(
-                    Icons.Default.Delete,
-                    contentDescription = stringResource(R.string.action_delete),
-                    tint = SpeseTheme.colors.danger,
-                )
-            }
-        },
+        // Elimina in basso a sinistra (danger), separato da Annulla/Salva a destra.
+        onDelete = onDelete,
         content = {
             OutlinedTextField(
                 value = name,

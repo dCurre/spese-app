@@ -5,6 +5,7 @@
     <string name="action_save">Salva</string>
     <string name="action_cancel">Annulla</string>
     <string name="action_clear_search">Svuota ricerca</string>
+    <string name="action_got_it">Ho capito</string>
     <string name="action_delete">Elimina</string>
     <string name="action_edit">Modifica</string>
     <string name="action_create">Crea</string>
@@ -232,7 +233,7 @@
     <string name="update_action">Aggiorna</string>
     <string name="update_allow_install">Consenti installazione</string>
     <string name="update_later">Più tardi</string>
-    <string name="update_full_changelog">Changelog completo</string>
+    <string name="update_whats_new">Novità</string>
 
     <!-- Snackbar -->
     <string name="snackbar_report">Segnala</string>

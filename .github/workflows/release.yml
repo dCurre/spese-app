@@ -72,12 +72,31 @@ jobs:
           mkdir -p dist
           cp app/build/outputs/apk/release/app-release.apk "dist/spese-v${{ steps.bump.outputs.version }}.apk"
 
+      - name: Estrai note di rilascio dal CHANGELOG
+        id: notes
+        run: |
+          # Prende SOLO la sezione "## <versione>" da CHANGELOG.md (note parlanti per l'utente),
+          # non i commit git. Se la sezione manca, usa un testo di fallback.
+          VER="${{ steps.bump.outputs.version }}"
+          NOTES=$(awk -v ver="## ${VER}" '
+            $0 == ver {flag=1; next}
+            /^## / && flag {flag=0}
+            flag {print}
+          ' CHANGELOG.md | sed '/^[[:space:]]*$/d')
+          if [ -z "$NOTES" ]; then
+            NOTES="Vedi il changelog completo su GitHub."
+          fi
+          # Scrive le note in un file da passare come body della release.
+          printf '%s\n' "$NOTES" > release_notes.md
+          echo "Note di rilascio per v${VER}:"
+          cat release_notes.md
+
       - name: Crea GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.bump.outputs.version }}
           name: v${{ steps.bump.outputs.version }}
           files: dist/spese-v${{ steps.bump.outputs.version }}.apk
-          generate_release_notes: true
+          body_path: release_notes.md
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

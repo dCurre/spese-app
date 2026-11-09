@@ -52,18 +52,8 @@ fun ItemEditDialog(
         title = stringResource(R.string.item_edit_title),
         onDismiss = onDismiss,
         icon = Icons.Outlined.Edit,
-        // Elimina come icona cestino (danger) a destra del titolo; i bottoni in basso restano
-        // lo standard Salva/Annulla.
-        titleAction = {
-            IconButton(onClick = onDelete) {
-                Icon(
-                    Icons.Default.Delete,
-                    contentDescription = stringResource(R.string.action_delete),
-                    tint = SpeseTheme.colors.danger,
-                    modifier = Modifier.size(22.dp),
-                )
-            }
-        },
+        // Elimina in basso a sinistra (danger), separato da Annulla/Salva a destra.
+        onDelete = onDelete,
         content = {
             OutlinedTextField(
                 value = name,

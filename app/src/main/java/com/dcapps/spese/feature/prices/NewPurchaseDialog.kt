@@ -81,18 +81,9 @@ fun NewPurchaseDialog(
             else stringResource(R.string.purchase_edit_title),
         onDismiss = onDismiss,
         icon = Icons.Outlined.ShoppingCart,
-        // In modifica l'elimina è un cestino (danger) accanto al titolo (coerente con gli altri).
-        titleAction = if (onDelete != null) {
-            {
-                IconButton(onClick = onDelete) {
-                    Icon(
-                        Icons.Default.Delete,
-                        contentDescription = stringResource(R.string.product_delete_purchase),
-                        tint = SpeseTheme.colors.danger,
-                    )
-                }
-            }
-        } else null,
+        // In modifica: elimina in basso a sinistra (danger), separato da Annulla/Salva a destra.
+        onDelete = onDelete,
+        deleteText = stringResource(R.string.product_delete_purchase),
         content = {
             Column(Modifier.verticalScroll(rememberScrollState())) {
                 OutlinedTextField(

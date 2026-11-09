@@ -26,6 +26,7 @@ import com.dcapps.spese.feature.bugreport.BugReportViewModel
 import com.dcapps.spese.feature.auth.SignInScreen
 import com.dcapps.spese.feature.update.UpdateScreen
 import com.dcapps.spese.feature.update.UpdateViewModel
+import com.dcapps.spese.feature.update.WhatsNewDialog
 import com.dcapps.spese.navigation.SpeseNavHost
 import com.dcapps.spese.ui.components.LoadingIndicator
 import com.dcapps.spese.ui.theme.SpeseTheme
@@ -175,6 +176,14 @@ private fun UpdateGate(updateViewModel: UpdateViewModel = hiltViewModel()) {
             canInstall = updateViewModel.canInstall(),
             onUpdate = updateViewModel::onUpdateClick,
             onDismiss = updateViewModel::dismiss,
+        )
+    }
+
+    // Novità post-update (modale) al primo avvio sulla nuova versione; non insieme all'UpdateScreen.
+    if (!updateState.showDialog && updateState.showWhatsNew) {
+        WhatsNewDialog(
+            entries = updateState.whatsNew,
+            onDismiss = updateViewModel::dismissWhatsNew,
         )
     }
 }

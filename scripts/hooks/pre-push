@@ -84,6 +84,18 @@ IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT"
 MAJOR=${MAJOR:-0}; MINOR=${MINOR:-0}; PATCH=${PATCH:-0}
 NEW_VERSION="${MAJOR}.${MINOR}.$((PATCH + 1))"
 
+# --- Controllo CHANGELOG (blocca il push se mancano le note della nuova versione) ---
+# Le note "parlanti" mostrate in-app vengono dal CHANGELOG.md: senza la sezione "## NEW_VERSION"
+# la release uscirebbe senza novità. Qui si blocca PRIMA di toccare VERSION, così non resta nulla
+# a metà. Il controllo scatta solo se CHANGELOG.md esiste nel repo.
+if [ -f "CHANGELOG.md" ]; then
+  if ! grep -qE "^##[[:space:]]+v?${NEW_VERSION}([[:space:]]|$)" CHANGELOG.md; then
+    echo "pre-push: ERRORE — manca la sezione '## ${NEW_VERSION}' in CHANGELOG.md." >&2
+    echo "pre-push: aggiungi le novità della versione ${NEW_VERSION} e ri-pusha." >&2
+    exit 1
+  fi
+fi
+
 printf '%s' "$NEW_VERSION" > "$VERSION_FILE"
 git add "$VERSION_FILE"
 
