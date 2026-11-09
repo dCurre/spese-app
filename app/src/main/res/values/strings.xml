@@ -85,6 +85,7 @@
     <string name="detail_new_expense">Nuova spesa</string>
     <string name="detail_more_actions">Altre azioni</string>
     <string name="detail_rename_list">Rinomina lista</string>
+    <string name="cd_rename_list">Rinomina checklist</string>
     <string name="detail_share">Condividi</string>
     <string name="detail_participants">Partecipanti</string>
     <string name="detail_transfer_owner">Trasferisci proprietà</string>
@@ -108,6 +109,16 @@
     <string name="selection_count">%1$d selezionati</string>
     <string name="products_delete_selected_title">Elimina prodotti</string>
     <string name="products_delete_selected_message">Vuoi eliminare %1$d prodotti selezionati?</string>
+    <string name="purchases_delete_selected_title">Elimina acquisti</string>
+    <string name="purchases_delete_selected_message">Vuoi eliminare %1$d acquisti selezionati?</string>
+    <string name="expenses_delete_selected_title">Elimina spese</string>
+    <string name="expenses_delete_selected_message">Vuoi eliminare %1$d spese selezionate?</string>
+    <string name="lists_delete_selected_title">Elimina liste</string>
+    <string name="lists_delete_selected_message">Vuoi eliminare %1$d liste selezionate?</string>
+    <string name="checklist_lists_delete_selected_title">Elimina checklist</string>
+    <string name="checklist_lists_delete_selected_message">Vuoi eliminare %1$d checklist selezionate?</string>
+    <string name="checklist_items_delete_selected_title">Elimina articoli</string>
+    <string name="checklist_items_delete_selected_message">Vuoi eliminare %1$d articoli selezionati?</string>
     <string name="product_delete_message">Vuoi eliminare \"%1$s\" e tutti i suoi acquisti?</string>
     <string name="product_price_trend">Andamento prezzo</string>
     <string name="chart_insufficient_data">Dati insufficienti per il grafico</string>
@@ -249,9 +260,7 @@
     <string name="cd_sort_checked">Spuntati</string>
     <string name="cd_no_results">Nessun articolo corrisponde alla ricerca.</string>
     <string name="cd_create_searched">Crea «%1$s»</string>
-    <string name="cd_duplicate_title">Articolo già presente</string>
-    <string name="cd_duplicate_message">«%1$s» esiste già in questa lista. Vuoi aggiungerlo comunque?</string>
-    <string name="cd_duplicate_add_anyway">Aggiungi comunque</string>
+    <string name="cd_duplicate_toast">«%1$s» è già nella lista</string>
     <string name="cd_export_chooser">Esporta checklist</string>
     <string name="cd_share_text">Unisciti alla mia checklist: %1$s</string>
     <string name="cd_delete_item_message">Vuoi eliminare \"%1$s\"?</string>

@@ -1,5 +1,7 @@
 package com.dcapps.spese.feature.checklist
 
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -13,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ListAlt
@@ -58,9 +61,12 @@ import com.dcapps.spese.ui.components.RowDivider
 import com.dcapps.spese.ui.components.SortBar
 import com.dcapps.spese.ui.components.SortOption
 import com.dcapps.spese.ui.components.SpeseBadge
+import com.dcapps.spese.ui.components.SelectableRow
+import com.dcapps.spese.ui.components.SelectionTopBar
 import com.dcapps.spese.ui.components.SpeseSearchField
 import com.dcapps.spese.ui.components.SpeseTopAppBar
 import com.dcapps.spese.ui.components.SwipeToDeleteRow
+import com.dcapps.spese.core.ui.SelectionUiState
 import com.dcapps.spese.ui.theme.SpeseTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -70,7 +76,9 @@ fun ChecklistScreen(
     viewModel: ChecklistViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val sel by viewModel.selection.state.collectAsStateWithLifecycle()
     var showCreate by remember { mutableStateOf(false) }
+    var showDeleteSelected by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
     ErrorSnackbarEffect(
         state.message, snackbarHostState, viewModel::clearMessage,
@@ -80,12 +88,25 @@ fun ChecklistScreen(
         showCreate = true
     }
 
+    // In modalità selezione, il tasto Indietro annulla la selezione invece di uscire.
+    BackHandler(enabled = sel.selectionMode) { viewModel.selection.clear() }
+
     // Rinfresca al ritorno dal dettaglio: spuntare/cancellare articoli cambia i conteggi
     // ma non emette eventi realtime sulla tabella delle liste.
     RefreshOnResume { viewModel.load() }
 
     Scaffold(
-        topBar = { SpeseTopAppBar(title = stringResource(R.string.checklist_title)) },
+        topBar = {
+            if (sel.selectionMode) {
+                SelectionTopBar(
+                    count = sel.selectedIds.size,
+                    onCancel = { viewModel.selection.clear() },
+                    onDelete = { showDeleteSelected = true },
+                )
+            } else {
+                SpeseTopAppBar(title = stringResource(R.string.checklist_title))
+            }
+        },
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { innerPadding ->
         PullToRefreshBox(
@@ -98,9 +119,19 @@ fun ChecklistScreen(
                     message = state.error!!,
                     onRetry = { viewModel.load(showLoading = true) },
                 )
-                else -> ChecklistContent(state, viewModel, onOpenList)
+                else -> ChecklistContent(state, sel, viewModel, onOpenList)
             }
         }
+    }
+
+    // Conferma eliminazione multipla (issue #10).
+    if (showDeleteSelected) {
+        ConfirmDialog(
+            title = stringResource(R.string.checklist_lists_delete_selected_title),
+            message = stringResource(R.string.checklist_lists_delete_selected_message, sel.selectedIds.size),
+            onConfirm = { viewModel.deleteSelected() },
+            onDismiss = { showDeleteSelected = false },
+        )
     }
 
     if (showCreate) {
@@ -118,6 +149,7 @@ fun ChecklistScreen(
 @Composable
 private fun ChecklistContent(
     state: ChecklistUiState,
+    sel: SelectionUiState,
     viewModel: ChecklistViewModel,
     onOpenList: (ShoppingList) -> Unit,
 ) {
@@ -159,9 +191,9 @@ private fun ChecklistContent(
             }
         }
 
-        section(starredTitle, state.starred, viewModel, onOpenList, onRequestDelete = { listToDelete = it })
-        section(activeTitle, state.active, viewModel, onOpenList, onRequestDelete = { listToDelete = it })
-        section(completedTitle, state.completed, viewModel, onOpenList, onRequestDelete = { listToDelete = it })
+        section(starredTitle, state.starred, sel, viewModel, onOpenList, onRequestDelete = { listToDelete = it })
+        section(activeTitle, state.active, sel, viewModel, onOpenList, onRequestDelete = { listToDelete = it })
+        section(completedTitle, state.completed, sel, viewModel, onOpenList, onRequestDelete = { listToDelete = it })
     }
 
     listToDelete?.let { list ->
@@ -177,6 +209,7 @@ private fun ChecklistContent(
 private fun LazyListScope.section(
     title: String,
     lists: List<ShoppingList>,
+    sel: SelectionUiState,
     viewModel: ChecklistViewModel,
     onOpenList: (ShoppingList) -> Unit,
     onRequestDelete: (ShoppingList) -> Unit,
@@ -194,71 +227,84 @@ private fun LazyListScope.section(
     items(lists, key = { it.id }) { list ->
         SwipeableChecklistRow(
             list = list,
+            sel = sel,
             onOpenList = onOpenList,
             onStar = { viewModel.toggleStarred(list) },
             onRequestDelete = { onRequestDelete(list) },
+            onLongPress = { viewModel.selection.start(list.id) },
+            onToggleSelect = { viewModel.selection.toggle(list.id) },
         )
         RowDivider()
     }
 }
 
 /**
- * Riga checklist con swipe-to-delete (sfondo rosso "Elimina"); l'eliminazione effettiva passa
- * dal dialog di conferma. Usa il componente condiviso [SwipeToDeleteRow].
+ * Riga checklist con selezione multipla: fuori dalla selezione ha lo swipe-to-delete (l'eliminazione
+ * effettiva passa dal dialog di conferma); in selezione usa checkbox/evidenziazione.
  */
 @Composable
 private fun SwipeableChecklistRow(
     list: ShoppingList,
+    sel: SelectionUiState,
     onOpenList: (ShoppingList) -> Unit,
     onStar: () -> Unit,
     onRequestDelete: () -> Unit,
+    onLongPress: () -> Unit,
+    onToggleSelect: () -> Unit,
 ) {
-    SwipeToDeleteRow(onRequestDelete = onRequestDelete) {
-        ChecklistRow(list, onOpenList, onStar = onStar)
+    val rowContent: @Composable () -> Unit = {
+        SelectableRow(
+            selectionMode = sel.selectionMode,
+            selected = list.id in sel.selectedIds,
+            onClick = { onOpenList(list) },
+            onLongClick = onLongPress,
+            onToggle = onToggleSelect,
+        ) {
+            ChecklistRowContent(list, sel.selectionMode, onStar)
+        }
+    }
+    if (sel.selectionMode) {
+        rowContent()
+    } else {
+        SwipeToDeleteRow(onRequestDelete = onRequestDelete) { rowContent() }
     }
 }
 
+/** Contenuto riga checklist (dentro [SelectableRow]). La stella è nascosta in modalità selezione. */
 @Composable
-private fun ChecklistRow(
+private fun RowScope.ChecklistRowContent(
     list: ShoppingList,
-    onOpenList: (ShoppingList) -> Unit,
+    selectionMode: Boolean,
     onStar: () -> Unit,
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.background)
-            .clickable { onOpenList(list) }
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column(Modifier.weight(1f)) {
-            Text(list.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-            val total = list.itemsCount ?: 0
-            val checked = list.checkedCount ?: 0
-            val isShared = list.listType == "shared"
-            val countLabel = if (total > 0) "$checked/$total" else null
-            Row(
-                modifier = Modifier.padding(top = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                SpeseBadge(
-                    text = if (isShared) stringResource(R.string.lists_type_shared)
-                        else stringResource(R.string.lists_type_personal),
-                    color = if (isShared) SpeseTheme.colors.accent
-                        else MaterialTheme.colorScheme.onSurfaceVariant,
+    Column(Modifier.weight(1f)) {
+        Text(list.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+        val total = list.itemsCount ?: 0
+        val checked = list.checkedCount ?: 0
+        val isShared = list.listType == "shared"
+        val countLabel = if (total > 0) "$checked/$total" else null
+        Row(
+            modifier = Modifier.padding(top = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            SpeseBadge(
+                text = if (isShared) stringResource(R.string.lists_type_shared)
+                    else stringResource(R.string.lists_type_personal),
+                color = if (isShared) SpeseTheme.colors.accent
+                    else MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            // Conteggio articoli (spuntati/totale) con icona, invece del solo testo.
+            countLabel?.let {
+                IconCount(
+                    icon = Icons.AutoMirrored.Filled.ListAlt,
+                    text = it,
+                    contentDescription = stringResource(R.string.checklist_items_cd),
                 )
-                // Conteggio articoli (spuntati/totale) con icona, invece del solo testo.
-                countLabel?.let {
-                    IconCount(
-                        icon = Icons.AutoMirrored.Filled.ListAlt,
-                        text = it,
-                        contentDescription = stringResource(R.string.checklist_items_cd),
-                    )
-                }
             }
         }
+    }
+    if (!selectionMode) {
         IconButton(onClick = onStar) {
             if (list.starred) {
                 Icon(Icons.Default.Star, contentDescription = stringResource(R.string.checklist_star_remove), tint = SpeseTheme.colors.accent)

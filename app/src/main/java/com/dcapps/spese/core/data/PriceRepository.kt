@@ -1,5 +1,6 @@
 package com.dcapps.spese.core.data
 
+import com.dcapps.spese.core.model.BulkDeleteRequest
 import com.dcapps.spese.core.model.CreateProductRequest
 import com.dcapps.spese.core.model.CreatePurchaseRequest
 import com.dcapps.spese.core.model.MeasurementUnit
@@ -38,6 +39,10 @@ class PriceRepository @Inject constructor(
     suspend fun deleteProduct(id: Long): ApiResult<Unit> =
         apiCall(json) { api.deleteProduct(id); Unit }
 
+    /** Cancellazione massiva di prodotti in una sola chiamata. */
+    suspend fun deleteProductsBulk(ids: List<Long>): ApiResult<Unit> =
+        apiCall(json) { api.deleteProductsBulk(BulkDeleteRequest(ids)); Unit }
+
     suspend fun getPurchases(productId: Long): ApiResult<List<Purchase>> =
         apiCall(json) { api.getPurchases(productId).purchases }
 
@@ -49,6 +54,10 @@ class PriceRepository @Inject constructor(
 
     suspend fun deletePurchase(id: Long): ApiResult<Unit> =
         apiCall(json) { api.deletePurchase(id); Unit }
+
+    /** Cancellazione massiva di acquisti in una sola chiamata. */
+    suspend fun deletePurchasesBulk(ids: List<Long>): ApiResult<Unit> =
+        apiCall(json) { api.deletePurchasesBulk(BulkDeleteRequest(ids)); Unit }
 
     suspend fun getPriceHistory(
         productId: Long,

@@ -1,7 +1,11 @@
 package com.dcapps.spese.feature.checklist
 
 import android.content.Intent
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -72,6 +76,7 @@ import com.dcapps.spese.ui.components.ReadOnlyPickerField
 import com.dcapps.spese.ui.components.SortBar
 import com.dcapps.spese.ui.components.SpeseBadge
 import com.dcapps.spese.ui.components.SortOption
+import com.dcapps.spese.ui.components.SelectionTopBar
 import com.dcapps.spese.ui.components.SpeseDialog
 import com.dcapps.spese.ui.components.SpeseSearchField
 import com.dcapps.spese.ui.components.SpeseTopAppBar
@@ -84,6 +89,7 @@ fun ChecklistDetailScreen(
     viewModel: ChecklistDetailViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val sel by viewModel.selection.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
     var newItem by remember { mutableStateOf("") }
     var editingItem by remember { mutableStateOf<ShoppingItem?>(null) }
@@ -95,6 +101,7 @@ fun ChecklistDetailScreen(
     var showDeleteList by remember { mutableStateOf(false) }
     var showRename by remember { mutableStateOf(false) }
     var showMakePersonal by remember { mutableStateOf(false) }
+    var showDeleteSelectedItems by remember { mutableStateOf(false) }
 
     val snackbarHostState = remember { SnackbarHostState() }
     ErrorSnackbarEffect(
@@ -106,6 +113,9 @@ fun ChecklistDetailScreen(
         if (state.deleted) onBack()
     }
 
+    // In modalità selezione, il tasto Indietro annulla la selezione invece di uscire.
+    BackHandler(enabled = sel.selectionMode) { viewModel.selection.clear() }
+
     // Condivisione: quando arriva un token, apre il selettore di condivisione di sistema.
     val token = state.inviteToken
     if (token != null) {
@@ -116,7 +126,16 @@ fun ChecklistDetailScreen(
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        topBar = {
+        topBar = if (sel.selectionMode) {
+            {
+                SelectionTopBar(
+                    count = sel.selectedIds.size,
+                    onCancel = { viewModel.selection.clear() },
+                    onDelete = { showDeleteSelectedItems = true },
+                )
+            }
+        } else {
+            {
             SpeseTopAppBar(
                 title = if (editState != null) stringResource(R.string.cd_edit_list)
                     else state.displayName ?: stringResource(R.string.detail_list_fallback),
@@ -180,6 +199,7 @@ fun ChecklistDetailScreen(
                     }
                 },
             )
+            }
         },
         bottomBar = {
             if (editState != null) {
@@ -201,7 +221,7 @@ fun ChecklistDetailScreen(
                         )
                     }
                 }
-            } else {
+            } else if (!sel.selectionMode) {
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically,
@@ -302,8 +322,12 @@ fun ChecklistDetailScreen(
                             )
                             is ChecklistRow.Item -> ItemRow(
                                 row = row,
+                                selectionMode = sel.selectionMode,
+                                selected = row.item.id in sel.selectedIds,
                                 onToggle = { viewModel.toggleItem(row.item) },
                                 onEdit = { editingItem = row.item },
+                                onLongPress = { viewModel.selection.start(row.item.id) },
+                                onToggleSelect = { viewModel.selection.toggle(row.item.id) },
                             )
                         }
                     }
@@ -331,6 +355,16 @@ fun ChecklistDetailScreen(
             message = stringResource(R.string.cd_delete_item_message, item.name),
             onConfirm = { viewModel.deleteItem(item) },
             onDismiss = { itemToDelete = null },
+        )
+    }
+
+    // Conferma eliminazione multipla articoli (issue #10).
+    if (showDeleteSelectedItems) {
+        ConfirmDialog(
+            title = stringResource(R.string.checklist_items_delete_selected_title),
+            message = stringResource(R.string.checklist_items_delete_selected_message, sel.selectedIds.size),
+            onConfirm = { viewModel.deleteSelectedItems() },
+            onDismiss = { showDeleteSelectedItems = false },
         )
     }
 
@@ -402,16 +436,6 @@ fun ChecklistDetailScreen(
         )
     }
 
-    // Conferma aggiunta di un articolo che esiste già (issue #7).
-    state.duplicateItemName?.let { dupName ->
-        ConfirmDialog(
-            title = stringResource(R.string.cd_duplicate_title),
-            message = stringResource(R.string.cd_duplicate_message, dupName),
-            confirmText = stringResource(R.string.cd_duplicate_add_anyway),
-            onConfirm = { viewModel.confirmAddDuplicate() },
-            onDismiss = { viewModel.dismissDuplicate() },
-        )
-    }
 }
 
 @Composable
@@ -422,7 +446,7 @@ private fun RenameListDialog(
 ) {
     var name by remember { mutableStateOf(currentName) }
     SpeseDialog(
-        title = stringResource(R.string.detail_rename_list),
+        title = stringResource(R.string.cd_rename_list),
         onDismiss = onDismiss,
         icon = Icons.Outlined.DriveFileRenameOutline,
         content = {
@@ -607,26 +631,45 @@ private fun CategoryHeaderRow(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun ItemRow(
     row: ChecklistRow.Item,
+    selectionMode: Boolean,
+    selected: Boolean,
     onToggle: () -> Unit,
     onEdit: () -> Unit,
+    onLongPress: () -> Unit,
+    onToggleSelect: () -> Unit,
 ) {
     val item = row.item
+    // L'alberatura (TreeIndent) resta: per non rompere l'indentazione né mettere due checkbox,
+    // la selezione evidenzia la riga e intercetta tap/long-press; in selezione il checkbox a
+    // sinistra è quello di SELEZIONE, fuori è quello di SPUNTA articolo.
     TreeIndent(
         depth = row.depth,
         isLastChild = row.isLastChild,
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onEdit() }
+            .background(
+                if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+                else androidx.compose.ui.graphics.Color.Transparent,
+            )
+            .combinedClickable(
+                onClick = { if (selectionMode) onToggleSelect() else onEdit() },
+                onLongClick = onLongPress,
+            )
             .padding(start = 8.dp, end = 8.dp),
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            Checkbox(checked = item.checked, onCheckedChange = { onToggle() })
+            if (selectionMode) {
+                Checkbox(checked = selected, onCheckedChange = { onToggleSelect() })
+            } else {
+                Checkbox(checked = item.checked, onCheckedChange = { onToggle() })
+            }
             Text(
                 text = buildString {
                     append(item.name)

@@ -13,6 +13,7 @@ import com.dcapps.spese.core.network.ApiResult
 import com.dcapps.spese.core.prefs.SortPreferences
 import com.dcapps.spese.core.realtime.RealtimeService
 import com.dcapps.spese.core.realtime.RealtimeTable
+import com.dcapps.spese.core.ui.SelectionController
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -134,6 +135,21 @@ class ChecklistViewModel @Inject constructor(
                 is ApiResult.Success -> load()
                 is ApiResult.Error -> _uiState.update { it.copy(message = result.message) }
             }
+        }
+    }
+
+    // --- Selezione multipla (issue #10) ---
+    val selection = SelectionController()
+
+    /** Elimina tutte le checklist selezionate in UNA chiamata bulk, poi esce dalla selezione. */
+    fun deleteSelected() {
+        val ids = selection.ids.toList()
+        if (ids.isEmpty()) return
+        viewModelScope.launch {
+            val r = shoppingRepository.deleteBulk(ids)
+            selection.clear()
+            if (r is ApiResult.Error) _uiState.update { it.copy(message = r.message) }
+            load(showLoading = false)
         }
     }
 

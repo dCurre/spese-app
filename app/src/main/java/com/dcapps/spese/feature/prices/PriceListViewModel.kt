@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dcapps.spese.core.data.CatalogRepository
 import com.dcapps.spese.core.prefs.SortPreferences
+import com.dcapps.spese.core.ui.SelectionController
 import com.dcapps.spese.core.data.PriceRepository
 import com.dcapps.spese.core.model.CreateProductRequest
 import com.dcapps.spese.core.model.MeasurementUnit
@@ -31,9 +32,6 @@ data class PriceListUiState(
     // Filtro per marca: insieme di marche selezionate; vuoto = tutte le marche.
     val brandFilter: Set<String> = emptySet(),
     val message: String? = null,
-    // Selezione multipla (issue #10): attiva dopo long-press, insieme di id prodotti selezionati.
-    val selectionMode: Boolean = false,
-    val selectedIds: Set<Long> = emptySet(),
 ) {
     /** Marche presenti tra i prodotti (per il selettore filtro), ordinate alfabeticamente. */
     val availableBrands: List<String>
@@ -145,31 +143,17 @@ class PriceListViewModel @Inject constructor(
     }
 
     // --- Selezione multipla (issue #10) ---
+    // Stato di selezione gestito dal controller condiviso (niente duplicazione tra ViewModel).
+    val selection = SelectionController()
 
-    /** Entra in modalità selezione (long-press) selezionando subito il prodotto premuto. */
-    fun startSelection(product: Product) =
-        _uiState.update { it.copy(selectionMode = true, selectedIds = setOf(product.id)) }
-
-    /** Seleziona/deseleziona un prodotto; se la selezione si svuota, esce dalla modalità. */
-    fun toggleSelection(product: Product) = _uiState.update {
-        val next = if (product.id in it.selectedIds) it.selectedIds - product.id else it.selectedIds + product.id
-        it.copy(selectedIds = next, selectionMode = next.isNotEmpty())
-    }
-
-    /** Annulla la selezione e torna alla modalità normale. */
-    fun clearSelection() = _uiState.update { it.copy(selectionMode = false, selectedIds = emptySet()) }
-
-    /** Elimina tutti i prodotti selezionati, poi esce dalla modalità selezione. */
+    /** Elimina tutti i prodotti selezionati in UNA chiamata bulk, poi esce dalla selezione. */
     fun deleteSelected() {
-        val ids = _uiState.value.selectedIds
+        val ids = selection.ids.toList()
         if (ids.isEmpty()) return
         viewModelScope.launch {
-            var firstError: String? = null
-            ids.forEach { id ->
-                val r = priceRepository.deleteProduct(id)
-                if (r is ApiResult.Error && firstError == null) firstError = r.message
-            }
-            _uiState.update { it.copy(selectionMode = false, selectedIds = emptySet(), message = firstError) }
+            val r = priceRepository.deleteProductsBulk(ids)
+            selection.clear()
+            if (r is ApiResult.Error) _uiState.update { it.copy(message = r.message) }
             load(showLoading = false)
         }
     }

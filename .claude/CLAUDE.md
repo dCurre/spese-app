@@ -112,8 +112,21 @@ $h = @{ "User-Agent"="spese-app-client"; "Accept"="application/vnd.github+json" 
 ```
 Il corpo ha sezioni **Descrizione / Ambiente (versione app, Android, dispositivo) / Stacktrace**.
 Lo stacktrace è **offuscato da R8** (classi tipo `T6.p`, `v3.c`) → identifica il bug dal tipo di
-errore (es. `HTTP 500`, endpoint) più che dai nomi di classe. Per chiudere una issue serve auth
-(il token `BUGREPORT_TOKEN` è solo `Issues:write`, non è in locale): la chiusura la fa l'utente.
+errore (es. `HTTP 500`, endpoint) più che dai nomi di classe.
+
+### Chiudere le issue
+
+Il token `github.bugreport.token` in `local.properties` (fine-grained, permesso **Issues: Read
+and write**) **chiude** le issue, non solo le apre. Usa lo script locale (gitignored):
+
+```powershell
+# Chiude una o più issue con commento opzionale; NON stampa mai il token.
+powershell -File scripts/close-issue.ps1 -Comment "Rilasciato in vX.Y.Z" 6 7 8
+```
+
+Lo script legge il token da `local.properties` e fa la PATCH `state=closed` (state_reason
+`completed`). **Chiudi solo dopo che l'utente ha confermato** che la fix/feature è ok (di norma
+verificata su device); se è l'utente a chiudere le issue a mano dal frontend, non toccarle.
 
 ## Scelta del modello (Opus vs Sonnet)
 

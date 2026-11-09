@@ -15,6 +15,7 @@ import com.dcapps.spese.core.model.UpdateExpensesListRequest
 import com.dcapps.spese.core.model.UpdateUserRequest
 import com.dcapps.spese.core.network.ApiResult
 import com.dcapps.spese.core.prefs.SortPreferences
+import com.dcapps.spese.core.ui.SelectionController
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -161,6 +162,21 @@ class ExpensesListViewModel @Inject constructor(
                 UpdateExpensesListRequest(paid = paid),
             )
             load()
+        }
+    }
+
+    // --- Selezione multipla (issue #10) ---
+    val selection = SelectionController()
+
+    /** Elimina tutte le liste selezionate in UNA chiamata bulk, poi esce dalla selezione. */
+    fun deleteSelected() {
+        val ids = selection.ids.toList()
+        if (ids.isEmpty()) return
+        viewModelScope.launch {
+            val r = expensesRepository.deleteListsBulk(ids)
+            selection.clear()
+            if (r is ApiResult.Error) _uiState.update { it.copy(message = r.message) }
+            load(showLoading = false)
         }
     }
 

@@ -26,6 +26,9 @@ local.properties
 # Firebase (contiene identificativi del progetto: non committare)
 app/google-services.json
 
+# Tool locale per chiudere le issue (usa il token da local.properties): non versionato
+scripts/close-issue.ps1
+
 # Keystore e materiale di firma: MAI nel repo
 keystore-tmp/
 *.keystore

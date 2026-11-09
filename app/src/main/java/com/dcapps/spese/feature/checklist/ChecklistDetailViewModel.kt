@@ -1,8 +1,10 @@
 package com.dcapps.spese.feature.checklist
 
+import android.content.Context
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.dcapps.spese.R
 import com.dcapps.spese.core.data.ShoppingItemRepository
 import com.dcapps.spese.core.data.ShoppingRepository
 import com.dcapps.spese.core.model.BatchCategoryCreate
@@ -22,7 +24,9 @@ import com.dcapps.spese.core.auth.SessionManager
 import com.dcapps.spese.core.realtime.RealtimeService
 import com.dcapps.spese.core.realtime.RealtimeTable
 import com.dcapps.spese.core.realtime.longField
+import com.dcapps.spese.core.ui.SelectionController
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -79,10 +83,6 @@ data class ChecklistDetailUiState(
     // getList risponda (evita flicker del nome / stella con stato sbagliato).
     val placeholderName: String? = null,
     val placeholderStarred: Boolean = false,
-    // Impostato quando si prova ad aggiungere un articolo che esiste già (issue #7): la UI chiede
-    // conferma; confirmAddDuplicate() lo crea comunque, dismissDuplicate() annulla.
-    val duplicateItemName: String? = null,
-    val duplicateItemCategoryId: Long? = null,
 ) {
     val isEditing: Boolean get() = editState != null
 
@@ -113,6 +113,7 @@ data class ChecklistDetailUiState(
 
 @HiltViewModel
 class ChecklistDetailViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val shoppingRepository: ShoppingRepository,
     private val itemRepository: ShoppingItemRepository,
     private val realtimeService: RealtimeService,
@@ -205,15 +206,14 @@ class ChecklistDetailViewModel @Inject constructor(
     }
 
     /**
-     * Aggiunge un articolo. Se [force] è false e un articolo con lo stesso nome esiste già (ovunque
-     * nella lista, confronto case-insensitive), NON lo crea e segnala il duplicato: la UI può
-     * chiedere conferma e richiamare con force=true. (issue #7)
+     * Aggiunge un articolo. Se un articolo con lo stesso nome esiste già (ovunque nella lista,
+     * confronto case-insensitive) NON lo crea e mostra un avviso: niente duplicati per nome. (#7)
      */
-    fun addItem(name: String, categoryId: Long?, force: Boolean = false) {
+    fun addItem(name: String, categoryId: Long?) {
         val trimmed = name.trim()
         if (trimmed.isBlank()) return
-        if (!force && itemExists(trimmed)) {
-            _uiState.update { it.copy(duplicateItemName = trimmed, duplicateItemCategoryId = categoryId) }
+        if (itemExists(trimmed)) {
+            _uiState.update { it.copy(message = context.getString(R.string.cd_duplicate_toast, trimmed)) }
             return
         }
         viewModelScope.launch {
@@ -238,17 +238,6 @@ class ChecklistDetailViewModel @Inject constructor(
             cats.flatMap { it.items + collect(it.children) }
         return (list.items + collect(list.categories)).any { it.name.trim().equals(name, ignoreCase = true) }
     }
-
-    /** L'utente ha confermato di voler aggiungere comunque il duplicato. */
-    fun confirmAddDuplicate() {
-        val name = _uiState.value.duplicateItemName ?: return
-        val catId = _uiState.value.duplicateItemCategoryId
-        _uiState.update { it.copy(duplicateItemName = null, duplicateItemCategoryId = null) }
-        addItem(name, catId, force = true)
-    }
-
-    fun dismissDuplicate() =
-        _uiState.update { it.copy(duplicateItemName = null, duplicateItemCategoryId = null) }
 
     fun deleteItem(item: ShoppingItem) {
         viewModelScope.launch {
@@ -510,6 +499,21 @@ class ChecklistDetailViewModel @Inject constructor(
                 is ApiResult.Error ->
                     _uiState.update { it.copy(saving = false, message = result.message) }
             }
+        }
+    }
+
+    // --- Selezione multipla ARTICOLI (issue #10) ---
+    val selection = SelectionController()
+
+    /** Elimina tutti gli articoli selezionati in UNA chiamata bulk, poi esce dalla selezione. */
+    fun deleteSelectedItems() {
+        val ids = selection.ids.toList()
+        if (ids.isEmpty()) return
+        viewModelScope.launch {
+            val r = itemRepository.deleteBulk(ids)
+            selection.clear()
+            if (r is ApiResult.Error) _uiState.update { it.copy(message = r.message) }
+            load(showLoading = false)
         }
     }
 

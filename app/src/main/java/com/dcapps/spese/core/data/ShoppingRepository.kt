@@ -1,6 +1,7 @@
 package com.dcapps.spese.core.data
 
 import com.dcapps.spese.core.model.BatchSaveRequest
+import com.dcapps.spese.core.model.BulkDeleteRequest
 import com.dcapps.spese.core.model.CheckRequest
 import com.dcapps.spese.core.model.CreateShoppingListRequest
 import com.dcapps.spese.core.model.JoinRequest
@@ -33,6 +34,10 @@ class ShoppingRepository @Inject constructor(
 
     suspend fun delete(id: Long): ApiResult<Unit> =
         apiCall(json) { api.deleteShoppingList(id); Unit }
+
+    /** Cancellazione massiva di checklist in una sola chiamata. */
+    suspend fun deleteBulk(ids: List<Long>): ApiResult<Unit> =
+        apiCall(json) { api.deleteShoppingListsBulk(BulkDeleteRequest(ids)); Unit }
 
     suspend fun batchSave(id: Long, body: BatchSaveRequest): ApiResult<Unit> =
         apiCall(json) { api.batchSave(id, body); Unit }

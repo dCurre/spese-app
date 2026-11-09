@@ -1,5 +1,6 @@
 package com.dcapps.spese.core.data
 
+import com.dcapps.spese.core.model.BulkItemsRequest
 import com.dcapps.spese.core.model.CheckAllRequest
 import com.dcapps.spese.core.model.CheckRequest
 import com.dcapps.spese.core.model.CreateShoppingCategoryRequest
@@ -49,6 +50,10 @@ class ShoppingItemRepository @Inject constructor(
 
     suspend fun delete(id: Long): ApiResult<Unit> =
         apiCall(json) { api.deleteShoppingItem(id); Unit }
+
+    /** Cancellazione massiva di articoli in una sola chiamata (endpoint bulk con delete_ids). */
+    suspend fun deleteBulk(ids: List<Long>): ApiResult<Unit> =
+        apiCall(json) { api.bulkShoppingItems(BulkItemsRequest(deleteIds = ids)); Unit }
 
     suspend fun check(id: Long, checked: Boolean?): ApiResult<Boolean> =
         apiCall(json) { api.checkShoppingItem(id, CheckRequest(checked)).checked }

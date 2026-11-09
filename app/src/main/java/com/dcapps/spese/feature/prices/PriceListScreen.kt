@@ -65,6 +65,8 @@ import com.dcapps.spese.ui.components.IconCount
 import com.dcapps.spese.ui.components.SortBar
 import com.dcapps.spese.ui.components.SortOption
 import com.dcapps.spese.ui.components.SpeseSearchField
+import com.dcapps.spese.ui.components.SelectableRow
+import com.dcapps.spese.ui.components.SelectionTopBar
 import com.dcapps.spese.ui.components.SpeseTopAppBar
 import com.dcapps.spese.ui.theme.SpeseTheme
 
@@ -75,6 +77,7 @@ fun PriceListScreen(
     viewModel: PriceListViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val sel by viewModel.selection.state.collectAsStateWithLifecycle()
     var showCreate by remember { mutableStateOf(false) }
     var productToDelete by remember { mutableStateOf<Product?>(null) }
     var showDeleteSelected by remember { mutableStateOf(false) }
@@ -88,34 +91,18 @@ fun PriceListScreen(
     }
 
     // In modalità selezione, il tasto Indietro annulla la selezione invece di uscire.
-    androidx.activity.compose.BackHandler(enabled = state.selectionMode) { viewModel.clearSelection() }
+    BackHandler(enabled = sel.selectionMode) { viewModel.selection.clear() }
 
     // Rinfresca al ritorno dal dettaglio prodotto (es. nuovi acquisti → conteggio/minimo prezzo).
     RefreshOnResume { viewModel.load() }
 
     Scaffold(
         topBar = {
-            if (state.selectionMode) {
-                // Barra contestuale di selezione: conteggio + elimina, X per annullare. (issue #10)
-                SpeseTopAppBar(
-                    title = stringResource(R.string.selection_count, state.selectedIds.size),
-                    navigationIcon = {
-                        IconButton(onClick = { viewModel.clearSelection() }) {
-                            Icon(Icons.Default.Close, contentDescription = stringResource(R.string.action_cancel))
-                        }
-                    },
-                    actions = {
-                        IconButton(
-                            onClick = { showDeleteSelected = true },
-                            enabled = state.selectedIds.isNotEmpty(),
-                        ) {
-                            Icon(
-                                Icons.Default.Delete,
-                                contentDescription = stringResource(R.string.action_delete),
-                                tint = SpeseTheme.colors.danger,
-                            )
-                        }
-                    },
+            if (sel.selectionMode) {
+                SelectionTopBar(
+                    count = sel.selectedIds.size,
+                    onCancel = { viewModel.selection.clear() },
+                    onDelete = { showDeleteSelected = true },
                 )
             } else {
                 SpeseTopAppBar(title = stringResource(R.string.prices_title))
@@ -179,33 +166,16 @@ fun PriceListScreen(
                         }
                     }
                     items(state.visibleProducts, key = { it.id }) { product ->
-                        val selected = product.id in state.selectedIds
+                        val selected = product.id in sel.selectedIds
                         // Contenuto riga: condiviso tra modalità normale e selezione.
                         val rowContent: @Composable () -> Unit = {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .background(
-                                        if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
-                                        else MaterialTheme.colorScheme.background,
-                                    )
-                                    .combinedClickable(
-                                        onClick = {
-                                            if (state.selectionMode) viewModel.toggleSelection(product)
-                                            else onOpenProduct(product)
-                                        },
-                                        onLongClick = { viewModel.startSelection(product) },
-                                    )
-                                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                                verticalAlignment = Alignment.CenterVertically,
+                            SelectableRow(
+                                selectionMode = sel.selectionMode,
+                                selected = selected,
+                                onClick = { onOpenProduct(product) },
+                                onLongClick = { viewModel.selection.start(product.id) },
+                                onToggle = { viewModel.selection.toggle(product.id) },
                             ) {
-                                if (state.selectionMode) {
-                                    Checkbox(
-                                        checked = selected,
-                                        onCheckedChange = { viewModel.toggleSelection(product) },
-                                        modifier = Modifier.padding(end = 8.dp),
-                                    )
-                                }
                                 Column(Modifier.weight(1f)) {
                                     Text(product.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                                     // Sottotitolo: marca · unità · (icona scontrino + n° acquisti).
@@ -249,7 +219,7 @@ fun PriceListScreen(
                                         )
                                     }
                                 }
-                                if (!state.selectionMode) {
+                                if (!sel.selectionMode) {
                                     Icon(
                                         Icons.AutoMirrored.Filled.KeyboardArrowRight,
                                         contentDescription = null,
@@ -259,7 +229,7 @@ fun PriceListScreen(
                             }
                         }
                         // In selezione niente swipe-to-delete (si elimina dalla barra contestuale).
-                        if (state.selectionMode) {
+                        if (sel.selectionMode) {
                             rowContent()
                         } else {
                             SwipeToDeleteRow(onRequestDelete = { productToDelete = product }) { rowContent() }
@@ -295,7 +265,7 @@ fun PriceListScreen(
     if (showDeleteSelected) {
         ConfirmDialog(
             title = stringResource(R.string.products_delete_selected_title),
-            message = stringResource(R.string.products_delete_selected_message, state.selectedIds.size),
+            message = stringResource(R.string.products_delete_selected_message, sel.selectedIds.size),
             onConfirm = { viewModel.deleteSelected() },
             onDismiss = { showDeleteSelected = false },
         )

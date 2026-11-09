@@ -3,6 +3,8 @@ package com.dcapps.spese.core.network
 import com.dcapps.spese.core.model.AddParticipantRequest
 import com.dcapps.spese.core.model.BalanceResponse
 import com.dcapps.spese.core.model.BatchSaveRequest
+import com.dcapps.spese.core.model.BulkDeleteRequest
+import com.dcapps.spese.core.model.BulkDeleteResponse
 import com.dcapps.spese.core.model.BulkItemsRequest
 import com.dcapps.spese.core.model.CheckAllRequest
 import com.dcapps.spese.core.model.CheckRequest
@@ -133,6 +135,9 @@ interface SpeseApi {
     @DELETE("api/expenses-lists/{id}")
     suspend fun deleteExpensesList(@Path("id") id: Long): MessageResponse
 
+    @POST("api/expenses-lists/bulk-delete")
+    suspend fun deleteExpensesListsBulk(@Body body: BulkDeleteRequest): BulkDeleteResponse
+
     @POST("api/expenses-lists/{id}/transfer-owner")
     suspend fun transferExpensesListOwner(
         @Path("id") id: Long,
@@ -183,6 +188,9 @@ interface SpeseApi {
     @DELETE("api/expenses/{id}")
     suspend fun deleteExpense(@Path("id") id: Long): MessageResponse
 
+    @POST("api/expenses/bulk-delete")
+    suspend fun deleteExpensesBulk(@Body body: BulkDeleteRequest): BulkDeleteResponse
+
     // ---------- Shopping lists ----------
     @GET("api/shopping-lists/by-user/{userId}")
     suspend fun getShoppingListsByUser(@Path("userId") userId: Long): ShoppingListsResponse
@@ -201,6 +209,9 @@ interface SpeseApi {
 
     @DELETE("api/shopping-lists/{id}")
     suspend fun deleteShoppingList(@Path("id") id: Long): MessageResponse
+
+    @POST("api/shopping-lists/bulk-delete")
+    suspend fun deleteShoppingListsBulk(@Body body: BulkDeleteRequest): BulkDeleteResponse
 
     @POST("api/shopping-lists/{id}/invite-token")
     suspend fun createInviteToken(@Path("id") id: Long): InviteTokenResponse
@@ -361,6 +372,9 @@ interface SpeseApi {
     @DELETE("api/products/{id}")
     suspend fun deleteProduct(@Path("id") id: Long): MessageResponse
 
+    @POST("api/products/bulk-delete")
+    suspend fun deleteProductsBulk(@Body body: BulkDeleteRequest): BulkDeleteResponse
+
     @GET("api/products/{productId}/purchases")
     suspend fun getPurchases(@Path("productId") productId: Long): PurchasesResponse
 
@@ -375,6 +389,9 @@ interface SpeseApi {
 
     @DELETE("api/purchases/{id}")
     suspend fun deletePurchase(@Path("id") id: Long): MessageResponse
+
+    @POST("api/purchases/bulk-delete")
+    suspend fun deletePurchasesBulk(@Body body: BulkDeleteRequest): BulkDeleteResponse
 
     @GET("api/products/{productId}/price-history")
     suspend fun getPriceHistory(

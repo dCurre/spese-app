@@ -1,16 +1,22 @@
 package com.dcapps.spese.feature.expenses
 
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import com.dcapps.spese.ui.components.ErrorState
 import com.dcapps.spese.ui.components.RefreshOnResume
 import com.dcapps.spese.ui.components.IconCount
 import com.dcapps.spese.ui.components.RowDivider
+import com.dcapps.spese.ui.components.SelectableRow
+import com.dcapps.spese.ui.components.SelectionTopBar
+import com.dcapps.spese.core.ui.SelectionUiState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -66,8 +72,10 @@ fun ExpensesListScreen(
     viewModel: ExpensesListViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val sel by viewModel.selection.state.collectAsStateWithLifecycle()
     var showCreateDialog by remember { mutableStateOf(false) }
     var listToDelete by remember { mutableStateOf<ExpensesList?>(null) }
+    var showDeleteSelected by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
 
     ErrorSnackbarEffect(state.message, snackbarHostState, viewModel::clearMessage)
@@ -77,11 +85,24 @@ fun ExpensesListScreen(
         showCreateDialog = true
     }
 
+    // In modalità selezione, il tasto Indietro annulla la selezione invece di uscire.
+    BackHandler(enabled = sel.selectionMode) { viewModel.selection.clear() }
+
     // Rinfresca al ritorno dal dettaglio (es. spese aggiunte/modificate → totali e conteggi).
     RefreshOnResume { viewModel.load() }
 
     Scaffold(
-        topBar = { SpeseTopAppBar(title = stringResource(R.string.lists_title)) },
+        topBar = {
+            if (sel.selectionMode) {
+                SelectionTopBar(
+                    count = sel.selectedIds.size,
+                    onCancel = { viewModel.selection.clear() },
+                    onDelete = { showDeleteSelected = true },
+                )
+            } else {
+                SpeseTopAppBar(title = stringResource(R.string.lists_title))
+            }
+        },
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { innerPadding ->
         PullToRefreshBox(
@@ -95,11 +116,14 @@ fun ExpensesListScreen(
                 state.error != null -> ErrorState(state.error!!, onRetry = viewModel::load)
                 else -> ListContent(
                     state = state,
+                    sel = sel,
                     onQueryChange = viewModel::onQueryChange,
                     onSortChange = viewModel::onSortChange,
                     onTogglePaid = viewModel::togglePaidListsShown,
                     onOpenList = onOpenList,
                     onDeleteList = { listToDelete = it },
+                    onLongPress = { viewModel.selection.start(it.id) },
+                    onToggleSelect = { viewModel.selection.toggle(it.id) },
                 )
             }
         }
@@ -114,6 +138,16 @@ fun ExpensesListScreen(
         )
     }
 
+    // Conferma eliminazione multipla (issue #10).
+    if (showDeleteSelected) {
+        ConfirmDialog(
+            title = stringResource(R.string.lists_delete_selected_title),
+            message = stringResource(R.string.lists_delete_selected_message, sel.selectedIds.size),
+            onConfirm = { viewModel.deleteSelected() },
+            onDismiss = { showDeleteSelected = false },
+        )
+    }
+
     if (showCreateDialog) {
         CreateListDialog(
             onDismiss = { showCreateDialog = false },
@@ -125,14 +159,18 @@ fun ExpensesListScreen(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun ListContent(
     state: ExpensesListUiState,
+    sel: SelectionUiState,
     onQueryChange: (String) -> Unit,
     onSortChange: (ListSort) -> Unit,
     onTogglePaid: () -> Unit,
     onOpenList: (ExpensesList) -> Unit,
     onDeleteList: (ExpensesList) -> Unit,
+    onLongPress: (ExpensesList) -> Unit,
+    onToggleSelect: (ExpensesList) -> Unit,
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -171,9 +209,7 @@ private fun ListContent(
         if (state.activeLists.isNotEmpty()) {
             item { SectionHeader(stringResource(R.string.lists_section_active)) }
             items(state.activeLists, key = { it.id }) { list ->
-                SwipeToDeleteRow(onRequestDelete = { onDeleteList(list) }) {
-                    ListRow(list, onOpenList)
-                }
+                SelectableListRow(list, sel, onOpenList, onDeleteList, onLongPress, onToggleSelect)
                 RowDivider()
             }
         }
@@ -196,13 +232,39 @@ private fun ListContent(
             }
             if (state.paidListsShown) {
                 items(state.paidLists, key = { it.id }) { list ->
-                    SwipeToDeleteRow(onRequestDelete = { onDeleteList(list) }) {
-                        ListRow(list, onOpenList)
-                    }
+                    SelectableListRow(list, sel, onOpenList, onDeleteList, onLongPress, onToggleSelect)
                     RowDivider()
                 }
             }
         }
+    }
+}
+
+/** Riga lista con selezione multipla: swipe-to-delete solo fuori dalla modalità selezione. */
+@Composable
+private fun SelectableListRow(
+    list: ExpensesList,
+    sel: SelectionUiState,
+    onOpenList: (ExpensesList) -> Unit,
+    onDeleteList: (ExpensesList) -> Unit,
+    onLongPress: (ExpensesList) -> Unit,
+    onToggleSelect: (ExpensesList) -> Unit,
+) {
+    val rowContent: @Composable () -> Unit = {
+        SelectableRow(
+            selectionMode = sel.selectionMode,
+            selected = list.id in sel.selectedIds,
+            onClick = { onOpenList(list) },
+            onLongClick = { onLongPress(list) },
+            onToggle = { onToggleSelect(list) },
+        ) {
+            ListRowContent(list)
+        }
+    }
+    if (sel.selectionMode) {
+        rowContent()
+    } else {
+        SwipeToDeleteRow(onRequestDelete = { onDeleteList(list) }) { rowContent() }
     }
 }
 
@@ -218,47 +280,38 @@ private fun SectionHeader(text: String) {
 }
 
 
+/** Contenuto della riga lista (dentro lo scope di [SelectableRow], che fornisce Row/click/checkbox). */
 @Composable
-private fun ListRow(
-    list: ExpensesList,
-    onOpenList: (ExpensesList) -> Unit,
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.background)
-            .clickable { onOpenList(list) }
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column(Modifier.weight(1f)) {
-            Text(list.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-            val isShared = list.type == ListType.SHARED
-            Row(
-                modifier = Modifier.padding(top = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                // Tipo lista come badge colorato (Condivisa = accent, Personale = neutro).
-                SpeseBadge(
-                    text = if (isShared) stringResource(R.string.lists_type_shared)
-                        else stringResource(R.string.lists_type_personal),
-                    color = if (isShared) SpeseTheme.colors.accent
-                        else MaterialTheme.colorScheme.onSurfaceVariant,
+private fun RowScope.ListRowContent(list: ExpensesList) {
+    Column(Modifier.weight(1f)) {
+        Text(list.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+        val isShared = list.type == ListType.SHARED
+        Row(
+            modifier = Modifier.padding(top = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            // Tipo lista come badge colorato (Condivisa = accent, Personale = neutro).
+            SpeseBadge(
+                text = if (isShared) stringResource(R.string.lists_type_shared)
+                    else stringResource(R.string.lists_type_personal),
+                color = if (isShared) SpeseTheme.colors.accent
+                    else MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            // Numero spese (prima) e, solo se condivisa, numero partecipanti: icona + conteggio.
+            list.expensesCount?.let {
+                IconCount(
+                    icon = Icons.Default.ReceiptLong,
+                    text = "$it",
+                    contentDescription = stringResource(R.string.lists_expenses_cd),
                 )
-                // Partecipanti e numero spese come icona + conteggio (meno verboso del testo).
+            }
+            if (isShared) {
                 list.participantsCount?.let {
                     IconCount(
                         icon = Icons.Default.Group,
                         text = "$it",
                         contentDescription = stringResource(R.string.lists_participants_cd),
-                    )
-                }
-                list.expensesCount?.let {
-                    IconCount(
-                        icon = Icons.Default.ReceiptLong,
-                        text = "$it",
-                        contentDescription = stringResource(R.string.lists_expenses_cd),
                     )
                 }
             }

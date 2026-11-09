@@ -20,6 +20,7 @@ import com.dcapps.spese.core.model.UpdateExpenseRequest
 import com.dcapps.spese.core.model.UpdateExpensesListRequest
 import com.dcapps.spese.core.model.User
 import com.dcapps.spese.core.network.ApiResult
+import com.dcapps.spese.core.ui.SelectionController
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -229,6 +230,21 @@ class ExpensesDetailViewModel @Inject constructor(
                 is ApiResult.Success -> reloadExpenses()
                 is ApiResult.Error -> _uiState.update { it.copy(message = result.message) }
             }
+        }
+    }
+
+    // --- Selezione multipla (issue #10) ---
+    val selection = SelectionController()
+
+    /** Elimina tutte le spese selezionate in UNA chiamata bulk, poi esce dalla selezione. */
+    fun deleteSelected() {
+        val ids = selection.ids.toList()
+        if (ids.isEmpty()) return
+        viewModelScope.launch {
+            val r = expensesRepository.deleteExpensesBulk(ids)
+            selection.clear()
+            if (r is ApiResult.Error) _uiState.update { it.copy(message = r.message) }
+            reloadExpenses()
         }
     }
 

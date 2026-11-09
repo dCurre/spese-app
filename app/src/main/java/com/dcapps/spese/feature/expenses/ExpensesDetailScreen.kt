@@ -1,5 +1,6 @@
 package com.dcapps.spese.feature.expenses
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -62,9 +63,12 @@ import com.dcapps.spese.ui.components.OverflowMenu
 import com.dcapps.spese.ui.components.RowDivider
 import com.dcapps.spese.ui.components.SortBar
 import com.dcapps.spese.ui.components.SortOption
+import com.dcapps.spese.ui.components.SelectableRow
+import com.dcapps.spese.ui.components.SelectionTopBar
 import com.dcapps.spese.ui.components.SpeseDialog
 import com.dcapps.spese.ui.components.SpeseSearchField
 import com.dcapps.spese.ui.components.SpeseTopAppBar
+import com.dcapps.spese.core.ui.SelectionUiState
 import com.dcapps.spese.ui.theme.SpeseTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -74,12 +78,14 @@ fun ExpensesDetailScreen(
     viewModel: ExpensesDetailViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val sel by viewModel.selection.state.collectAsStateWithLifecycle()
     var editing by remember { mutableStateOf<Expense?>(null) }
     var showDialog by remember { mutableStateOf(false) }
     var showParticipants by remember { mutableStateOf(false) }
     var showTransfer by remember { mutableStateOf(false) }
     var showRename by remember { mutableStateOf(false) }
     var showMakePersonal by remember { mutableStateOf(false) }
+    var showDeleteSelected by remember { mutableStateOf(false) }
     var repeating by remember { mutableStateOf(false) }
     var expenseToDelete by remember { mutableStateOf<Expense?>(null) }
 
@@ -90,6 +96,9 @@ fun ExpensesDetailScreen(
         state.message, snackbarHostState, viewModel::clearMessage,
     )
 
+    // In modalità selezione, il tasto Indietro annulla la selezione invece di uscire.
+    BackHandler(enabled = sel.selectionMode) { viewModel.selection.clear() }
+
     // Condivisione: apre il chooser di sistema quando è disponibile un link.
     state.shareLink?.let { link ->
         ShareLinkEffect(link = link, onShared = viewModel::clearShareLink)
@@ -98,36 +107,46 @@ fun ExpensesDetailScreen(
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
-            SpeseTopAppBar(
-                title = state.displayName ?: stringResource(R.string.detail_list_fallback),
-                onTitleEdit = { showRename = true },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.action_back))
-                    }
-                },
-                actions = {
-                    ExpensesListMenu(
-                        isShared = isShared,
-                        canChangeType = viewModel.isOwner,
-                        onShare = viewModel::share,
-                        onParticipants = {
-                            viewModel.loadAvailableUsers()
-                            showParticipants = true
-                        },
-                        onTransfer = {
-                            viewModel.loadAvailableUsers()
-                            showTransfer = true
-                        },
-                        onMakeShared = { viewModel.setListType(true) },
-                        onMakePersonal = { showMakePersonal = true },
-                    )
-                },
-            )
+            if (sel.selectionMode) {
+                SelectionTopBar(
+                    count = sel.selectedIds.size,
+                    onCancel = { viewModel.selection.clear() },
+                    onDelete = { showDeleteSelected = true },
+                )
+            } else {
+                SpeseTopAppBar(
+                    title = state.displayName ?: stringResource(R.string.detail_list_fallback),
+                    onTitleEdit = { showRename = true },
+                    navigationIcon = {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.action_back))
+                        }
+                    },
+                    actions = {
+                        ExpensesListMenu(
+                            isShared = isShared,
+                            canChangeType = viewModel.isOwner,
+                            onShare = viewModel::share,
+                            onParticipants = {
+                                viewModel.loadAvailableUsers()
+                                showParticipants = true
+                            },
+                            onTransfer = {
+                                viewModel.loadAvailableUsers()
+                                showTransfer = true
+                            },
+                            onMakeShared = { viewModel.setListType(true) },
+                            onMakePersonal = { showMakePersonal = true },
+                        )
+                    },
+                )
+            }
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { editing = null; showDialog = true }) {
-                Icon(Icons.Default.Add, contentDescription = stringResource(R.string.detail_new_expense))
+            if (!sel.selectionMode) {
+                FloatingActionButton(onClick = { editing = null; showDialog = true }) {
+                    Icon(Icons.Default.Add, contentDescription = stringResource(R.string.detail_new_expense))
+                }
             }
         },
     ) { innerPadding ->
@@ -140,10 +159,13 @@ fun ExpensesDetailScreen(
                 )
                 else -> DetailContent(
                     state = state,
+                    sel = sel,
                     onQueryChange = viewModel::onQueryChange,
                     onSortChange = viewModel::onSortChange,
                     onEdit = { editing = it; repeating = false; showDialog = true },
                     onRepeat = { editing = it; repeating = true; showDialog = true },
+                    onLongPress = { viewModel.selection.start(it.id) },
+                    onToggleSelect = { viewModel.selection.toggle(it.id) },
                 )
             }
         }
@@ -182,6 +204,16 @@ fun ExpensesDetailScreen(
             message = stringResource(R.string.detail_delete_expense_message, exp.name),
             onConfirm = { viewModel.deleteExpense(exp) },
             onDismiss = { expenseToDelete = null },
+        )
+    }
+
+    // Conferma eliminazione multipla (issue #10).
+    if (showDeleteSelected) {
+        ConfirmDialog(
+            title = stringResource(R.string.expenses_delete_selected_title),
+            message = stringResource(R.string.expenses_delete_selected_message, sel.selectedIds.size),
+            onConfirm = { viewModel.deleteSelected() },
+            onDismiss = { showDeleteSelected = false },
         )
     }
 
@@ -312,10 +344,13 @@ private fun ExpensesListMenu(
 @Composable
 private fun DetailContent(
     state: ExpensesDetailUiState,
+    sel: SelectionUiState,
     onQueryChange: (String) -> Unit,
     onSortChange: (ExpenseSort) -> Unit,
     onEdit: (Expense) -> Unit,
     onRepeat: (Expense) -> Unit,
+    onLongPress: (Expense) -> Unit,
+    onToggleSelect: (Expense) -> Unit,
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -397,7 +432,7 @@ private fun DetailContent(
             if (index == 0) {
                 RowDivider()
             }
-            ExpenseRow(expense, onEdit, onRepeat)
+            ExpenseRow(expense, sel, onEdit, onRepeat, onLongPress, onToggleSelect)
             HorizontalDivider(
                 Modifier.padding(horizontal = 16.dp),
                 color = SpeseTheme.colors.divider,
@@ -410,15 +445,19 @@ private fun DetailContent(
 @Composable
 private fun ExpenseRow(
     expense: Expense,
+    sel: SelectionUiState,
     onEdit: (Expense) -> Unit,
     onRepeat: (Expense) -> Unit,
+    onLongPress: (Expense) -> Unit,
+    onToggleSelect: (Expense) -> Unit,
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onEdit(expense) }
-            .padding(horizontal = 16.dp, vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically,
+    SelectableRow(
+        selectionMode = sel.selectionMode,
+        selected = expense.id in sel.selectedIds,
+        onClick = { onEdit(expense) },
+        onLongClick = { onLongPress(expense) },
+        onToggle = { onToggleSelect(expense) },
+        modifier = Modifier.padding(vertical = 0.dp),
     ) {
         // Badge circolare €
         Box(
@@ -451,8 +490,10 @@ private fun ExpenseRow(
             fontWeight = FontWeight.Bold,
             color = SpeseTheme.colors.debit,
         )
-        IconButton(onClick = { onRepeat(expense) }) {
-            Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.detail_repeat_expense))
+        if (!sel.selectionMode) {
+            IconButton(onClick = { onRepeat(expense) }) {
+                Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.detail_repeat_expense))
+            }
         }
     }
 }

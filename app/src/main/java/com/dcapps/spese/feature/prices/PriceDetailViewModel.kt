@@ -14,6 +14,7 @@ import com.dcapps.spese.core.model.Product
 import com.dcapps.spese.core.model.Purchase
 import com.dcapps.spese.core.model.UpdateProductRequest
 import com.dcapps.spese.core.network.ApiResult
+import com.dcapps.spese.core.ui.SelectionController
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -203,6 +204,21 @@ class PriceDetailViewModel @Inject constructor(
     fun deletePurchase(purchase: Purchase) {
         viewModelScope.launch {
             priceRepository.deletePurchase(purchase.id)
+            load(showLoading = false)
+        }
+    }
+
+    // --- Selezione multipla (issue #10) ---
+    val selection = SelectionController()
+
+    /** Elimina tutti gli acquisti selezionati in UNA chiamata bulk, poi esce dalla selezione. */
+    fun deleteSelected() {
+        val ids = selection.ids.toList()
+        if (ids.isEmpty()) return
+        viewModelScope.launch {
+            val r = priceRepository.deletePurchasesBulk(ids)
+            selection.clear()
+            if (r is ApiResult.Error) _uiState.update { it.copy(message = r.message) }
             load(showLoading = false)
         }
     }

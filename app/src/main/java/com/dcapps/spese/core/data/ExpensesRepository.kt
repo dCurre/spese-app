@@ -1,6 +1,7 @@
 package com.dcapps.spese.core.data
 
 import com.dcapps.spese.core.model.BalanceResponse
+import com.dcapps.spese.core.model.BulkDeleteRequest
 import com.dcapps.spese.core.model.CreateExpenseRequest
 import com.dcapps.spese.core.model.CreateExpensesListRequest
 import com.dcapps.spese.core.model.Expense
@@ -47,6 +48,10 @@ class ExpensesRepository @Inject constructor(
     suspend fun deleteList(id: Long): ApiResult<Unit> =
         apiCall(json) { api.deleteExpensesList(id); Unit }
 
+    /** Cancellazione massiva di liste spese in una sola chiamata. */
+    suspend fun deleteListsBulk(ids: List<Long>): ApiResult<Unit> =
+        apiCall(json) { api.deleteExpensesListsBulk(BulkDeleteRequest(ids)); Unit }
+
     suspend fun addParticipant(listId: Long, userId: Long): ApiResult<Unit> =
         apiCall(json) { api.addParticipant(listId, AddParticipantRequest(userId)); Unit }
 
@@ -87,6 +92,10 @@ class ExpensesRepository @Inject constructor(
 
     suspend fun deleteExpense(id: Long): ApiResult<Unit> =
         apiCall(json) { api.deleteExpense(id); Unit }
+
+    /** Cancellazione massiva di spese in una sola chiamata. */
+    suspend fun deleteExpensesBulk(ids: List<Long>): ApiResult<Unit> =
+        apiCall(json) { api.deleteExpensesBulk(BulkDeleteRequest(ids)); Unit }
 
     suspend fun getBalance(listId: Long): ApiResult<BalanceResponse> =
         apiCall(json) { api.getBalance(listId) }

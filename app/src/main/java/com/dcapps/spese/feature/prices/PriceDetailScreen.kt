@@ -1,5 +1,6 @@
 package com.dcapps.spese.feature.prices
 
+import androidx.activity.compose.BackHandler
 import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -54,6 +55,8 @@ import com.dcapps.spese.ui.components.ConfirmDialog
 import com.dcapps.spese.ui.components.ErrorSnackbarEffect
 import com.dcapps.spese.ui.components.OverflowMenu
 import com.dcapps.spese.ui.components.RowDivider
+import com.dcapps.spese.ui.components.SelectableRow
+import com.dcapps.spese.ui.components.SelectionTopBar
 import com.dcapps.spese.ui.components.SpeseFilterChip
 import com.dcapps.spese.ui.components.SpeseTopAppBar
 import com.dcapps.spese.ui.components.SwipeToDeleteRow
@@ -66,11 +69,13 @@ fun PriceDetailScreen(
     viewModel: PriceDetailViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val sel by viewModel.selection.state.collectAsStateWithLifecycle()
     var showAddPurchase by remember { mutableStateOf(false) }
     var editingPurchase by remember { mutableStateOf<Purchase?>(null) }
     var purchaseToDelete by remember { mutableStateOf<Purchase?>(null) }
     var showEditProduct by remember { mutableStateOf(false) }
     var showDeleteProduct by remember { mutableStateOf(false) }
+    var showDeleteSelected by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
     ErrorSnackbarEffect(
         state.message, snackbarHostState, viewModel::clearMessage,
@@ -80,6 +85,9 @@ fun PriceDetailScreen(
     LaunchedEffect(state.deleted) {
         if (state.deleted) onBack()
     }
+
+    // In modalità selezione, il tasto Indietro annulla la selezione invece di uscire.
+    BackHandler(enabled = sel.selectionMode) { viewModel.selection.clear() }
 
     // Pannello grafico persistente (P11): parte collassato mostrando solo intestazione + chip
     // periodo; trascinandolo verso l'alto appare il grafico. Lo sfondo (statistiche + acquisti)
@@ -100,25 +108,33 @@ fun PriceDetailScreen(
         // Altezza da collassato: giusto intestazione + chip periodo (il grafico resta nascosto).
         sheetPeekHeight = 120.dp,
         topBar = {
-            SpeseTopAppBar(
-                title = state.product?.name ?: state.placeholderName
-                    ?: stringResource(R.string.product_detail_fallback),
-                onTitleEdit = { showEditProduct = true },
-                titleEditLabel = stringResource(R.string.product_edit_title),
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.action_back))
-                    }
-                },
-                actions = {
-                    OverflowMenu { dismiss ->
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.product_delete_title)) },
-                            onClick = { dismiss(); showDeleteProduct = true },
-                        )
-                    }
-                },
-            )
+            if (sel.selectionMode) {
+                SelectionTopBar(
+                    count = sel.selectedIds.size,
+                    onCancel = { viewModel.selection.clear() },
+                    onDelete = { showDeleteSelected = true },
+                )
+            } else {
+                SpeseTopAppBar(
+                    title = state.product?.name ?: state.placeholderName
+                        ?: stringResource(R.string.product_detail_fallback),
+                    onTitleEdit = { showEditProduct = true },
+                    titleEditLabel = stringResource(R.string.product_edit_title),
+                    navigationIcon = {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.action_back))
+                        }
+                    },
+                    actions = {
+                        OverflowMenu { dismiss ->
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.product_delete_title)) },
+                                onClick = { dismiss(); showDeleteProduct = true },
+                            )
+                        }
+                    },
+                )
+            }
         },
         sheetContent = {
             Column(
@@ -195,14 +211,14 @@ fun PriceDetailScreen(
                     }
 
                     items(state.purchases, key = { it.id }) { p ->
-                        SwipeToDeleteRow(onRequestDelete = { purchaseToDelete = p }) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .background(MaterialTheme.colorScheme.background)
-                                    .clickable { editingPurchase = p }
-                                    .padding(horizontal = 16.dp, vertical = 10.dp),
-                                verticalAlignment = Alignment.CenterVertically,
+                        val rowContent: @Composable () -> Unit = {
+                            SelectableRow(
+                                selectionMode = sel.selectionMode,
+                                selected = p.id in sel.selectedIds,
+                                onClick = { editingPurchase = p },
+                                onLongClick = { viewModel.selection.start(p.id) },
+                                onToggle = { viewModel.selection.toggle(p.id) },
+                                modifier = Modifier.padding(vertical = 0.dp),
                             ) {
                                 Column(Modifier.weight(1f)) {
                                     Text(
@@ -222,6 +238,11 @@ fun PriceDetailScreen(
                                 )
                             }
                         }
+                        if (sel.selectionMode) {
+                            rowContent()
+                        } else {
+                            SwipeToDeleteRow(onRequestDelete = { purchaseToDelete = p }) { rowContent() }
+                        }
                         RowDivider()
                     }
                 }
@@ -229,8 +250,8 @@ fun PriceDetailScreen(
 
             // FAB "aggiungi acquisto": overlay in basso a destra (BottomSheetScaffold non ha
             // uno slot FAB dedicato). Sta sopra lo sfondo, il pannello grafico gli passa davanti.
-            // Nascosto durante caricamento/errore (quando non c'è la lista acquisti).
-            if (!state.isLoading && state.error == null) {
+            // Nascosto durante caricamento/errore e in modalità selezione.
+            if (!state.isLoading && state.error == null && !sel.selectionMode) {
                 FloatingActionButton(
                     onClick = { showAddPurchase = true },
                     modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp),
@@ -300,6 +321,16 @@ fun PriceDetailScreen(
             message = stringResource(R.string.product_delete_message, state.product?.name ?: ""),
             onConfirm = { viewModel.deleteProduct() },
             onDismiss = { showDeleteProduct = false },
+        )
+    }
+
+    // Conferma eliminazione multipla acquisti (issue #10).
+    if (showDeleteSelected) {
+        ConfirmDialog(
+            title = stringResource(R.string.purchases_delete_selected_title),
+            message = stringResource(R.string.purchases_delete_selected_message, sel.selectedIds.size),
+            onConfirm = { viewModel.deleteSelected() },
+            onDismiss = { showDeleteSelected = false },
         )
     }
 }
