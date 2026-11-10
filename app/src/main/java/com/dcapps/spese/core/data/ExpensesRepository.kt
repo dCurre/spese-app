@@ -6,6 +6,7 @@ import com.dcapps.spese.core.model.BalanceResponse
 import com.dcapps.spese.core.model.CreateExpenseRequest
 import com.dcapps.spese.core.model.CreateExpensesListRequest
 import com.dcapps.spese.core.model.Expense
+import com.dcapps.spese.core.model.ExpenseStats
 import com.dcapps.spese.core.model.ExpensesList
 import com.dcapps.spese.core.model.AddParticipantRequest
 import com.dcapps.spese.core.model.CreateUserRequest
@@ -108,6 +109,21 @@ class ExpensesRepository @Inject constructor(
      */
     suspend fun getBalance(listId: Long): ApiResult<BalanceResponse> =
         ApiResult.Success(BalanceResponse())
+
+    /**
+     * Statistiche aggregate delle spese personali dell'utente (dashboard). Online-only: aggregazione
+     * lato backend (`GET /api/expenses/stats`). In guest/senza utente ritorna un errore gentile.
+     * [from]/[to] sono date yyyy-MM-dd; [granularity] = month|week|year.
+     */
+    suspend fun getExpenseStats(
+        from: String? = null,
+        to: String? = null,
+        granularity: String? = null,
+    ): ApiResult<ExpenseStats> {
+        val userId = session.currentUser.value?.id
+            ?: return ApiResult.Error(message = "Accedi con un account per vedere le statistiche.")
+        return apiCall(json) { api.getExpenseStats(userId, from, to, granularity) }
+    }
 
     /**
      * Dopo una scrittura locale riuscita richiede un sync (debounced) col backend. No-op in guest

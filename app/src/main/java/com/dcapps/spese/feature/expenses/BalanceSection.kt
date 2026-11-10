@@ -1,19 +1,13 @@
 package com.dcapps.spese.feature.expenses
 
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.background
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -28,13 +22,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -43,11 +31,11 @@ import com.dcapps.spese.core.model.BalanceEntry
 import com.dcapps.spese.core.model.BalanceTotal
 import com.dcapps.spese.core.model.Expense
 import com.dcapps.spese.core.util.toEuro
+import com.dcapps.spese.ui.components.DoughnutChartWithLegend
+import com.dcapps.spese.ui.components.DoughnutSlice
 import com.dcapps.spese.ui.theme.SpeseTheme
-import com.dcapps.spese.ui.theme.categoricalColor
 import java.math.BigDecimal
 import java.math.RoundingMode
-import kotlin.math.abs
 
 /**
  * Pannello saldo: grafico a ciambella "chi ha pagato quanto" (dai totali) + elenco
@@ -118,14 +106,15 @@ fun BalanceSection(
             }
 
             Spacer(Modifier.height(12.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                DoughnutChart(
-                    values = slices.map { it.amount },
-                    modifier = Modifier.size(120.dp),
-                )
-                Spacer(Modifier.width(16.dp))
-                Legend(slices)
-            }
+            DoughnutChartWithLegend(
+                slices = slices.map {
+                    DoughnutSlice(
+                        label = it.label,
+                        amount = it.amount,
+                        formattedAmount = BigDecimal(it.amount).setScale(2, RoundingMode.HALF_UP).toEuro(),
+                    )
+                },
+            )
 
             // "Chi deve a chi": solo le direzioni con debito reale (toPay > 0).
             val debts = balance.filter { it.toPay > 0.0 }
@@ -152,56 +141,6 @@ fun BalanceSection(
                         )
                     }
                 }
-            }
-        }
-    }
-}
-
-@Composable
-private fun DoughnutChart(values: List<Double>, modifier: Modifier = Modifier) {
-    val total = values.sumOf { abs(it) }.takeIf { it > 0 } ?: 1.0
-    val surface = MaterialTheme.colorScheme.surface
-    Canvas(modifier) {
-        val stroke = size.minDimension * 0.18f
-        val inset = stroke / 2f
-        val arcSize = Size(size.width - stroke, size.height - stroke)
-        var startAngle = -90f
-        values.forEachIndexed { index, value ->
-            val sweep = (abs(value) / total * 360f).toFloat()
-            // Gap di 2px sul colore di superficie tra i segmenti.
-            drawArc(
-                color = categoricalColor(index),
-                startAngle = startAngle,
-                sweepAngle = sweep,
-                useCenter = false,
-                topLeft = Offset(inset, inset),
-                size = arcSize,
-                style = Stroke(width = stroke),
-            )
-            startAngle += sweep
-        }
-    }
-}
-
-@Composable
-private fun Legend(slices: List<Slice>) {
-    Column {
-        slices.forEachIndexed { index, s ->
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(vertical = 2.dp),
-            ) {
-                Box(
-                    Modifier
-                        .size(12.dp)
-                        .clip(CircleShape)
-                        .background(categoricalColor(index)),
-                )
-                Spacer(Modifier.width(8.dp))
-                Text(
-                    "${s.label} · ${BigDecimal(s.amount).setScale(2, RoundingMode.HALF_UP).toEuro()}",
-                    style = MaterialTheme.typography.bodySmall,
-                )
             }
         }
     }

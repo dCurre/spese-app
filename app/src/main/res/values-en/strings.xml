@@ -130,6 +130,19 @@
     <string name="product_delete_message">Delete \"%1$s\" and all its purchases?</string>
     <string name="product_price_trend">Price trend</string>
     <string name="chart_insufficient_data">Not enough data for the chart</string>
+    <!-- Expense stats dashboard -->
+    <string name="stats_title">Expense statistics</string>
+    <string name="stats_subtitle">Trend and breakdown of your spending</string>
+    <string name="stats_period_month">This month</string>
+    <string name="stats_period_6months">6 months</string>
+    <string name="stats_period_year">Year</string>
+    <string name="stats_total">Total spent</string>
+    <string name="stats_count">%1$d expenses</string>
+    <string name="stats_change_vs_prev">%1$s vs previous period</string>
+    <string name="stats_over_time">Trend over time</string>
+    <string name="stats_by_type">By type</string>
+    <string name="stats_type_other">Uncategorized</string>
+    <string name="stats_empty">No expenses in the selected period</string>
     <string name="chart_need_more_points">Add more purchases to see the trend</string>
     <string name="chart_unit_price">Unit price (€)</string>
     <string name="chart_point_tooltip">%1$s · %2$s €/%3$s</string>

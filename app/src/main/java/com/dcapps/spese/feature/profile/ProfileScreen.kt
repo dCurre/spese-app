@@ -15,6 +15,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.AdminPanelSettings
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Lightbulb
@@ -56,6 +57,7 @@ fun ProfileScreen(
     onOpenProfileDetail: () -> Unit,
     onOpenSettings: () -> Unit,
     onOpenStats: () -> Unit,
+    onOpenStatsDashboard: () -> Unit,
     onOpenAbout: () -> Unit,
     onOpenAdmin: () -> Unit,
     onCheckUpdates: () -> Unit,
@@ -140,6 +142,13 @@ fun ProfileScreen(
                 icon = Icons.Default.QueryStats,
                 title = stringResource(R.string.profile_stats),
                 onClick = onOpenStats,
+            )
+            ProfileGroupDivider()
+            ProfileListItem(
+                icon = Icons.AutoMirrored.Filled.TrendingUp,
+                title = stringResource(R.string.stats_title),
+                subtitle = stringResource(R.string.stats_subtitle),
+                onClick = onOpenStatsDashboard,
             )
             ProfileGroupDivider()
 

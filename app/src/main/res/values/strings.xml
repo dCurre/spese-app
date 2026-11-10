@@ -130,6 +130,19 @@
     <string name="product_delete_message">Vuoi eliminare \"%1$s\" e tutti i suoi acquisti?</string>
     <string name="product_price_trend">Andamento prezzo</string>
     <string name="chart_insufficient_data">Dati insufficienti per il grafico</string>
+    <!-- Dashboard statistiche spese -->
+    <string name="stats_title">Statistiche spese</string>
+    <string name="stats_subtitle">Andamento e ripartizione delle tue spese</string>
+    <string name="stats_period_month">Questo mese</string>
+    <string name="stats_period_6months">6 mesi</string>
+    <string name="stats_period_year">Anno</string>
+    <string name="stats_total">Totale speso</string>
+    <string name="stats_count">%1$d spese</string>
+    <string name="stats_change_vs_prev">%1$s rispetto al periodo precedente</string>
+    <string name="stats_over_time">Andamento nel tempo</string>
+    <string name="stats_by_type">Per tipologia</string>
+    <string name="stats_type_other">Senza categoria</string>
+    <string name="stats_empty">Nessuna spesa nel periodo selezionato</string>
     <string name="chart_need_more_points">Aggiungi altri acquisti per vedere l\'andamento</string>
     <string name="chart_unit_price">Prezzo unitario (€)</string>
     <string name="chart_point_tooltip">%1$s · %2$s €/%3$s</string>

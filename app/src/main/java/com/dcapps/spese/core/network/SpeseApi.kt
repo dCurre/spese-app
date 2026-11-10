@@ -2,6 +2,7 @@ package com.dcapps.spese.core.network
 
 import com.dcapps.spese.core.model.AddParticipantRequest
 import com.dcapps.spese.core.model.BalanceResponse
+import com.dcapps.spese.core.model.ExpenseStats
 import com.dcapps.spese.core.model.BatchSaveRequest
 import com.dcapps.spese.core.model.BatchSyncRequest
 import com.dcapps.spese.core.model.BatchSyncResponse
@@ -184,6 +185,14 @@ interface SpeseApi {
 
     @GET("api/expenses/{id}")
     suspend fun getExpense(@Path("id") id: Long): Expense
+
+    @GET("api/expenses/stats")
+    suspend fun getExpenseStats(
+        @Query("user_id") userId: Long,
+        @Query("from") from: String? = null,
+        @Query("to") to: String? = null,
+        @Query("granularity") granularity: String? = null,
+    ): ExpenseStats
 
     @POST("api/expenses")
     suspend fun createExpense(@Body body: CreateExpenseRequest): CreatedResponse

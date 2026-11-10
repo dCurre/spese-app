@@ -51,6 +51,7 @@ import com.dcapps.spese.feature.profile.ProfileScreen
 import com.dcapps.spese.feature.profile.ProfileEditScreen
 import com.dcapps.spese.feature.profile.ProfileSettingsScreen
 import com.dcapps.spese.feature.profile.ProfileStatsScreen
+import com.dcapps.spese.feature.stats.StatsDashboardScreen
 import com.dcapps.spese.feature.sync.SyncIndicator
 import com.dcapps.spese.feature.update.UpdateScreen
 import com.dcapps.spese.feature.update.UpdateViewModel
@@ -69,6 +70,7 @@ object Routes {
     const val PROFILE_EDIT = "profile/edit"
     const val PROFILE_SETTINGS = "profile/settings"
     const val PROFILE_STATS = "profile/stats"
+    const val STATS_DASHBOARD = "stats/dashboard"
     const val ADMIN = "admin"
     const val ABOUT = "about"
     fun expensesDetail(listId: Long, name: String) =
@@ -208,6 +210,7 @@ fun SpeseNavHost(
                     onOpenProfileDetail = { navController.navigate(Routes.PROFILE_EDIT) },
                     onOpenSettings = { navController.navigate(Routes.PROFILE_SETTINGS) },
                     onOpenStats = { navController.navigate(Routes.PROFILE_STATS) },
+                    onOpenStatsDashboard = { navController.navigate(Routes.STATS_DASHBOARD) },
                     onOpenAbout = { navController.navigate(Routes.ABOUT) },
                     onOpenAdmin = { navController.navigate(Routes.ADMIN) },
                     onCheckUpdates = { updateViewModel.checkForUpdateManual() },
@@ -222,6 +225,9 @@ fun SpeseNavHost(
             }
             composable(Routes.PROFILE_STATS) {
                 ProfileStatsScreen(onBack = { navController.popBackStack() })
+            }
+            composable(Routes.STATS_DASHBOARD) {
+                StatsDashboardScreen(onBack = { navController.popBackStack() })
             }
             composable(Routes.ADMIN) {
                 AdminScreen(onBack = { navController.popBackStack() })
