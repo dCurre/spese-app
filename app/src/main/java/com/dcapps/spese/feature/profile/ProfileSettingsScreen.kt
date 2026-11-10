@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.FlowRowScope
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -18,9 +19,11 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -78,7 +81,49 @@ fun ProfileSettingsScreen(
                 SelectableChip(stringResource(R.string.profile_theme_legacy), current == "legacy") { viewModel.setTheme("legacy") }
                 SelectableChip(stringResource(R.string.profile_theme_auto), current == "auto") { viewModel.setTheme("auto") }
             }
+
+            HorizontalDivider(color = SpeseTheme.colors.divider)
+
+            // Sincronizzazione — flag per mostrare/nascondere il badge "in attesa" sulle righe.
+            val showPending by viewModel.showPendingSyncBadges.collectAsStateWithLifecycle()
+            SwitchRow(
+                title = stringResource(R.string.profile_sync_badges),
+                subtitle = stringResource(R.string.profile_sync_badges_desc),
+                checked = showPending,
+                onCheckedChange = { viewModel.setShowPendingSyncBadges(it) },
+            )
         }
+    }
+}
+
+/** Riga impostazioni con titolo/descrizione a sinistra e interruttore a destra. */
+@Composable
+private fun SwitchRow(
+    title: String,
+    subtitle: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(
+                title,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                subtitle,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Switch(checked = checked, onCheckedChange = onCheckedChange)
     }
 }
 

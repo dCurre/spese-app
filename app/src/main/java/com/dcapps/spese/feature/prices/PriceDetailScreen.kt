@@ -59,6 +59,7 @@ import com.dcapps.spese.ui.components.SelectableRow
 import com.dcapps.spese.ui.components.SelectionTopBar
 import com.dcapps.spese.ui.components.SpeseFilterChip
 import com.dcapps.spese.ui.components.SpeseTopAppBar
+import com.dcapps.spese.ui.components.PendingSyncBadge
 import com.dcapps.spese.ui.components.SwipeToDeleteRow
 import com.dcapps.spese.ui.theme.SpeseTheme
 
@@ -229,6 +230,11 @@ fun PriceDetailScreen(
                                     val sub = listOfNotNull(p.purchasedAt, p.store).joinToString(" · ")
                                     Text(sub, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
+                                // Badge "in attesa di sync" se l'acquisto ha modifiche locali non inviate (punto 2).
+                                PendingSyncBadge(
+                                    show = state.showPendingSync && p.pendingSync,
+                                    modifier = Modifier.padding(end = 8.dp),
+                                )
                                 val unitSym = p.unitSymbol ?: state.product?.defaultUnitSymbol ?: "u"
                                 Text(
                                     "%.2f €/%s".format(p.unitPrice, unitSym),

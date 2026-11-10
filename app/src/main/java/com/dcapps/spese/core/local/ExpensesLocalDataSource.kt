@@ -145,6 +145,7 @@ private fun LocalExpensesListEntity.toModel(expensesCount: Int) = ExpensesList(
     participantsCount = 1,
     expensesCount = expensesCount,
     participants = emptyList(),
+    pendingSync = pendingSync,
 )
 
 private fun LocalExpenseEntity.toModel() = Expense(
@@ -155,6 +156,7 @@ private fun LocalExpenseEntity.toModel() = Expense(
     expenseListId = listId,
     expenseDate = expenseDate?.let { parseDate(it) },
     expenseTypeId = expenseTypeId,
+    pendingSync = pendingSync,
 )
 
 /** Converte una data semplice "yyyy-MM-dd" in Instant (mezzanotte locale). */

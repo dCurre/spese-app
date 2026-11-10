@@ -63,6 +63,7 @@ import com.dcapps.spese.core.util.toShortDate
 import com.dcapps.spese.ui.components.ConfirmDialog
 import com.dcapps.spese.ui.components.ErrorSnackbarEffect
 import com.dcapps.spese.ui.components.OverflowMenu
+import com.dcapps.spese.ui.components.PendingSyncBadge
 import com.dcapps.spese.ui.components.RowDivider
 import com.dcapps.spese.ui.components.SortBar
 import com.dcapps.spese.ui.components.SortOption
@@ -489,7 +490,7 @@ private fun DetailContent(
             if (index == 0) {
                 RowDivider()
             }
-            ExpenseRow(expense, sel, onEdit, onRepeat, onLongPress, onToggleSelect)
+            ExpenseRow(expense, sel, onEdit, onRepeat, onLongPress, onToggleSelect, state.showPendingSync)
             HorizontalDivider(
                 Modifier.padding(horizontal = 16.dp),
                 color = SpeseTheme.colors.divider,
@@ -507,6 +508,7 @@ private fun ExpenseRow(
     onRepeat: (Expense) -> Unit,
     onLongPress: (Expense) -> Unit,
     onToggleSelect: (Expense) -> Unit,
+    showPendingSync: Boolean,
 ) {
     SelectableRow(
         selectionMode = sel.selectionMode,
@@ -540,6 +542,11 @@ private fun ExpenseRow(
                 Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
+        // Badge "in attesa di sync" se la spesa ha modifiche locali non inviate (punto 2).
+        PendingSyncBadge(
+            show = showPendingSync && expense.pendingSync,
+            modifier = Modifier.padding(end = 8.dp),
+        )
         // Importo: colore semantico (spesa = debito/rosso).
         Text(
             expense.amount.toEuro(),

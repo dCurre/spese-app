@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ListAlt
@@ -231,10 +232,13 @@ fun SpeseNavHost(
         }
 
         // Indicatore stato sync, sovrapposto in alto a destra (non invasivo): spinner mentre
-        // sincronizza, badge d'errore toccabile se l'ultimo ciclo è fallito. Invisibile se IDLE.
+        // sincronizza, badge offline/errore. Invisibile quando è tutto a posto.
+        // statusBarsPadding(): lo spinge sotto la status bar così resta alla STESSA altezza su
+        // ogni schermata (prima, senza, finiva sotto la status bar / troppo in alto).
         SyncIndicator(
             modifier = Modifier
                 .align(Alignment.TopEnd)
+                .statusBarsPadding()
                 .padding(top = 6.dp, end = 10.dp),
         )
       }

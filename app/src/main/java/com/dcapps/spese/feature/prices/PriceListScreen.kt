@@ -38,7 +38,6 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -63,6 +62,7 @@ import com.dcapps.spese.ui.components.RowDivider
 import com.dcapps.spese.ui.components.SwipeToDeleteRow
 import com.dcapps.spese.ui.components.IconCount
 import com.dcapps.spese.ui.components.ListRowContent
+import com.dcapps.spese.ui.components.PendingSyncBadge
 import com.dcapps.spese.ui.components.SortBar
 import com.dcapps.spese.ui.components.SortOption
 import com.dcapps.spese.ui.components.SpeseSearchField
@@ -111,11 +111,7 @@ fun PriceListScreen(
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { innerPadding ->
-        PullToRefreshBox(
-            isRefreshing = state.isLoading,
-            onRefresh = { viewModel.load(showLoading = true) },
-            modifier = Modifier.fillMaxSize().padding(innerPadding),
-        ) {
+        Box(Modifier.fillMaxSize().padding(innerPadding)) {
             when {
                 state.error != null -> ErrorState(
                     message = state.error!!,
@@ -193,6 +189,8 @@ fun PriceListScreen(
                                             text = "${product.purchaseCount}",
                                             contentDescription = stringResource(R.string.prices_count_cd),
                                         )
+                                        // Badge "in attesa di sync" (prodotto o un suo acquisto non inviato).
+                                        PendingSyncBadge(show = state.showPendingSync && product.pendingSync)
                                     },
                                     trailing = {
                                         // Minimo storico a destra: "min" piccolo sopra, valore con unità sotto.

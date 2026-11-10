@@ -34,11 +34,11 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -57,6 +57,7 @@ import com.dcapps.spese.ui.components.ErrorSnackbarEffect
 import com.dcapps.spese.ui.components.ErrorState
 import com.dcapps.spese.ui.components.IconCount
 import com.dcapps.spese.ui.components.ListRowContent
+import com.dcapps.spese.ui.components.PendingSyncBadge
 import com.dcapps.spese.ui.components.RowDivider
 import com.dcapps.spese.ui.components.SortBar
 import com.dcapps.spese.ui.components.SortOption
@@ -68,6 +69,7 @@ import com.dcapps.spese.ui.components.SpeseTopAppBar
 import com.dcapps.spese.ui.components.SwipeToDeleteRow
 import com.dcapps.spese.core.ui.SelectionUiState
 import com.dcapps.spese.ui.theme.SpeseTheme
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -80,6 +82,10 @@ fun ChecklistScreen(
     var showCreate by remember { mutableStateOf(false) }
     var showDeleteSelected by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+    // Messaggi quando l'opzione "condivisa" è lucchettata: guest (serve account) o offline (serve rete).
+    val sharedLockedGuestMsg = stringResource(R.string.guest_shared_list_locked)
+    val sharedLockedOfflineMsg = stringResource(R.string.offline_shared_list_locked)
     ErrorSnackbarEffect(
         state.message, snackbarHostState, viewModel::clearMessage,
     )
@@ -107,11 +113,7 @@ fun ChecklistScreen(
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { innerPadding ->
-        PullToRefreshBox(
-            isRefreshing = state.isLoading,
-            onRefresh = { viewModel.load(showLoading = true) },
-            modifier = Modifier.fillMaxSize().padding(innerPadding),
-        ) {
+        Box(Modifier.fillMaxSize().padding(innerPadding)) {
             when {
                 state.error != null -> ErrorState(
                     message = state.error!!,
@@ -138,6 +140,11 @@ fun ChecklistScreen(
             onCreate = { name, shared ->
                 viewModel.create(name, shared)
                 showCreate = false
+            },
+            sharedLocked = viewModel.isGuest || !state.isOnline,
+            onSharedLocked = {
+                val msg = if (viewModel.isGuest) sharedLockedGuestMsg else sharedLockedOfflineMsg
+                scope.launch { snackbarHostState.showSnackbar(msg) }
             },
             titleRes = R.string.checklist_new,
         )
@@ -189,9 +196,9 @@ private fun ChecklistContent(
             }
         }
 
-        section(starredTitle, state.starred, sel, viewModel, onOpenList, onRequestDelete = { listToDelete = it })
-        section(activeTitle, state.active, sel, viewModel, onOpenList, onRequestDelete = { listToDelete = it })
-        section(completedTitle, state.completed, sel, viewModel, onOpenList, onRequestDelete = { listToDelete = it })
+        section(starredTitle, state.starred, sel, viewModel, onOpenList, state.showPendingSync, onRequestDelete = { listToDelete = it })
+        section(activeTitle, state.active, sel, viewModel, onOpenList, state.showPendingSync, onRequestDelete = { listToDelete = it })
+        section(completedTitle, state.completed, sel, viewModel, onOpenList, state.showPendingSync, onRequestDelete = { listToDelete = it })
     }
 
     listToDelete?.let { list ->
@@ -210,6 +217,7 @@ private fun LazyListScope.section(
     sel: SelectionUiState,
     viewModel: ChecklistViewModel,
     onOpenList: (ShoppingList) -> Unit,
+    showPendingSync: Boolean,
     onRequestDelete: (ShoppingList) -> Unit,
 ) {
     if (lists.isEmpty()) return
@@ -231,6 +239,7 @@ private fun LazyListScope.section(
             onRequestDelete = { onRequestDelete(list) },
             onLongPress = { viewModel.selection.start(list.id) },
             onToggleSelect = { viewModel.selection.toggle(list.id) },
+            showPendingSync = showPendingSync,
         )
         RowDivider()
     }
@@ -249,6 +258,7 @@ private fun SwipeableChecklistRow(
     onRequestDelete: () -> Unit,
     onLongPress: () -> Unit,
     onToggleSelect: () -> Unit,
+    showPendingSync: Boolean,
 ) {
     val rowContent: @Composable () -> Unit = {
         SelectableRow(
@@ -258,7 +268,7 @@ private fun SwipeableChecklistRow(
             onLongClick = onLongPress,
             onToggle = onToggleSelect,
         ) {
-            ChecklistRowContent(list, sel.selectionMode, onStar)
+            ChecklistRowContent(list, sel.selectionMode, onStar, showPendingSync)
         }
     }
     if (sel.selectionMode) {
@@ -274,6 +284,7 @@ private fun RowScope.ChecklistRowContent(
     list: ShoppingList,
     selectionMode: Boolean,
     onStar: () -> Unit,
+    showPendingSync: Boolean,
 ) {
     val total = list.itemsCount ?: 0
     val checked = list.checkedCount ?: 0
@@ -296,6 +307,8 @@ private fun RowScope.ChecklistRowContent(
                     contentDescription = stringResource(R.string.checklist_items_cd),
                 )
             }
+            // Badge "in attesa di sync" se la lista ha modifiche locali non inviate (punto 2).
+            PendingSyncBadge(show = showPendingSync && list.pendingSync)
         },
         trailing = if (!selectionMode) {
             {

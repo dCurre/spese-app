@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dcapps.spese.core.data.CatalogRepository
 import com.dcapps.spese.core.prefs.SortPreferences
+import com.dcapps.spese.core.prefs.UiPreferences
 import com.dcapps.spese.core.ui.SelectionController
 import com.dcapps.spese.core.ui.launchMutation
 import com.dcapps.spese.core.data.PriceRepository
@@ -33,6 +34,8 @@ data class PriceListUiState(
     // Filtro per marca: insieme di marche selezionate; vuoto = tutte le marche.
     val brandFilter: Set<String> = emptySet(),
     val message: String? = null,
+    // Mostra il badge "in attesa di sync" sulle righe (preferenza utente).
+    val showPendingSync: Boolean = true,
 ) {
     /** Marche presenti tra i prodotti (per il selettore filtro), ordinate alfabeticamente. */
     val availableBrands: List<String>
@@ -67,6 +70,7 @@ class PriceListViewModel @Inject constructor(
     private val priceRepository: PriceRepository,
     private val catalogRepository: CatalogRepository,
     private val sortPreferences: SortPreferences,
+    private val uiPreferences: UiPreferences,
 ) : ViewModel() {
 
     // Ordinamento ricordato dall'ultima volta (issue #9).
@@ -89,6 +93,11 @@ class PriceListViewModel @Inject constructor(
         }
         // Unità di misura: catalogo online (non è un dato local-first).
         loadUnits()
+        viewModelScope.launch {
+            uiPreferences.showPendingSyncBadges.collect { show ->
+                _uiState.update { it.copy(showPendingSync = show) }
+            }
+        }
     }
 
     /** load() resta per compat: in local-first ricarica solo il catalogo unità. */

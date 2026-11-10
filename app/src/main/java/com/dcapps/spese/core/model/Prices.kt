@@ -21,6 +21,8 @@ data class Product(
     @SerialName("client_id") val clientId: String? = null,
     @SerialName("updated_at") @Serializable(InstantSerializer::class) val updatedAt: Instant? = null,
     val deleted: Boolean = false,
+    // Solo locale: true se la riga ha modifiche non ancora inviate al backend (badge "in attesa").
+    @kotlinx.serialization.Transient val pendingSync: Boolean = false,
 )
 
 @Serializable
@@ -44,6 +46,8 @@ data class Purchase(
     @SerialName("client_id") val clientId: String? = null,
     @SerialName("updated_at") @Serializable(InstantSerializer::class) val updatedAt: Instant? = null,
     val deleted: Boolean = false,
+    // Solo locale: true se la riga ha modifiche non ancora inviate al backend (badge "in attesa").
+    @kotlinx.serialization.Transient val pendingSync: Boolean = false,
 )
 
 @Serializable

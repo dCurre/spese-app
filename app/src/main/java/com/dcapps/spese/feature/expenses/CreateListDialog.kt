@@ -31,14 +31,16 @@ import com.dcapps.spese.ui.components.SpeseFormBottomSheet
 fun CreateListDialog(
     onDismiss: () -> Unit,
     onCreate: (name: String, shared: Boolean) -> Unit,
-    // In guest l'opzione "condivisa" è lucchettata: il guest crea solo liste personali.
-    isGuest: Boolean = false,
+    // L'opzione "condivisa" è lucchettata quando la condivisione non è disponibile: in guest
+    // (serve un account) oppure offline (serve la rete). Il chiamante decide il motivo via
+    // [onSharedLocked], che mostra il messaggio giusto.
+    sharedLocked: Boolean = false,
     onSharedLocked: () -> Unit = {},
     @StringRes titleRes: Int = R.string.lists_new,
 ) {
     var name by remember { mutableStateOf("") }
-    // Guest: default a personale (la condivisa è lucchettata).
-    var shared by remember { mutableStateOf(!isGuest) }
+    // Se la condivisione è lucchettata, default a personale.
+    var shared by remember { mutableStateOf(!sharedLocked) }
 
     // Pannello dal basso (bottom sheet) invece del dialog centrale: aperto dal "+" della navbar.
     SpeseFormBottomSheet(
@@ -55,8 +57,8 @@ fun CreateListDialog(
             TypeOption(
                 label = stringResource(R.string.lists_type_shared),
                 selected = shared,
-                locked = isGuest,
-                onSelect = { if (isGuest) onSharedLocked() else shared = true },
+                locked = sharedLocked,
+                onSelect = { if (sharedLocked) onSharedLocked() else shared = true },
             )
             TypeOption(
                 label = stringResource(R.string.lists_type_personal),
@@ -66,8 +68,8 @@ fun CreateListDialog(
             )
         },
         confirmText = stringResource(R.string.action_create),
-        // In guest forziamo personale a prescindere dallo stato (difesa extra).
-        onConfirm = { onCreate(name, if (isGuest) false else shared) },
+        // Se lucchettata forziamo personale a prescindere dallo stato (difesa extra).
+        onConfirm = { onCreate(name, if (sharedLocked) false else shared) },
         confirmEnabled = name.isNotBlank(),
     )
 }

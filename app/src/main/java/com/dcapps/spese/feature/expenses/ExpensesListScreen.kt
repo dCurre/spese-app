@@ -8,6 +8,7 @@ import com.dcapps.spese.ui.components.ErrorState
 import com.dcapps.spese.ui.components.RefreshOnResume
 import com.dcapps.spese.ui.components.IconCount
 import com.dcapps.spese.ui.components.ListRowContent
+import com.dcapps.spese.ui.components.PendingSyncBadge
 import com.dcapps.spese.ui.components.RowDivider
 import com.dcapps.spese.ui.components.SelectableRow
 import com.dcapps.spese.ui.components.SelectionTopBar
@@ -37,7 +38,6 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -81,8 +81,9 @@ fun ExpensesListScreen(
     var showDeleteSelected by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
-    // Messaggio quando un guest prova a creare una lista condivisa (opzione lucchettata).
-    val sharedLockedMsg = stringResource(R.string.guest_shared_list_locked)
+    // Messaggi quando l'opzione "condivisa" è lucchettata: guest (serve account) o offline (serve rete).
+    val sharedLockedGuestMsg = stringResource(R.string.guest_shared_list_locked)
+    val sharedLockedOfflineMsg = stringResource(R.string.offline_shared_list_locked)
 
     ErrorSnackbarEffect(state.message, snackbarHostState, viewModel::clearMessage)
 
@@ -111,11 +112,7 @@ fun ExpensesListScreen(
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { innerPadding ->
-        PullToRefreshBox(
-            isRefreshing = state.isLoading,
-            onRefresh = { viewModel.load(showLoading = true) },
-            modifier = Modifier.fillMaxSize().padding(innerPadding),
-        ) {
+        Box(Modifier.fillMaxSize().padding(innerPadding)) {
             when {
                 state.isLoading && state.activeLists.isEmpty() && state.paidLists.isEmpty() ->
                     LoadingIndicator()
@@ -161,9 +158,10 @@ fun ExpensesListScreen(
                 viewModel.createList(name, shared)
                 showCreateDialog = false
             },
-            isGuest = viewModel.isGuest,
+            sharedLocked = viewModel.isGuest || !state.isOnline,
             onSharedLocked = {
-                scope.launch { snackbarHostState.showSnackbar(sharedLockedMsg) }
+                val msg = if (viewModel.isGuest) sharedLockedGuestMsg else sharedLockedOfflineMsg
+                scope.launch { snackbarHostState.showSnackbar(msg) }
             },
         )
     }
@@ -219,7 +217,7 @@ private fun ListContent(
         if (state.activeLists.isNotEmpty()) {
             item { SectionHeader(stringResource(R.string.lists_section_active)) }
             items(state.activeLists, key = { it.id }) { list ->
-                SelectableListRow(list, sel, onOpenList, onDeleteList, onLongPress, onToggleSelect)
+                SelectableListRow(list, sel, onOpenList, onDeleteList, onLongPress, onToggleSelect, state.showPendingSync)
                 RowDivider()
             }
         }
@@ -242,7 +240,7 @@ private fun ListContent(
             }
             if (state.paidListsShown) {
                 items(state.paidLists, key = { it.id }) { list ->
-                    SelectableListRow(list, sel, onOpenList, onDeleteList, onLongPress, onToggleSelect)
+                    SelectableListRow(list, sel, onOpenList, onDeleteList, onLongPress, onToggleSelect, state.showPendingSync)
                     RowDivider()
                 }
             }
@@ -259,6 +257,7 @@ private fun SelectableListRow(
     onDeleteList: (ExpensesList) -> Unit,
     onLongPress: (ExpensesList) -> Unit,
     onToggleSelect: (ExpensesList) -> Unit,
+    showPendingSync: Boolean,
 ) {
     val rowContent: @Composable () -> Unit = {
         SelectableRow(
@@ -268,7 +267,7 @@ private fun SelectableListRow(
             onLongClick = { onLongPress(list) },
             onToggle = { onToggleSelect(list) },
         ) {
-            ExpensesRowContent(list)
+            ExpensesRowContent(list, showPendingSync)
         }
     }
     if (sel.selectionMode) {
@@ -292,7 +291,7 @@ private fun SectionHeader(text: String) {
 
 /** Contenuto della riga lista (dentro lo scope di [SelectableRow], che fornisce Row/click/checkbox). */
 @Composable
-private fun RowScope.ExpensesRowContent(list: ExpensesList) {
+private fun RowScope.ExpensesRowContent(list: ExpensesList, showPendingSync: Boolean) {
     val isShared = list.type == ListType.SHARED
     ListRowContent(
         title = list.name,
@@ -321,6 +320,8 @@ private fun RowScope.ExpensesRowContent(list: ExpensesList) {
                     )
                 }
             }
+            // Badge "in attesa di sync" se la lista ha modifiche locali non inviate (punto 2).
+            PendingSyncBadge(show = showPendingSync && list.pendingSync)
         },
     )
 }

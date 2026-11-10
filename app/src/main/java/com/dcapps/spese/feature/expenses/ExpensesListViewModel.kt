@@ -10,7 +10,9 @@ import com.dcapps.spese.core.model.ExpensesList
 import com.dcapps.spese.core.model.UpdateExpensesListRequest
 import com.dcapps.spese.core.model.UpdateUserRequest
 import com.dcapps.spese.core.network.ApiResult
+import com.dcapps.spese.core.network.ConnectivityObserver
 import com.dcapps.spese.core.prefs.SortPreferences
+import com.dcapps.spese.core.prefs.UiPreferences
 import com.dcapps.spese.core.ui.SelectionController
 import com.dcapps.spese.core.ui.launchMutation
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -33,6 +35,10 @@ data class ExpensesListUiState(
     val sortAsc: Boolean = false,
     val paidListsShown: Boolean = true,
     val message: String? = null,
+    // Mostra il badge "in attesa di sync" sulle righe (preferenza utente).
+    val showPendingSync: Boolean = true,
+    // Connesso a Internet: offline la creazione di liste condivise è lucchettata (punto 4).
+    val isOnline: Boolean = true,
 )
 
 @HiltViewModel
@@ -41,6 +47,8 @@ class ExpensesListViewModel @Inject constructor(
     private val userRepository: UserRepository,
     private val session: SessionManager,
     private val sortPreferences: SortPreferences,
+    private val uiPreferences: UiPreferences,
+    private val connectivity: ConnectivityObserver,
 ) : ViewModel() {
 
     // Ordinamento ricordato dall'ultima volta (issue #9).
@@ -67,6 +75,16 @@ class ExpensesListViewModel @Inject constructor(
                 allLists = lists
                 _uiState.update { it.copy(isLoading = false, error = null) }
                 recompute()
+            }
+        }
+        viewModelScope.launch {
+            uiPreferences.showPendingSyncBadges.collect { show ->
+                _uiState.update { it.copy(showPendingSync = show) }
+            }
+        }
+        viewModelScope.launch {
+            connectivity.isOnline.collect { online ->
+                _uiState.update { it.copy(isOnline = online) }
             }
         }
     }
@@ -102,7 +120,9 @@ class ExpensesListViewModel @Inject constructor(
     fun createList(name: String, shared: Boolean) {
         if (name.isBlank()) return
         val userId = session.currentUser.value?.id ?: 0L
-        val listType = if (shared) "shared" else "personal"
+        // Difesa: offline la condivisione non è disponibile → forza personale (punto 4).
+        val effectiveShared = shared && connectivity.isOnline.value
+        val listType = if (effectiveShared) "shared" else "personal"
         // Local-first: la create scrive su Room; il Flow osservato aggiorna la UI da solo.
         launchMutation(
             onError = { e -> _uiState.update { it.copy(message = e.message) } },

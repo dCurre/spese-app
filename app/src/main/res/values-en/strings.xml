@@ -32,6 +32,8 @@
     <string name="profile_language">Language</string>
     <string name="profile_language_it">Italiano</string>
     <string name="profile_language_en">English</string>
+    <string name="profile_sync_badges">Per-item sync status</string>
+    <string name="profile_sync_badges_desc">Show a cloud badge on rows with changes not yet synced.</string>
     <string name="profile_stats">Statistics</string>
     <string name="profile_stats_owned">Owned lists</string>
     <string name="profile_stats_participating">Participations</string>
@@ -93,6 +95,7 @@
     <string name="detail_transfer_owner">Transfer ownership</string>
     <string name="guest_share_locked">Sign in with an account to share lists.</string>
     <string name="guest_shared_list_locked">Shared lists require an account. Sign in to create one.</string>
+    <string name="offline_shared_list_locked">Shared lists require a connection. Try again when you\'re online.</string>
     <string name="cd_locked">For registered users only</string>
     <string name="list_make_shared">Make shared</string>
     <string name="list_make_personal">Make personal</string>
@@ -264,6 +267,9 @@
     <!-- Sync status indicator -->
     <string name="sync_status_syncing">Syncing</string>
     <string name="sync_status_error">Sync failed</string>
+    <string name="sync_status_offline">Offline</string>
+    <string name="sync_status_error_hint">Sync failed</string>
+    <string name="sync_pending_cd">Waiting to sync</string>
 
     <!-- About -->
     <string name="about_version">Version %1$s</string>

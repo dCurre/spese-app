@@ -3,6 +3,12 @@
 Note di rilascio in linguaggio comprensibile, mostrate nella schermata di aggiornamento dell'app.
 Ogni versione ha una sezione `## X.Y.Z` con un elenco puntato delle novità per l'utente.
 
+## 0.2.1
+- L'indicatore di sincronizzazione in alto è più chiaro: mostra "Offline" quando non c'è rete e "Sync non riuscita" (toccabile) in caso di errore, sempre alla stessa altezza.
+- Le righe con modifiche non ancora sincronizzate mostrano una piccola nuvoletta "in attesa"; puoi disattivarla da Profilo › Impostazioni.
+- Tolto il "tira per aggiornare": con l'app offline-first le pagine si aggiornano già da sole.
+- Quando sei offline l'opzione "lista condivisa" è disattivata con una spiegazione: la condivisione richiede la connessione.
+
 ## 0.2.0
 - Ora puoi usare l'app subito, senza account: entri come ospite e crei liste spese, checklist e prezzi direttamente sul tuo telefono.
 - Tutto funziona anche offline: le tue modifiche sono immediate e vengono sincronizzate da sole quando torni online.

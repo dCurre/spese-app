@@ -20,6 +20,8 @@ data class ShoppingItem(
     @SerialName("client_id") val clientId: String? = null,
     @SerialName("updated_at") @Serializable(InstantSerializer::class) val updatedAt: Instant? = null,
     val deleted: Boolean = false,
+    // Solo locale: true se la riga ha modifiche non ancora inviate al backend (badge "in attesa").
+    @kotlinx.serialization.Transient val pendingSync: Boolean = false,
 )
 
 /** Categoria (albero: può avere sottocategorie e item). */
@@ -67,6 +69,8 @@ data class ShoppingList(
     @SerialName("client_id") val clientId: String? = null,
     @SerialName("updated_at") @Serializable(InstantSerializer::class) val updatedAt: Instant? = null,
     val deleted: Boolean = false,
+    // Solo locale: true se la lista ha modifiche non ancora inviate al backend (badge "in attesa").
+    @kotlinx.serialization.Transient val pendingSync: Boolean = false,
     val participants: List<ShoppingListParticipant> = emptyList(),
     val categories: List<ShoppingCategory> = emptyList(),
     val items: List<ShoppingItem> = emptyList(),

@@ -32,6 +32,8 @@
     <string name="profile_language">Lingua</string>
     <string name="profile_language_it">Italiano</string>
     <string name="profile_language_en">English</string>
+    <string name="profile_sync_badges">Stato di sincronizzazione per elemento</string>
+    <string name="profile_sync_badges_desc">Mostra una nuvoletta sulle righe con modifiche non ancora sincronizzate.</string>
     <string name="profile_stats">Statistiche</string>
     <string name="profile_stats_owned">Liste possedute</string>
     <string name="profile_stats_participating">Partecipazioni</string>
@@ -93,6 +95,7 @@
     <string name="detail_transfer_owner">Trasferisci proprietà</string>
     <string name="guest_share_locked">Accedi con un account per condividere le liste.</string>
     <string name="guest_shared_list_locked">Le liste condivise richiedono un account. Accedi per crearne una.</string>
+    <string name="offline_shared_list_locked">Le liste condivise richiedono una connessione. Riprova quando sei online.</string>
     <string name="cd_locked">Riservato agli utenti registrati</string>
     <string name="list_make_shared">Rendi condivisa</string>
     <string name="list_make_personal">Rendi personale</string>
@@ -264,6 +267,9 @@
     <!-- Indicatore stato sincronizzazione -->
     <string name="sync_status_syncing">Sincronizzazione in corso</string>
     <string name="sync_status_error">Sincronizzazione non riuscita</string>
+    <string name="sync_status_offline">Offline</string>
+    <string name="sync_status_error_hint">Sync non riuscita</string>
+    <string name="sync_pending_cd">In attesa di sincronizzazione</string>
 
     <!-- Informazioni (About) -->
     <string name="about_version">Versione %1$s</string>

@@ -37,6 +37,8 @@ class PricesLocalDataSource @Inject constructor(
                 p.toModel(
                     purchaseCount = mine.size,
                     minPrice = mine.minOfOrNull { it.unitPrice },
+                    // Il prodotto è "in attesa" se lo è esso stesso o un suo acquisto non sincronizzato.
+                    pendingSync = p.pendingSync || mine.any { it.pendingSync },
                 )
             }
         }
@@ -48,6 +50,7 @@ class PricesLocalDataSource @Inject constructor(
             productEntity?.toModel(
                 purchaseCount = mine.size,
                 minPrice = mine.minOfOrNull { it.unitPrice },
+                pendingSync = productEntity.pendingSync || mine.any { it.pendingSync },
             )
         }
 
@@ -208,7 +211,7 @@ private inline fun <T> guard(block: () -> T): ApiResult<T> =
         ApiResult.Error(message = e.message ?: "Errore locale", cause = e)
     }
 
-private fun LocalProductEntity.toModel(purchaseCount: Int, minPrice: Double?) = Product(
+private fun LocalProductEntity.toModel(purchaseCount: Int, minPrice: Double?, pendingSync: Boolean = this.pendingSync) = Product(
     id = id,
     name = name,
     brand = brand,
@@ -216,6 +219,7 @@ private fun LocalProductEntity.toModel(purchaseCount: Int, minPrice: Double?) = 
     defaultUnitSymbol = null,
     purchaseCount = purchaseCount,
     minPrice = minPrice,
+    pendingSync = pendingSync,
 )
 
 private fun LocalPurchaseEntity.toModel() = Purchase(
@@ -230,4 +234,5 @@ private fun LocalPurchaseEntity.toModel() = Purchase(
     unitPrice = unitPrice,
     store = store,
     notes = notes,
+    pendingSync = pendingSync,
 )

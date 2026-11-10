@@ -20,6 +20,7 @@ import com.dcapps.spese.core.model.UpdateShoppingItemRequest
 import com.dcapps.spese.core.model.UpdateShoppingListRequest
 import com.dcapps.spese.core.network.ApiResult
 import com.dcapps.spese.core.prefs.SortPreferences
+import com.dcapps.spese.core.prefs.UiPreferences
 import com.dcapps.spese.core.auth.SessionManager
 import com.dcapps.spese.core.ui.SelectionController
 import com.dcapps.spese.core.ui.launchMutation
@@ -83,6 +84,8 @@ data class ChecklistDetailUiState(
     // getList risponda (evita flicker del nome / stella con stato sbagliato).
     val placeholderName: String? = null,
     val placeholderStarred: Boolean = false,
+    // Mostra il badge "in attesa di sync" sulle righe (preferenza utente).
+    val showPendingSync: Boolean = true,
 ) {
     val isEditing: Boolean get() = editState != null
 
@@ -117,6 +120,7 @@ class ChecklistDetailViewModel @Inject constructor(
     private val shoppingRepository: ShoppingRepository,
     private val itemRepository: ShoppingItemRepository,
     private val sortPreferences: SortPreferences,
+    private val uiPreferences: UiPreferences,
     private val session: SessionManager,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
@@ -147,6 +151,11 @@ class ChecklistDetailViewModel @Inject constructor(
             shoppingRepository.observeList(listId).collect { list ->
                 if (list != null) applyList(list)
                 else _uiState.update { it.copy(isLoading = false) }
+            }
+        }
+        viewModelScope.launch {
+            uiPreferences.showPendingSyncBadges.collect { show ->
+                _uiState.update { it.copy(showPendingSync = show) }
             }
         }
     }

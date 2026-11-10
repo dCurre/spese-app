@@ -35,6 +35,8 @@ data class ExpensesList(
     @SerialName("client_id") val clientId: String? = null,
     @SerialName("updated_at") @Serializable(InstantSerializer::class) val updatedAt: Instant? = null,
     val deleted: Boolean = false,
+    // Solo locale: true se la riga ha modifiche non ancora inviate al backend (badge "in attesa").
+    @kotlinx.serialization.Transient val pendingSync: Boolean = false,
 ) {
     val type: ListType get() = ListType.from(listType)
 }
@@ -90,6 +92,8 @@ data class Expense(
     // Campi delta sync (backend local-first).
     @SerialName("client_id") val clientId: String? = null,
     val deleted: Boolean = false,
+    // Solo locale: true se la riga ha modifiche non ancora inviate al backend (badge "in attesa").
+    @kotlinx.serialization.Transient val pendingSync: Boolean = false,
 )
 
 @Serializable

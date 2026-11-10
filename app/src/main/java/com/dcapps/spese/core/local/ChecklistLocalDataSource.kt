@@ -216,6 +216,7 @@ private fun LocalShoppingListEntity.toModel(
     itemsCount = itemsCount,
     checkedCount = checkedCount,
     participantsCount = 1,
+    pendingSync = pendingSync,
     categories = categories,
     items = rootItems,
 )
@@ -228,6 +229,7 @@ private fun LocalShoppingItemEntity.toModel() = ShoppingItem(
     quantity = quantity,
     checked = checked,
     sortOrder = sortOrder,
+    pendingSync = pendingSync,
 )
 
 /** Owner fittizio per le liste local-first senza account backend. */

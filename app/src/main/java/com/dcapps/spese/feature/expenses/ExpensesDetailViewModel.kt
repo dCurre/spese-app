@@ -17,6 +17,7 @@ import com.dcapps.spese.core.model.UpdateExpenseRequest
 import com.dcapps.spese.core.model.UpdateExpensesListRequest
 import com.dcapps.spese.core.model.User
 import com.dcapps.spese.core.network.ApiResult
+import com.dcapps.spese.core.prefs.UiPreferences
 import com.dcapps.spese.core.ui.SelectionController
 import com.dcapps.spese.core.ui.launchMutation
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -51,6 +52,8 @@ data class ExpensesDetailUiState(
     val message: String? = null,
     // Nome passato via nav-arg per mostrare subito il titolo corretto, prima che i dati arrivino.
     val placeholderName: String? = null,
+    // Mostra il badge "in attesa di sync" sulle righe (preferenza utente).
+    val showPendingSync: Boolean = true,
 ) {
     /** Nome da mostrare: quello reale se caricato, altrimenti il placeholder dal nav-arg. */
     val displayName: String? get() = list?.name ?: placeholderName?.takeIf { it.isNotBlank() }
@@ -76,6 +79,7 @@ data class ExpensesDetailUiState(
 class ExpensesDetailViewModel @Inject constructor(
     private val expensesRepository: ExpensesRepository,
     private val catalogRepository: CatalogRepository,
+    private val uiPreferences: UiPreferences,
     private val session: SessionManager,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
@@ -109,6 +113,11 @@ class ExpensesDetailViewModel @Inject constructor(
                 }
         }
         loadExpenseTypes()
+        viewModelScope.launch {
+            uiPreferences.showPendingSyncBadges.collect { show ->
+                _uiState.update { it.copy(showPendingSync = show) }
+            }
+        }
     }
 
     /** Compat: con l'osservazione reattiva il reload manuale non serve più (no-op). */

@@ -72,6 +72,7 @@ import com.dcapps.spese.core.model.ShoppingItem
 import com.dcapps.spese.ui.components.ConfirmDialog
 import com.dcapps.spese.ui.components.ErrorSnackbarEffect
 import com.dcapps.spese.ui.components.OverflowMenu
+import com.dcapps.spese.ui.components.PendingSyncBadge
 import com.dcapps.spese.ui.components.ReadOnlyPickerField
 import com.dcapps.spese.ui.components.SortBar
 import com.dcapps.spese.ui.components.SpeseBadge
@@ -329,6 +330,7 @@ fun ChecklistDetailScreen(
                                 onEdit = { editingItem = row.item },
                                 onLongPress = { viewModel.selection.start(row.item.id) },
                                 onToggleSelect = { viewModel.selection.toggle(row.item.id) },
+                                showPendingSync = state.showPendingSync,
                             )
                         }
                     }
@@ -642,6 +644,7 @@ private fun ItemRow(
     onEdit: () -> Unit,
     onLongPress: () -> Unit,
     onToggleSelect: () -> Unit,
+    showPendingSync: Boolean,
 ) {
     val item = row.item
     // L'alberatura (TreeIndent) resta: per non rompere l'indentazione né mettere due checkbox,
@@ -683,6 +686,8 @@ private fun ItemRow(
                 else MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.weight(1f).padding(vertical = 12.dp),
             )
+            // Badge "in attesa di sync" se l'articolo ha modifiche locali non inviate (punto 2).
+            PendingSyncBadge(show = showPendingSync && item.pendingSync)
         }
     }
 }

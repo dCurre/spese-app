@@ -15,6 +15,7 @@ import com.dcapps.spese.core.model.Product
 import com.dcapps.spese.core.model.Purchase
 import com.dcapps.spese.core.model.UpdateProductRequest
 import com.dcapps.spese.core.network.ApiResult
+import com.dcapps.spese.core.prefs.UiPreferences
 import com.dcapps.spese.core.ui.SelectionController
 import com.dcapps.spese.core.ui.launchMutation
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -45,6 +46,8 @@ data class PriceDetailUiState(
     val granularity: Granularity = Granularity.MONTH,
     val message: String? = null,
     val deleted: Boolean = false,
+    // Mostra il badge "in attesa di sync" sulle righe (preferenza utente).
+    val showPendingSync: Boolean = true,
 )
 
 @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
@@ -52,6 +55,7 @@ data class PriceDetailUiState(
 class PriceDetailViewModel @Inject constructor(
     private val priceRepository: PriceRepository,
     private val catalogRepository: CatalogRepository,
+    private val uiPreferences: UiPreferences,
     private val session: SessionManager,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
@@ -96,6 +100,11 @@ class PriceDetailViewModel @Inject constructor(
         }
         // Unità di misura: catalogo online (non local-first).
         loadUnits()
+        viewModelScope.launch {
+            uiPreferences.showPendingSyncBadges.collect { show ->
+                _uiState.update { it.copy(showPendingSync = show) }
+            }
+        }
     }
 
     /** load() resta per compat: in local-first ricarica solo il catalogo unità. */

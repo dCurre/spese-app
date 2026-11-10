@@ -8,7 +8,9 @@ import com.dcapps.spese.core.model.CreateShoppingListRequest
 import com.dcapps.spese.core.model.ShoppingList
 import com.dcapps.spese.core.model.UpdateShoppingListRequest
 import com.dcapps.spese.core.network.ApiResult
+import com.dcapps.spese.core.network.ConnectivityObserver
 import com.dcapps.spese.core.prefs.SortPreferences
+import com.dcapps.spese.core.prefs.UiPreferences
 import com.dcapps.spese.core.ui.SelectionController
 import com.dcapps.spese.core.ui.launchMutation
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -31,6 +33,10 @@ data class ChecklistUiState(
     val sort: ChecklistSort = ChecklistSort.DATE,
     val sortAsc: Boolean = false,
     val message: String? = null,
+    // Mostra il badge "in attesa di sync" sulle righe (preferenza utente).
+    val showPendingSync: Boolean = true,
+    // Connesso a Internet: offline la creazione di liste condivise è lucchettata (punto 4).
+    val isOnline: Boolean = true,
 )
 
 @HiltViewModel
@@ -38,6 +44,8 @@ class ChecklistViewModel @Inject constructor(
     private val shoppingRepository: ShoppingRepository,
     private val session: SessionManager,
     private val sortPreferences: SortPreferences,
+    private val uiPreferences: UiPreferences,
+    private val connectivity: ConnectivityObserver,
 ) : ViewModel() {
 
     // Ordinamento ricordato dall'ultima volta (issue #9).
@@ -62,7 +70,20 @@ class ChecklistViewModel @Inject constructor(
                 recompute()
             }
         }
+        // Preferenza badge sync + stato connettività (reattivi).
+        viewModelScope.launch {
+            uiPreferences.showPendingSyncBadges.collect { show ->
+                _uiState.update { it.copy(showPendingSync = show) }
+            }
+        }
+        viewModelScope.launch {
+            connectivity.isOnline.collect { online ->
+                _uiState.update { it.copy(isOnline = online) }
+            }
+        }
     }
+
+    val isGuest: Boolean get() = session.isGuest
 
     /** Compat: con l'osservazione reattiva il refresh manuale non serve più (no-op). */
     fun load(showLoading: Boolean = false) { /* reattivo: niente da fare */ }
@@ -84,6 +105,8 @@ class ChecklistViewModel @Inject constructor(
     fun create(name: String, shared: Boolean) {
         val userId = session.currentUser.value?.id ?: return
         if (name.isBlank()) return
+        // Difesa: offline la condivisione non è disponibile → forza personale (punto 4).
+        val effectiveShared = shared && connectivity.isOnline.value
         // Local-first: la create scrive su Room; il Flow osservato aggiorna la UI da solo.
         launchMutation(
             onError = { e -> _uiState.update { it.copy(message = e.message) } },
@@ -93,7 +116,7 @@ class ChecklistViewModel @Inject constructor(
                     CreateShoppingListRequest(
                         name = name.trim(),
                         ownerId = userId,
-                        listType = if (shared) "shared" else "personal",
+                        listType = if (effectiveShared) "shared" else "personal",
                     )
                 )
             },

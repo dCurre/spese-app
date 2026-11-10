@@ -12,6 +12,7 @@ import com.dcapps.spese.core.data.UserRepository
 import com.dcapps.spese.core.model.UpdateUserRequest
 import com.dcapps.spese.core.model.User
 import com.dcapps.spese.core.network.ApiResult
+import com.dcapps.spese.core.prefs.UiPreferences
 import com.dcapps.spese.core.ui.launchMutation
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -50,7 +51,13 @@ class ProfileViewModel @Inject constructor(
     private val authManager: AuthManager,
     private val session: SessionManager,
     private val guestProfile: GuestProfile,
+    private val uiPreferences: UiPreferences,
 ) : ViewModel() {
+
+    /** Preferenza locale: mostrare il badge "in attesa di sync" sulle righe. */
+    val showPendingSyncBadges: StateFlow<Boolean> = uiPreferences.showPendingSyncBadges
+
+    fun setShowPendingSyncBadges(enabled: Boolean) = uiPreferences.setShowPendingSyncBadges(enabled)
 
     private val _uiState = MutableStateFlow(
         ProfileUiState(
