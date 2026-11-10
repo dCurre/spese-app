@@ -60,7 +60,7 @@ class ExpensesSyncEngine @Inject constructor(
         var failed = false
         try {
             mutex.withLock {
-                failed = errorReporter.runSyncStep("spese push", autoReporter) { push() } || failed
+                failed = errorReporter.runSyncStep("spese push", autoReporter) { push(userId) } || failed
                 failed = errorReporter.runSyncStep("spese pull", autoReporter) { pull(userId) } || failed
             }
         } finally {
@@ -83,7 +83,7 @@ class ExpensesSyncEngine @Inject constructor(
 
     // ---------------- PUSH ----------------
 
-    private suspend fun push() {
+    private suspend fun push(userId: Long) {
         val lists = dao.pendingLists()
         val expenses = dao.pendingExpenses()
         if (lists.isEmpty() && expenses.isEmpty()) return
@@ -102,7 +102,7 @@ class ExpensesSyncEngine @Inject constructor(
                 l.deleted && l.remoteId == null -> dao.hardDeleteList(l.id) // mai sul server
                 l.deleted -> listsDelete += l.remoteId!!
                 l.remoteId == null -> listsCreate += SyncExpensesListCreate(
-                    tempId = tempOf("L", l.id), clientId = l.clientId, name = l.name, paid = l.paid,
+                    tempId = tempOf("L", l.id), clientId = l.clientId, userId = userId, name = l.name, paid = l.paid,
                 )
                 else -> listsUpdate += SyncExpensesListUpdate(l.remoteId, l.name, l.paid)
             }
@@ -116,7 +116,7 @@ class ExpensesSyncEngine @Inject constructor(
                 e.deleted && e.remoteId == null -> dao.hardDeleteExpense(e.id)
                 e.deleted -> expensesDelete += e.remoteId!!
                 e.remoteId == null -> expensesCreate += SyncExpenseCreate(
-                    tempId = tempOf("E", e.id), clientId = e.clientId,
+                    tempId = tempOf("E", e.id), clientId = e.clientId, expenseOwnerUserId = userId,
                     listId = listRemoteId(e.listId), listTempId = listTempIfNew(e.listId),
                     name = e.name, amount = BigDecimal(e.amount),
                     expenseDate = e.expenseDate, expenseTypeId = e.expenseTypeId,

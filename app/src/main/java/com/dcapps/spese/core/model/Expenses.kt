@@ -195,6 +195,7 @@ data class ExpensesDeltaResponse(
 data class SyncExpensesListCreate(
     @SerialName("temp_id") val tempId: String,
     @SerialName("client_id") val clientId: String,
+    @SerialName("user_id") val userId: Long,
     val name: String,
     @SerialName("list_type") val listType: String = "personal",
     val paid: Boolean = false,
@@ -211,6 +212,7 @@ data class SyncExpensesListUpdate(
 data class SyncExpenseCreate(
     @SerialName("temp_id") val tempId: String,
     @SerialName("client_id") val clientId: String,
+    @SerialName("expense_owner_user_id") val expenseOwnerUserId: Long,
     // list_id o list_temp_id (uno dei due): la lista può essere nuova (temp) o esistente.
     @SerialName("expense_list_id") val listId: Long? = null,
     @SerialName("list_temp_id") val listTempId: String? = null,

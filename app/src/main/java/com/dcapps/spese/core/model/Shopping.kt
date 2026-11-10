@@ -243,6 +243,7 @@ data class DeltaResponse(
 data class SyncListCreate(
     @SerialName("temp_id") val tempId: String,
     @SerialName("client_id") val clientId: String,
+    @SerialName("owner_id") val ownerId: Long,
     val name: String,
     @SerialName("list_type") val listType: String = "personal",
     val completed: Boolean = false,

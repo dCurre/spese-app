@@ -59,7 +59,7 @@ class ChecklistSyncEngine @Inject constructor(
         var failed = false
         try {
             mutex.withLock {
-                failed = errorReporter.runSyncStep("checklist push", autoReporter) { push() } || failed
+                failed = errorReporter.runSyncStep("checklist push", autoReporter) { push(userId) } || failed
                 failed = errorReporter.runSyncStep("checklist pull", autoReporter) { pull(userId) } || failed
             }
         } finally {
@@ -82,7 +82,7 @@ class ChecklistSyncEngine @Inject constructor(
 
     // ---------------- PUSH ----------------
 
-    private suspend fun push() {
+    private suspend fun push(userId: Long) {
         val lists = dao.pendingLists()
         val cats = dao.pendingCategories()
         val items = dao.pendingItems()
@@ -103,7 +103,7 @@ class ChecklistSyncEngine @Inject constructor(
                 l.deleted && l.remoteId == null -> dao.hardDeleteList(l.id) // mai sul server
                 l.deleted -> listsDelete += l.remoteId!!
                 l.remoteId == null -> listsCreate += SyncListCreate(
-                    tempId = tempOf("L", l.id), clientId = l.clientId, name = l.name,
+                    tempId = tempOf("L", l.id), clientId = l.clientId, ownerId = userId, name = l.name,
                     completed = l.completed, starred = l.starred,
                 )
                 else -> listsUpdate += SyncListUpdate(l.remoteId, l.name, l.completed, l.starred)
