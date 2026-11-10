@@ -3,6 +3,9 @@
 Note di rilascio in linguaggio comprensibile, mostrate nella schermata di aggiornamento dell'app.
 Ogni versione ha una sezione `## X.Y.Z` con un elenco puntato delle novità per l'utente.
 
+## 0.2.4
+- La sincronizzazione non viene più interrotta a metà quando modifichi qualcosa mentre è in corso: le nuove modifiche vengono messe in coda e sincronizzate subito dopo, senza falsi errori.
+
 ## 0.2.3
 - Corretto un errore che impediva di sincronizzare le liste spese e le checklist create offline (il salvataggio sul server falliva): ora le nuove liste e spese si sincronizzano correttamente al ritorno online.
 

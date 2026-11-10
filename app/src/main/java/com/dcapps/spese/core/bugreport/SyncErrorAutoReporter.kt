@@ -1,6 +1,7 @@
 package com.dcapps.spese.core.bugreport
 
 import android.content.Context
+import com.dcapps.spese.BuildConfig
 import com.dcapps.spese.core.network.ApiResult
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
@@ -16,8 +17,10 @@ import javax.inject.Singleton
  * Invia AUTOMATICAMENTE una segnalazione su GitHub quando il sync fallisce con un errore REALE
  * (non una semplice mancanza di rete — quella è già esclusa da `runSyncStep`).
  *
- * Anti-spam: una sola segnalazione per "firma" dell'errore (codice HTTP + metodo + endpoint +
- * messaggio) entro una finestra di [COOLDOWN_MS]. La firma e il timestamp dell'ultimo invio sono
+ * Anti-spam: una sola segnalazione per "firma" dell'errore (versione app + codice HTTP + metodo +
+ * endpoint + messaggio + corpo server normalizzato) entro una finestra di [COOLDOWN_MS]. Errori con
+ * causa diversa sullo stesso endpoint → firme diverse → segnalati entrambi; una nuova versione
+ * dell'app azzera il dedup. La firma e il timestamp dell'ultimo invio sono
  * persistiti in SharedPreferences, così il cooldown vale anche tra riavvii dell'app (il sync gira
  * ogni ~15 min: senza questo si aprirebbero decine di issue identiche).
  *
@@ -57,16 +60,33 @@ class SyncErrorAutoReporter @Inject constructor(
         }
     }
 
-    /** Firma stabile dell'errore: stessa causa → stessa firma → una sola issue nel cooldown. */
+    /**
+     * Firma stabile dell'errore: stessa causa → stessa firma → una sola issue nel cooldown.
+     *
+     * Include il [ReportableError.serverBody] NORMALIZZATO: così due errori sullo stesso endpoint
+     * con stesso codice HTTP ma causa diversa (es. "owner_id mancante" vs "Errore interno") hanno
+     * firme diverse e vengono segnalati entrambi. La normalizzazione azzera le cifre (id, numeri,
+     * timestamp) così "lista 5 non trovata" e "lista 9 non trovata" restano UNA sola firma, evitando
+     * lo spam di issue che differiscono solo per un id.
+     *
+     * Include anche la VERSIONE dell'app (`VERSION_NAME`): dopo un rilascio il dedup riparte da capo,
+     * così se lo stesso errore ricompare in una build nuova viene riaperta una issue invece di
+     * restare silenziato dal cooldown della versione precedente.
+     */
     private fun signatureOf(e: ReportableError): String {
         val raw = listOf(
+            BuildConfig.VERSION_NAME,
             e.httpCode?.toString().orEmpty(),
             e.httpMethod.orEmpty(),
             e.url.orEmpty(),
             e.message,
+            normalize(e.serverBody.orEmpty()),
         ).joinToString("|")
         return raw.hashCode().toString()
     }
+
+    /** Toglie le cifre (id/numeri/timestamp variabili) così errori uguali-salvo-id condividono la firma. */
+    private fun normalize(s: String): String = s.replace(Regex("\\d+"), "#")
 
     private fun keyTime(signature: String) = "ts_$signature"
 

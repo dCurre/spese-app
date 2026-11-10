@@ -48,18 +48,22 @@ class PricesSyncEngine @Inject constructor(
     private val mutex = Mutex()
     private val scope = CoroutineScope(SupervisorJob())
     private var debounceJob: Job? = null
+    @Volatile private var rerunRequested = false
 
     /** Esegue un ciclo completo di sync. No-op in guest o senza utente. Best-effort (non lancia). */
     suspend fun sync() {
         if (session.isGuest) return
+        mutex.withLock { runOneCycle() }
+    }
+
+    /** Un singolo ciclo push+pull. DEVE girare sotto [mutex]. Mai interrotto a metà da un debounce. */
+    private suspend fun runOneCycle() {
         val userId = session.currentUser.value?.id ?: return
         syncStatus.onSyncStarted()
         var failed = false
         try {
-            mutex.withLock {
-                failed = errorReporter.runSyncStep("prezzi push", autoReporter) { push(userId) } || failed
-                failed = errorReporter.runSyncStep("prezzi pull", autoReporter) { pull(userId) } || failed
-            }
+            failed = errorReporter.runSyncStep("prezzi push", autoReporter) { push(userId) } || failed
+            failed = errorReporter.runSyncStep("prezzi pull", autoReporter) { pull(userId) } || failed
         } finally {
             syncStatus.onSyncFinished(failed)
         }
@@ -68,13 +72,32 @@ class PricesSyncEngine @Inject constructor(
     /**
      * Richiesta di sync DEBOUNCED: il repository la chiama dopo ogni scrittura locale. Più scritture
      * ravvicinate collassano in un solo ciclo di sync (evita una chiamata di rete per tap).
+     *
+     * Il `cancel()` del debounce annulla SOLO l'attesa [delay], mai un ciclo già partito: il ciclo
+     * vero gira in una coroutine separata ([drain]) protetta da [mutex]. Se una nuova richiesta
+     * arriva mentre un ciclo è in corso, NON lo interrompe: alza [rerunRequested] così [drain] fa un
+     * altro giro al termine (coda "pending re-run", niente sync cancellati a metà né duplicati).
      */
     fun requestSync() {
         if (session.isGuest) return
         debounceJob?.cancel()
         debounceJob = scope.launch {
             delay(1500)
-            sync()
+            rerunRequested = true
+            scope.launch { drain() } // lancio indipendente: il prossimo cancel() del debounce non lo tocca
+        }
+    }
+
+    /** Esegue cicli finché restano richieste pendenti. Un solo [drain] alla volta grazie al [mutex]. */
+    private suspend fun drain() {
+        if (!mutex.tryLock()) return // un drain è già attivo: raccoglierà lui il rerun richiesto
+        try {
+            while (rerunRequested) {
+                rerunRequested = false
+                runOneCycle()
+            }
+        } finally {
+            mutex.unlock()
         }
     }
 

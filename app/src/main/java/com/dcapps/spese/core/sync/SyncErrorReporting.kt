@@ -35,6 +35,11 @@ internal suspend fun ErrorReporter.runSyncStep(
     return try {
         block()
         false
+    } catch (e: kotlinx.coroutines.CancellationException) {
+        // Cancellazione cooperativa della coroutine (es. il debounce annulla il sync in volo quando
+        // arriva una nuova scrittura, o lo scope viene chiuso): NON è un errore. Va rilanciata per
+        // non rompere la cooperazione delle coroutine e non va mai segnalata.
+        throw e
     } catch (e: IOException) {
         // Offline/timeout: atteso, nessuna segnalazione e nessuno stato di errore.
         false
