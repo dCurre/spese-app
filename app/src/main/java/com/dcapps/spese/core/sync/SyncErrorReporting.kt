@@ -1,6 +1,8 @@
 package com.dcapps.spese.core.sync
 
 import com.dcapps.spese.core.bugreport.ErrorReporter
+import com.dcapps.spese.core.bugreport.ReportableError
+import com.dcapps.spese.core.bugreport.SyncErrorAutoReporter
 import com.dcapps.spese.core.network.isExpectedAppError
 import retrofit2.HttpException
 import java.io.IOException
@@ -18,10 +20,18 @@ import java.io.IOException
  *
  * Nota: è l'equivalente, per il sync, di ciò che `apiCall` fa per le chiamate dei repository.
  *
+ * Se [autoReporter] è passato, un errore REALE viene anche segnalato automaticamente su GitHub
+ * (con dedup + cooldown lato [SyncErrorAutoReporter]). Gli errori di rete e quelli applicativi
+ * attesi non generano mai una segnalazione.
+ *
  * @return true se il passo è fallito con un errore REALE (non una semplice mancanza di rete), così
  *   il chiamante può aggiornare l'indicatore di stato sync. IOException → false (non è un errore reale).
  */
-internal suspend fun ErrorReporter.runSyncStep(label: String, block: suspend () -> Unit): Boolean {
+internal suspend fun ErrorReporter.runSyncStep(
+    label: String,
+    autoReporter: SyncErrorAutoReporter? = null,
+    block: suspend () -> Unit,
+): Boolean {
     return try {
         block()
         false
@@ -32,13 +42,25 @@ internal suspend fun ErrorReporter.runSyncStep(label: String, block: suspend () 
         if (!isExpectedAppError(e.code())) {
             val request = e.response()?.raw()?.request
             val rawBody = runCatching { e.response()?.errorBody()?.string() }.getOrNull()
+            val message = "Sync $label: HTTP ${e.code()}"
             record(
-                message = "Sync $label: HTTP ${e.code()}",
+                message = message,
                 cause = e,
                 httpMethod = request?.method,
                 url = request?.url?.encodedPath,
                 httpCode = e.code(),
                 serverBody = rawBody?.takeIf { it.isNotBlank() },
+            )
+            autoReporter?.maybeReport(
+                label,
+                ReportableError(
+                    message = message,
+                    stackTrace = e.stackTraceToString(),
+                    httpMethod = request?.method,
+                    url = request?.url?.encodedPath,
+                    httpCode = e.code(),
+                    serverBody = rawBody?.takeIf { it.isNotBlank() },
+                ),
             )
             true
         } else {
@@ -46,7 +68,9 @@ internal suspend fun ErrorReporter.runSyncStep(label: String, block: suspend () 
             false
         }
     } catch (e: Exception) {
-        record(message = "Sync $label: ${e.message ?: e.javaClass.simpleName}", cause = e)
+        val message = "Sync $label: ${e.message ?: e.javaClass.simpleName}"
+        record(message = message, cause = e)
+        autoReporter?.maybeReport(label, ReportableError(message = message, stackTrace = e.stackTraceToString()))
         true
     }
 }

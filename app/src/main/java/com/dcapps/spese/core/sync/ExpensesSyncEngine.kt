@@ -2,6 +2,7 @@ package com.dcapps.spese.core.sync
 
 import com.dcapps.spese.core.auth.SessionManager
 import com.dcapps.spese.core.bugreport.ErrorReporter
+import com.dcapps.spese.core.bugreport.SyncErrorAutoReporter
 import com.dcapps.spese.core.local.dao.ExpensesDao
 import com.dcapps.spese.core.local.entity.LocalExpenseEntity
 import com.dcapps.spese.core.local.entity.LocalExpensesListEntity
@@ -45,6 +46,7 @@ class ExpensesSyncEngine @Inject constructor(
     private val cursor: SyncCursor,
     private val errorReporter: ErrorReporter,
     private val syncStatus: SyncStatusReporter,
+    private val autoReporter: SyncErrorAutoReporter,
 ) {
     private val mutex = Mutex()
     private val scope = CoroutineScope(SupervisorJob())
@@ -58,8 +60,8 @@ class ExpensesSyncEngine @Inject constructor(
         var failed = false
         try {
             mutex.withLock {
-                failed = errorReporter.runSyncStep("spese push") { push() } || failed
-                failed = errorReporter.runSyncStep("spese pull") { pull(userId) } || failed
+                failed = errorReporter.runSyncStep("spese push", autoReporter) { push() } || failed
+                failed = errorReporter.runSyncStep("spese pull", autoReporter) { pull(userId) } || failed
             }
         } finally {
             syncStatus.onSyncFinished(failed)

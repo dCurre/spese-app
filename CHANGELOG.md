@@ -3,6 +3,9 @@
 Note di rilascio in linguaggio comprensibile, mostrate nella schermata di aggiornamento dell'app.
 Ogni versione ha una sezione `## X.Y.Z` con un elenco puntato delle novità per l'utente.
 
+## 0.2.2
+- Quando la sincronizzazione non riesce per un errore reale, l'app ora invia da sola una segnalazione con i dettagli tecnici (una sola volta per tipo di errore), così il problema può essere corretto prima.
+
 ## 0.2.1
 - L'indicatore di sincronizzazione in alto è più chiaro: mostra "Offline" quando non c'è rete e "Sync non riuscita" (toccabile) in caso di errore, sempre alla stessa altezza.
 - Le righe con modifiche non ancora sincronizzate mostrano una piccola nuvoletta "in attesa"; puoi disattivarla da Profilo › Impostazioni.
