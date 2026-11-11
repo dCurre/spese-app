@@ -93,6 +93,12 @@ class ChecklistLocalDataSource @Inject constructor(
         dao.updateItem(cur.copy(checked = checked, pendingSync = true, updatedAt = now()))
     }
 
+    /** Assegna una categoria (o null = nessuna) a un articolo, preservando nome/quantità/stato. */
+    suspend fun setItemCategory(id: Long, categoryId: Long?): ApiResult<Unit> = guard {
+        val cur = dao.getItem(id) ?: error("Articolo non trovato")
+        dao.updateItem(cur.copy(categoryId = categoryId, pendingSync = true, updatedAt = now()))
+    }
+
     suspend fun setAllChecked(listId: Long, checked: Boolean): ApiResult<Unit> = guard {
         dao.getItems(listId).forEach { dao.updateItem(it.copy(checked = checked, pendingSync = true, updatedAt = now())) }
     }

@@ -320,6 +320,11 @@
     <string name="cd_category_title">Category</string>
     <string name="cd_parent_category">Parent category</string>
     <string name="cd_parent_none">(None — top-level category)</string>
+    <!-- Bulk move of selected items (issue #17) -->
+    <string name="cd_move_to_category">Move to category</string>
+    <string name="cd_move_message">Move %1$d items to the chosen category.</string>
+    <string name="cd_move_no_category">No category</string>
+    <string name="action_move">Move</string>
 
     <!-- Checklist -->
     <string name="checklist_title">My checklists</string>

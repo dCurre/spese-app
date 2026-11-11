@@ -3,6 +3,10 @@
 Note di rilascio in linguaggio comprensibile, mostrate nella schermata di aggiornamento dell'app.
 Ogni versione ha una sezione `## X.Y.Z` con un elenco puntato delle novità per l'utente.
 
+## 0.2.6
+- Corretto un errore che impediva di sincronizzare nuove categorie e articoli aggiunti a checklist già esistenti: ora si salvano correttamente sul server.
+- Nella selezione multipla degli articoli di una checklist puoi spostarli tutti insieme in una categoria (o toglierli da ogni categoria con "Senza categoria").
+
 ## 0.2.5
 - Nuova sezione "Statistiche spese" (dal Profilo): mostra quanto hai speso nel periodo scelto (questo mese, 6 mesi, anno), l'andamento nel tempo, la ripartizione per tipologia e il confronto con il periodo precedente. Conteggia solo le spese che hai pagato tu.
 

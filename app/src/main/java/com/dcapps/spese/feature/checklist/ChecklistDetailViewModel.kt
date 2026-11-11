@@ -56,6 +56,16 @@ sealed interface ChecklistRow {
 /** Criterio di ordinamento degli item dentro ogni categoria. */
 enum class ChecklistItemSort { ORDER, NAME, CHECKED }
 
+/**
+ * Esito del calcolo della categoria comune a una selezione di articoli (issue #17):
+ *  - [Single] con [categoryId] (può essere null = tutti "senza categoria") se condividono la stessa;
+ *  - [None] se la selezione è vuota o gli articoli hanno categorie diverse (niente da escludere).
+ */
+sealed interface CommonCategory {
+    data class Single(val categoryId: Long?) : CommonCategory
+    data object None : CommonCategory
+}
+
 data class ChecklistDetailUiState(
     val isLoading: Boolean = true,
     val error: String? = null,
@@ -473,6 +483,39 @@ class ChecklistDetailViewModel @Inject constructor(
             if (r is ApiResult.Error) _uiState.update { it.copy(message = r.message) }
             load(showLoading = false)
         }
+    }
+
+    /**
+     * Assegna in blocco gli articoli selezionati a una categoria (null = "senza categoria",
+     * cioè fuori da ogni categoria), poi esce dalla selezione. (issue #17)
+     */
+    fun assignSelectedToCategory(categoryId: Long?) {
+        val ids = selection.ids.toList()
+        if (ids.isEmpty()) return
+        viewModelScope.launch {
+            val r = itemRepository.setCategoryBulk(ids, categoryId)
+            selection.clear()
+            if (r is ApiResult.Error) _uiState.update { it.copy(message = r.message) }
+            load(showLoading = false)
+        }
+    }
+
+    /**
+     * Categoria "comune" a TUTTI gli articoli attualmente selezionati (id categoria, o null se
+     * tutti sono già senza categoria). Restituisce [NoCommonCategory] se hanno categorie diverse.
+     * Serve a nascondere dal picker la destinazione attuale (spostare dov'è già non ha senso). (#17)
+     */
+    fun commonCategoryOfSelection(): CommonCategory {
+        val ids = selection.ids
+        if (ids.isEmpty()) return CommonCategory.None
+        fun collect(cats: List<ShoppingCategory>): List<ShoppingItem> =
+            cats.flatMap { it.items + collect(it.children) }
+        val list = _uiState.value.list ?: return CommonCategory.None
+        val all = list.items + collect(list.categories)
+        val selected = all.filter { it.id in ids }
+        if (selected.isEmpty()) return CommonCategory.None
+        val cats = selected.map { it.categoryId }.toSet()
+        return if (cats.size == 1) CommonCategory.Single(cats.first()) else CommonCategory.None
     }
 
     fun clearMessage() = _uiState.update { it.copy(message = null, messageReportable = true) }

@@ -42,6 +42,12 @@ class ShoppingItemRepository @Inject constructor(
         return afterWrite(ApiResult.Success(Unit))
     }
 
+    /** Assegna in blocco la stessa categoria (o null = nessuna) a più articoli. */
+    suspend fun setCategoryBulk(ids: List<Long>, categoryId: Long?): ApiResult<Unit> {
+        ids.forEach { local.setItemCategory(it, categoryId) }
+        return afterWrite(ApiResult.Success(Unit))
+    }
+
     suspend fun check(id: Long, checked: Boolean?): ApiResult<Boolean> =
         afterWrite(local.setItemChecked(id, checked == true).mapTo(checked == true))
 

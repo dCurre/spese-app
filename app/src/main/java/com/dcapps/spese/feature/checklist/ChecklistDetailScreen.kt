@@ -24,6 +24,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CreateNewFolder
+import androidx.compose.material.icons.filled.DriveFileMove
 import androidx.compose.material.icons.outlined.DriveFileRenameOutline
 import androidx.compose.material.icons.outlined.FileDownload
 import androidx.compose.material.icons.filled.Delete
@@ -103,6 +104,8 @@ fun ChecklistDetailScreen(
     var showRename by remember { mutableStateOf(false) }
     var showMakePersonal by remember { mutableStateOf(false) }
     var showDeleteSelectedItems by remember { mutableStateOf(false) }
+    // Dialog "sposta articoli selezionati in categoria" (issue #17).
+    var showAssignCategory by remember { mutableStateOf(false) }
 
     val snackbarHostState = remember { SnackbarHostState() }
     ErrorSnackbarEffect(
@@ -134,6 +137,7 @@ fun ChecklistDetailScreen(
                     count = sel.selectedIds.size,
                     onCancel = { viewModel.selection.clear() },
                     onDelete = { showDeleteSelectedItems = true },
+                    onAssignCategory = { showAssignCategory = true },
                 )
             }
         } else {
@@ -368,6 +372,25 @@ fun ChecklistDetailScreen(
             message = stringResource(R.string.checklist_items_delete_selected_message, sel.selectedIds.size),
             onConfirm = { viewModel.deleteSelectedItems() },
             onDismiss = { showDeleteSelectedItems = false },
+        )
+    }
+
+    // Sposta articoli selezionati in una categoria (issue #17). "Senza categoria" = fuori da ogni
+    // categoria (null). La destinazione attuale (se condivisa da tutti i selezionati) è esclusa.
+    if (showAssignCategory) {
+        val common = viewModel.commonCategoryOfSelection()
+        val excludedId = (common as? CommonCategory.Single)?.categoryId
+        // Nascondi "senza categoria" solo se TUTTI i selezionati sono già senza categoria.
+        val showNoneOption = !(common is CommonCategory.Single && common.categoryId == null)
+        AssignCategoryDialog(
+            categories = state.categories.filter { it.id != excludedId },
+            showNoneOption = showNoneOption,
+            count = sel.selectedIds.size,
+            onDismiss = { showAssignCategory = false },
+            onConfirm = { categoryId ->
+                viewModel.assignSelectedToCategory(categoryId)
+                showAssignCategory = false
+            },
         )
     }
 
@@ -690,6 +713,50 @@ private fun ItemRow(
             PendingSyncBadge(show = showPendingSync && item.pendingSync)
         }
     }
+}
+
+/**
+ * Dialog per spostare gli articoli selezionati in una categoria (issue #17).
+ *  - [categories] sono le destinazioni possibili (la destinazione attuale è già esclusa a monte);
+ *  - [showNoneOption] aggiunge "Senza categoria" (fuori da ogni categoria); è nascosto se tutti i
+ *    selezionati sono già senza categoria.
+ * Conferma abilitata solo quando una destinazione è selezionata (null è una scelta valida solo se
+ * è stata scelta esplicitamente "Senza categoria").
+ */
+@Composable
+private fun AssignCategoryDialog(
+    categories: List<ShoppingCategory>,
+    showNoneOption: Boolean,
+    count: Int,
+    onDismiss: () -> Unit,
+    onConfirm: (categoryId: Long?) -> Unit,
+) {
+    // Sentinella: nessuna scelta ancora fatta (diverso da "Senza categoria" = null).
+    val unselected = Long.MIN_VALUE
+    val noneValue = -1L
+    var choice by remember { mutableStateOf(unselected) }
+    val noneLabel = stringResource(R.string.cd_move_no_category)
+    val options = buildList<Pair<Long, String>> {
+        if (showNoneOption) add(noneValue to noneLabel)
+        addAll(categories.map { it.id to it.name })
+    }
+    SpeseDialog(
+        title = stringResource(R.string.cd_move_to_category),
+        onDismiss = onDismiss,
+        icon = Icons.Default.DriveFileMove,
+        content = {
+            Text(stringResource(R.string.cd_move_message, count))
+            ReadOnlyPickerField(
+                label = stringResource(R.string.cd_parent_category),
+                options = options,
+                selectedId = choice.takeIf { it != unselected },
+                onSelect = { choice = it },
+            )
+        },
+        confirmText = stringResource(R.string.action_move),
+        onConfirm = { onConfirm(if (choice == noneValue) null else choice) },
+        confirmEnabled = choice != unselected,
+    )
 }
 
 @Composable

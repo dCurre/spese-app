@@ -320,6 +320,11 @@
     <string name="cd_category_title">Categoria</string>
     <string name="cd_parent_category">Categoria padre</string>
     <string name="cd_parent_none">(Nessuna — categoria principale)</string>
+    <!-- Spostamento in blocco degli articoli selezionati (issue #17) -->
+    <string name="cd_move_to_category">Sposta in categoria</string>
+    <string name="cd_move_message">Sposta %1$d articoli nella categoria scelta.</string>
+    <string name="cd_move_no_category">Senza categoria</string>
+    <string name="action_move">Sposta</string>
 
     <!-- Checklist -->
     <string name="checklist_title">Le mie checklist</string>

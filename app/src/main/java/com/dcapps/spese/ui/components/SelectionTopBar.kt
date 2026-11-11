@@ -3,6 +3,7 @@ package com.dcapps.spese.ui.components
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.DriveFileMove
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -19,6 +20,8 @@ import com.dcapps.spese.ui.theme.SpeseTheme
  * @param count numero di elementi selezionati (mostrato nel titolo).
  * @param onCancel annulla la selezione e torna alla barra normale.
  * @param onDelete chiede l'eliminazione dei selezionati (tipicamente apre una conferma).
+ * @param onAssignCategory se non null, aggiunge un'azione "sposta in categoria" (issue #17);
+ *   le liste che non supportano le categorie lo lasciano null e l'icona non compare.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -26,6 +29,7 @@ fun SelectionTopBar(
     count: Int,
     onCancel: () -> Unit,
     onDelete: () -> Unit,
+    onAssignCategory: (() -> Unit)? = null,
 ) {
     SpeseTopAppBar(
         title = stringResource(R.string.selection_count, count),
@@ -35,6 +39,14 @@ fun SelectionTopBar(
             }
         },
         actions = {
+            if (onAssignCategory != null) {
+                IconButton(onClick = onAssignCategory, enabled = count > 0) {
+                    Icon(
+                        Icons.Default.DriveFileMove,
+                        contentDescription = stringResource(R.string.cd_move_to_category),
+                    )
+                }
+            }
             IconButton(onClick = onDelete, enabled = count > 0) {
                 Icon(
                     Icons.Default.Delete,

@@ -262,8 +262,8 @@ data class SyncListUpdate(
 data class SyncCategoryCreate(
     @SerialName("temp_id") val tempId: String,
     @SerialName("client_id") val clientId: String,
-    // list_id o list_temp_id (uno dei due): la lista può essere nuova (temp) o esistente.
-    @SerialName("list_id") val listId: Long? = null,
+    // shopping_list_id o list_temp_id (uno dei due): la lista può essere nuova (temp) o esistente.
+    @SerialName("shopping_list_id") val listId: Long? = null,
     @SerialName("list_temp_id") val listTempId: String? = null,
     @SerialName("parent_id") val parentId: Long? = null,
     @SerialName("parent_temp_id") val parentTempId: String? = null,
@@ -283,7 +283,7 @@ data class SyncCategoryUpdate(
 data class SyncItemCreate(
     @SerialName("temp_id") val tempId: String,
     @SerialName("client_id") val clientId: String,
-    @SerialName("list_id") val listId: Long? = null,
+    @SerialName("shopping_list_id") val listId: Long? = null,
     @SerialName("list_temp_id") val listTempId: String? = null,
     @SerialName("category_id") val categoryId: Long? = null,
     @SerialName("category_temp_id") val categoryTempId: String? = null,
