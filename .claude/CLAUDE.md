@@ -5,8 +5,10 @@ App Android nativa (Kotlin + Jetpack Compose, MVVM + Hilt). Client del backend R
 
 ## Regole non negoziabili
 
-- **Backend NON modificabile.** Usa solo endpoint che esistono già in `spese-ms`
-  (`app/api/*/routes.py`); verificali prima di scrivere il client.
+- **Backend modificabile se serve.** Puoi accedere a `spese-ms` e modificarlo (es. nuovi
+  endpoint/campi) quando la funzione lo richiede. Verifica sempre gli endpoint esistenti in
+  `app/api/*/routes.py` prima di scrivere il client. **Non creare un backend dentro l'app**: la
+  logica server sta in `spese-ms`. Se tocchi il backend, pusha anche quel repo (su ok esplicito).
 - **Push solo su ok esplicito** dell'utente. **Non bumpare `VERSION` a mano**: lo fa
   automaticamente l'hook `pre-push` (vedi sotto). Usa `git push` normale.
 - **Mai committare segreti.** `local.properties`, `google-services.json`, keystore, file

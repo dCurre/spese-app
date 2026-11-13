@@ -640,9 +640,10 @@ private fun CategoryHeaderRow(
                     else MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.clickable { onToggleCollapse() }.padding(vertical = 8.dp),
             )
-            // Badge con il numero di sottoelementi diretti (sottocategorie + articoli).
+            // Badge: se la categoria contiene articoli mostra "spuntati/totale" (es. 2/3, issue #21);
+            // altrimenti (nessun articolo, solo sottocategorie) il numero di sottoelementi diretti.
             SpeseBadge(
-                text = "${row.directCount}",
+                text = if (row.totalItems > 0) "${row.checkedItems}/${row.totalItems}" else "${row.directCount}",
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(start = 8.dp),
             )

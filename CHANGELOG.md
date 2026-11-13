@@ -3,6 +3,10 @@
 Note di rilascio in linguaggio comprensibile, mostrate nella schermata di aggiornamento dell'app.
 Ogni versione ha una sezione `## X.Y.Z` con un elenco puntato delle novità per l'utente.
 
+## 0.2.7
+- Nelle categorie delle checklist il contatore ora mostra quanti articoli sono spuntati sul totale (es. "2/3"), così vedi a colpo d'occhio quanto manca.
+- Le barre di ricerca sono più sottili e compatte in tutte le schermate.
+
 ## 0.2.6
 - Corretto un errore che impediva di sincronizzare nuove categorie e articoli aggiunti a checklist già esistenti: ora si salvano correttamente sul server.
 - Nella selezione multipla degli articoli di una checklist puoi spostarli tutti insieme in una categoria (o toglierli da ogni categoria con "Senza categoria").

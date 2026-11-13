@@ -41,6 +41,9 @@ sealed interface ChecklistRow {
         val collapsed: Boolean = false,
         // Numero di sottoelementi diretti (sottocategorie + articoli diretti): badge conteggio.
         val directCount: Int = 0,
+        // Articoli spuntati / articoli totali (ricorsivi) per il badge "2/3" (issue #21).
+        val checkedItems: Int = 0,
+        val totalItems: Int = 0,
         // true se la categoria ha articoli e sono TUTTI spuntati (ricorsivo): nome barrato.
         val completed: Boolean = false,
         // true se è l'ultimo figlio del suo gruppo: connettore albero "└─" invece di "├─".
@@ -570,16 +573,9 @@ class ChecklistDetailViewModel @Inject constructor(
     private fun categoryHasMatch(cat: ShoppingCategory, q: String): Boolean =
         cat.items.any { matchesQuery(it, q) } || cat.children.any { categoryHasMatch(it, q) }
 
-    /**
-     * True se la categoria contiene almeno un articolo (diretto o nei discendenti) e TUTTI sono
-     * spuntati: in tal caso il nome va barrato.
-     */
-    private fun categoryCompleted(cat: ShoppingCategory): Boolean {
-        fun collect(c: ShoppingCategory): List<ShoppingItem> =
-            c.items + c.children.flatMap { collect(it) }
-        val all = collect(cat)
-        return all.isNotEmpty() && all.all { it.checked }
-    }
+    /** Tutti gli articoli della categoria, diretti e nei discendenti (ricorsivo). */
+    private fun allItems(cat: ShoppingCategory): List<ShoppingItem> =
+        cat.items + cat.children.flatMap { allItems(it) }
 
     private fun appendCategory(
         cat: ShoppingCategory,
@@ -593,10 +589,13 @@ class ChecklistDetailViewModel @Inject constructor(
         if (q.isNotBlank() && !categoryHasMatch(cat, q)) return
 
         val isCollapsed = cat.id in collapsed
+        val items = allItems(cat)
         out += ChecklistRow.CategoryHeader(
             cat, depth, collapsed = isCollapsed,
             directCount = cat.items.size + cat.children.size,
-            completed = categoryCompleted(cat),
+            checkedItems = items.count { it.checked },
+            totalItems = items.size,
+            completed = items.isNotEmpty() && items.all { it.checked },
             isLastChild = isLast,
         )
         // In ricerca ignoriamo il collasso (si vogliono vedere i risultati).
