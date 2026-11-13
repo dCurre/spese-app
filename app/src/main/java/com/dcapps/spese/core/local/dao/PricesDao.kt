@@ -106,6 +106,13 @@ interface PricesDao {
     @Query("UPDATE local_purchase SET remoteId = NULL, pendingSync = 1 WHERE deleted = 0")
     suspend fun resetPurchasesForMigration()
 
+    /** Righe con modifiche locali non ancora sincronizzate (per il controllo sync-then-wipe al logout). */
+    @Query("SELECT COUNT(*) FROM local_product WHERE pendingSync = 1")
+    suspend fun pendingCount(): Int
+
+    @Query("SELECT COUNT(*) FROM local_purchase WHERE pendingSync = 1")
+    suspend fun pendingPurchasesCount(): Int
+
     /** "Solo online": scarta tutti i dati guest locali. */
     @Query("DELETE FROM local_product")
     suspend fun wipeProducts()

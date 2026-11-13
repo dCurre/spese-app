@@ -13,6 +13,10 @@ import com.dcapps.spese.core.model.UpdateUserRequest
 import com.dcapps.spese.core.model.User
 import com.dcapps.spese.core.network.ApiResult
 import com.dcapps.spese.core.prefs.UiPreferences
+import com.dcapps.spese.core.sync.ChecklistSyncEngine
+import com.dcapps.spese.core.sync.ExpensesSyncEngine
+import com.dcapps.spese.core.sync.GuestMigration
+import com.dcapps.spese.core.sync.PricesSyncEngine
 import com.dcapps.spese.core.ui.launchMutation
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -43,6 +47,10 @@ data class ProfileUiState(
     val photo: String? = null,
     // Email dell'account (null in guest).
     val email: String? = null,
+    // Logout in corso (sync finale + pulizia locale): blocca la UI con un indicatore.
+    val signingOut: Boolean = false,
+    // Logout con dati non ancora sincronizzati: chiedi conferma prima di cancellarli dal dispositivo.
+    val showSignOutUnsyncedWarning: Boolean = false,
 )
 
 @HiltViewModel
@@ -52,6 +60,10 @@ class ProfileViewModel @Inject constructor(
     private val session: SessionManager,
     private val guestProfile: GuestProfile,
     private val uiPreferences: UiPreferences,
+    private val checklistSync: ChecklistSyncEngine,
+    private val expensesSync: ExpensesSyncEngine,
+    private val pricesSync: PricesSyncEngine,
+    private val guestMigration: GuestMigration,
 ) : ViewModel() {
 
     /** Preferenza locale: mostrare il badge "in attesa di sync" sulle righe. */
@@ -255,8 +267,46 @@ class ProfileViewModel @Inject constructor(
         )
     }
 
+    /**
+     * Logout sicuro (sync-then-wipe). Il DB local-first NON è partizionato per utente: al logout va
+     * svuotato, altrimenti un successivo login con un altro account sullo stesso dispositivo vedrebbe i
+     * dati del precedente (e rischierebbe di sincronizzarli come propri). Prima di cancellare tentiamo un
+     * sync finale; se restano modifiche non sincronizzate (offline/errore) chiediamo conferma per non
+     * perdere dati, altrimenti procediamo. La navigazione alla schermata di accesso è reattiva
+     * (AuthViewModel osserva la fine della sessione).
+     */
     fun signOut(context: Context) {
-        viewModelScope.launch { authManager.signOut(context) }
+        viewModelScope.launch {
+            _uiState.update { it.copy(signingOut = true) }
+            // Sync finale bloccante su tutte le sezioni (best-effort: non lancia).
+            checklistSync.sync()
+            expensesSync.sync()
+            pricesSync.sync()
+            if (guestMigration.hasPendingData()) {
+                _uiState.update { it.copy(signingOut = false, showSignOutUnsyncedWarning = true) }
+            } else {
+                performSignOut(context)
+            }
+        }
+    }
+
+    /** L'utente conferma il logout pur avendo dati non sincronizzati: verranno persi. */
+    fun confirmSignOutDiscardingUnsynced(context: Context) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(showSignOutUnsyncedWarning = false, signingOut = true) }
+            performSignOut(context)
+        }
+    }
+
+    /** Annulla il logout dal dialog "dati non sincronizzati": resta loggato, niente cancellazioni. */
+    fun cancelSignOut() {
+        _uiState.update { it.copy(showSignOutUnsyncedWarning = false) }
+    }
+
+    /** Pulizia locale totale (Room + cursori) e logout vero. La navigazione la gestisce l'AuthViewModel. */
+    private suspend fun performSignOut(context: Context) {
+        guestMigration.resetAllLocal()
+        authManager.signOut(context)
     }
 
     fun clearMessage() = _uiState.update { it.copy(message = null) }

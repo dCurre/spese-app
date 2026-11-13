@@ -51,6 +51,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.dcapps.spese.R
+import com.dcapps.spese.ui.components.ConfirmDialog
 import com.dcapps.spese.ui.components.ErrorSnackbarEffect
 import com.dcapps.spese.ui.components.SpeseTopAppBar
 
@@ -208,9 +209,14 @@ fun ProfileEditScreen(
 
                 OutlinedButton(
                     onClick = { viewModel.signOut(context) },
+                    enabled = !state.signingOut,
                     modifier = Modifier.fillMaxWidth().padding(top = 32.dp),
                 ) {
-                    Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = null, modifier = Modifier.size(18.dp))
+                    if (state.signingOut) {
+                        CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                    } else {
+                        Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = null, modifier = Modifier.size(18.dp))
+                    }
                     Text(stringResource(R.string.profile_logout), modifier = Modifier.padding(start = 8.dp))
                 }
             }
@@ -223,6 +229,17 @@ fun ProfileEditScreen(
             initialSurname = user?.surname ?: "",
             onDismiss = { showEditName = false },
             onConfirm = { n, s -> viewModel.updateNameSurname(n, s); showEditName = false },
+        )
+    }
+
+    // Logout con modifiche non ancora sincronizzate: conferma prima di cancellarle dal dispositivo.
+    if (state.showSignOutUnsyncedWarning) {
+        ConfirmDialog(
+            title = stringResource(R.string.logout_unsynced_title),
+            message = stringResource(R.string.logout_unsynced_message),
+            confirmText = stringResource(R.string.logout_unsynced_confirm),
+            onConfirm = { viewModel.confirmSignOutDiscardingUnsynced(context) },
+            onDismiss = { viewModel.cancelSignOut() },
         )
     }
 }

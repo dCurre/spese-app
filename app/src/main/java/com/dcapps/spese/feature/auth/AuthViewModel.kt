@@ -59,6 +59,24 @@ class AuthViewModel @Inject constructor(
 
     init {
         restoreSession()
+        observeSessionEnd()
+    }
+
+    /**
+     * Navigazione reattiva al LOGOUT: quando la sessione viene chiusa (currentUser → null mentre non
+     * siamo in guest e l'app era già avviata), porta alla schermata di accesso. Centralizza qui la
+     * reazione così il logout funziona da qualunque punto lo invochi (es. ProfileViewModel), senza
+     * dover condividere questa istanza di ViewModel con le schermate dentro il NavHost.
+     */
+    private fun observeSessionEnd() {
+        viewModelScope.launch {
+            session.currentUser.collect { user ->
+                val d = _uiState.value.destination
+                if (user == null && !session.isGuest && d == StartDestination.APP) {
+                    _uiState.value = _uiState.value.copy(user = null, destination = StartDestination.SIGN_IN)
+                }
+            }
+        }
     }
 
     private fun restoreSession() {
@@ -135,13 +153,6 @@ class AuthViewModel @Inject constructor(
         }
     }
 
-    fun signOut(context: Context) {
-        viewModelScope.launch {
-            authManager.signOut(context)
-            // Dopo il logout: schermata di accesso (NON guest in automatico).
-            _uiState.value = _uiState.value.copy(user = null, destination = StartDestination.SIGN_IN)
-        }
-    }
 
     fun clearError() {
         _uiState.value = _uiState.value.copy(error = null)

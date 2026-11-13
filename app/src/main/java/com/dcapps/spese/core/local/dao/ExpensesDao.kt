@@ -104,6 +104,13 @@ interface ExpensesDao {
     @Query("UPDATE local_expense SET remoteId = NULL, pendingSync = 1 WHERE deleted = 0")
     suspend fun resetExpensesForMigration()
 
+    /** Righe con modifiche locali non ancora sincronizzate (per il controllo sync-then-wipe al logout). */
+    @Query("SELECT COUNT(*) FROM local_expenses_list WHERE pendingSync = 1")
+    suspend fun pendingCount(): Int
+
+    @Query("SELECT COUNT(*) FROM local_expense WHERE pendingSync = 1")
+    suspend fun pendingExpensesCount(): Int
+
     /** "Solo online": scarta tutti i dati guest locali. */
     @Query("DELETE FROM local_expenses_list")
     suspend fun wipeLists()

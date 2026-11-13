@@ -3,6 +3,9 @@
 Note di rilascio in linguaggio comprensibile, mostrate nella schermata di aggiornamento dell'app.
 Ogni versione ha una sezione `## X.Y.Z` con un elenco puntato delle novità per l'utente.
 
+## 0.2.8
+- Correzione importante: al logout i dati locali (checklist, spese, prezzi) vengono ora rimossi dal dispositivo, così accedendo con un altro account non si vedono più i dati dell'account precedente. Prima di uscire l'app prova a sincronizzare; se qualcosa non è ancora stato salvato sul server (offline), chiede conferma per non perdere dati.
+
 ## 0.2.7
 - Nelle categorie delle checklist il contatore ora mostra quanti articoli sono spuntati sul totale (es. "2/3"), così vedi a colpo d'occhio quanto manca.
 - Le barre di ricerca sono più sottili e compatte in tutte le schermate.

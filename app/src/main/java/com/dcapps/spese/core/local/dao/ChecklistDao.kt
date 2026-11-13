@@ -152,6 +152,16 @@ interface ChecklistDao {
     @Query("UPDATE local_shopping_item SET remoteId = NULL, pendingSync = 1 WHERE deleted = 0")
     suspend fun resetItemsForMigration()
 
+    /** Righe con modifiche locali non ancora sincronizzate (per il controllo sync-then-wipe al logout). */
+    @Query("SELECT COUNT(*) FROM local_shopping_list WHERE pendingSync = 1")
+    suspend fun pendingCount(): Int
+
+    @Query("SELECT COUNT(*) FROM local_shopping_category WHERE pendingSync = 1")
+    suspend fun pendingCategoriesCount(): Int
+
+    @Query("SELECT COUNT(*) FROM local_shopping_item WHERE pendingSync = 1")
+    suspend fun pendingItemsCount(): Int
+
     /** "Solo online": scarta tutti i dati guest locali (poi il pull ripopola dall'account). */
     @Query("DELETE FROM local_shopping_list")
     suspend fun wipeLists()

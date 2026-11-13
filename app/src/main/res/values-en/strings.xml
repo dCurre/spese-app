@@ -50,6 +50,9 @@
     <string name="profile_admin">Administration</string>
     <string name="profile_about">About</string>
     <string name="profile_logout">Log out</string>
+    <string name="logout_unsynced_title">Unsynced changes</string>
+    <string name="logout_unsynced_message">Some changes haven\'t been saved to the server yet (you\'re offline or the save failed). If you log out now, these changes will be removed from this device. Log out anyway?</string>
+    <string name="logout_unsynced_confirm">Log out and delete</string>
     <string name="profile_edit_name">Edit name</string>
     <string name="profile_surname">Surname</string>
     <string name="profile_copy_email">Copy email</string>
