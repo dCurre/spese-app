@@ -6,6 +6,7 @@ import androidx.work.Configuration
 import com.dcapps.spese.core.bugreport.CrashStore
 import com.dcapps.spese.core.bugreport.ErrorReporter
 import com.dcapps.spese.core.sync.SyncWorker
+import com.dcapps.spese.core.update.UpdateCheckWorker
 import dagger.hilt.android.HiltAndroidApp
 import javax.inject.Inject
 
@@ -25,6 +26,7 @@ class SpeseApplication : Application(), Configuration.Provider {
         super.onCreate()
         installCrashHandler()
         SyncWorker.schedule(this) // sync periodico in background (solo con rete)
+        UpdateCheckWorker.schedule(this) // notifica aggiornamenti in background (anche ad app chiusa)
     }
 
     /** Salva lo stacktrace dei crash non gestiti, così al riavvio si può proporre la segnalazione. */

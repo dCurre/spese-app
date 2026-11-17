@@ -5,12 +5,7 @@ da fare: aggiornare qui (spuntare / rimuovere quando completato).
 
 ## Bug
 
-- [x] **Logout non isolava i dati tra account (fuga dati locale).** Il DB Room non è partizionato per
-  utente e il logout non lo svuotava → con un altro account sullo stesso device si vedevano i dati del
-  precedente. Fix: logout sync-then-wipe (sync finale; se restano righe pendingSync chiede conferma),
-  poi wipe di tutte le tabelle + reset dei 3 cursori (`GuestMigration.resetAllLocal`). Navigazione a
-  SIGN_IN resa reattiva (AuthViewModel osserva `session.currentUser`). **Da verificare su device** (0.2.8):
-  logout online, login account B dopo A, logout offline con pending (dialog), flusso guest→account non regredito.
+_(nessun bug aperto)_
 
 ## Feature
 
@@ -37,7 +32,9 @@ da fare: aggiornare qui (spuntare / rimuovere quando completato).
 
 ## Fuori scope / escluse
 
-- Notifiche push → richiederebbero modifiche al backend (intoccabile).
+- Notifiche push "vere" (lato server, es. nuova spesa su lista condivisa) → richiederebbero FCM +
+  modifiche al backend. Fatte invece le notifiche **locali di nuova versione** (issue #22): worker
+  periodico che interroga GitHub Releases e notifica, senza backend.
 - Escluse dall'utente: condivisione liste spese con bottoni WhatsApp/Telegram dedicati; pagina
   "Partecipa" dedicata.
 - Placeholder anche nella webapp (non mancanti): login email/password, registrazione, archivio

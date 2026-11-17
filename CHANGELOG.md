@@ -3,6 +3,10 @@
 Note di rilascio in linguaggio comprensibile, mostrate nella schermata di aggiornamento dell'app.
 Ogni versione ha una sezione `## X.Y.Z` con un elenco puntato delle novità per l'utente.
 
+## 0.2.9
+- L'app ora ti avvisa con una notifica quando è disponibile una nuova versione, anche se non la stai usando: così non ti perdi gli aggiornamenti. Il controllo avviene in background un paio di volte al giorno (solo quando c'è rete); toccando la notifica si apre direttamente la schermata di aggiornamento.
+- Dal Profilo trovi la nuova voce "Notifiche di aggiornamento", che mostra se le notifiche sono attive e permette di attivarle o gestirle con un tocco.
+
 ## 0.2.8
 - Correzione importante: al logout i dati locali (checklist, spese, prezzi) vengono ora rimossi dal dispositivo, così accedendo con un altro account non si vedono più i dati dell'account precedente. Prima di uscire l'app prova a sincronizzare; se qualcosa non è ancora stato salvato sul server (offline), chiede conferma per non perdere dati.
 

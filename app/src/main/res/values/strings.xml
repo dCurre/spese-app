@@ -39,6 +39,9 @@
     <string name="profile_stats_participating">Partecipazioni</string>
     <string name="profile_stats_expenses">Spese totali</string>
     <string name="profile_check_updates">Controlla aggiornamenti</string>
+    <string name="profile_update_notifications">Notifiche di aggiornamento</string>
+    <string name="profile_notifications_on">Attive · tocca per gestirle</string>
+    <string name="profile_notifications_off">Disattivate · tocca per attivarle</string>
     <string name="profile_checking">Controllo…</string>
     <string name="profile_feedback">Invia feedback</string>
 
@@ -257,6 +260,9 @@
     <string name="update_allow_install">Consenti installazione</string>
     <string name="update_later">Più tardi</string>
     <string name="update_whats_new">Novità</string>
+    <string name="update_notification_text">È disponibile la versione %1$s. Tocca per aggiornare.</string>
+    <string name="update_channel_name">Aggiornamenti app</string>
+    <string name="update_channel_desc">Avvisa quando è disponibile una nuova versione dell\'app.</string>
 
     <!-- Snackbar -->
     <string name="snackbar_report">Segnala</string>

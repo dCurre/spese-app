@@ -1,10 +1,16 @@
 package com.dcapps.spese
 
+import android.Manifest
 import android.animation.ObjectAnimator
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.view.animation.AnticipateInterpolator
 import androidx.core.animation.doOnEnd
+import androidx.core.content.ContextCompat
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.activity.enableEdgeToEdge
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
@@ -19,6 +25,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dcapps.spese.core.bugreport.CrashStore
 import com.dcapps.spese.core.locale.LocaleManager
+import com.dcapps.spese.core.update.UpdateNotifier
 import com.dcapps.spese.feature.auth.AuthViewModel
 import com.dcapps.spese.feature.auth.MigrationChoiceDialog
 import com.dcapps.spese.feature.auth.OfflineChoiceScreen
@@ -38,9 +45,24 @@ import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
+
+    // True quando l'app è stata aperta toccando la notifica di aggiornamento: in tal caso la
+    // UpdateGate apre direttamente la schermata di update (senza attendere il check in-app).
+    private val openUpdateFromNotification =
+        androidx.compose.runtime.mutableStateOf(false)
+
+    // Richiesta runtime del permesso notifiche (Android 13+): il risultato non ci serve qui, il
+    // worker controlla canNotify() da sé; chiediamo solo una volta per abilitare le notifiche.
+    private val notificationPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { /* no-op */ }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         val splashScreen = installSplashScreen()
         super.onCreate(savedInstanceState)
+
+        openUpdateFromNotification.value =
+            intent?.getBooleanExtra(UpdateNotifier.EXTRA_OPEN_UPDATE, false) == true
+        requestNotificationPermissionIfNeeded()
 
         // Animazione d'uscita dello splash: la banconota "corre via" verso destra (slide-out +
         // fade). Si anima l'iconView (così scorre via solo l'icona, non lo sfondo); l'iconView può
@@ -67,12 +89,33 @@ class MainActivity : AppCompatActivity() {
         }
 
         enableEdgeToEdge()
-        setContent { SpeseApp() }
+        setContent { SpeseApp(openUpdate = openUpdateFromNotification.value) }
+    }
+
+    // Se l'app è già aperta quando si tocca la notifica, aggiorna il flag (riusa la stessa task).
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        if (intent.getBooleanExtra(UpdateNotifier.EXTRA_OPEN_UPDATE, false)) {
+            openUpdateFromNotification.value = true
+        }
+    }
+
+    private fun requestNotificationPermissionIfNeeded() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
+        val granted = ContextCompat.checkSelfPermission(
+            this, Manifest.permission.POST_NOTIFICATIONS,
+        ) == PackageManager.PERMISSION_GRANTED
+        if (!granted) {
+            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
     }
 }
 
 @Composable
-private fun SpeseApp(viewModel: AuthViewModel = hiltViewModel()) {
+private fun SpeseApp(
+    openUpdate: Boolean = false,
+    viewModel: AuthViewModel = hiltViewModel(),
+) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val user by viewModel.currentUser.collectAsStateWithLifecycle()
 
@@ -132,7 +175,8 @@ private fun SpeseApp(viewModel: AuthViewModel = hiltViewModel()) {
         }
 
         // Controllo aggiornamenti: mostra il popup se su GitHub c'è una versione maggiore.
-        UpdateGate()
+        // openUpdate = true quando si arriva dalla notifica (apri diretto, niente doppio dialog).
+        UpdateGate(openUpdate = openUpdate)
 
         // Segnalazione bug: dopo un crash (all'avvio) o su richiesta (azione "Segnala"
         // delle snackbar di errore).
@@ -171,8 +215,17 @@ private fun BugReportGate(
 }
 
 @Composable
-private fun UpdateGate(updateViewModel: UpdateViewModel = hiltViewModel()) {
+private fun UpdateGate(
+    openUpdate: Boolean = false,
+    updateViewModel: UpdateViewModel = hiltViewModel(),
+) {
     val updateState by updateViewModel.uiState.collectAsStateWithLifecycle()
+
+    // Arrivo dalla notifica: forza subito un check così la schermata di update appare senza
+    // attendere l'ON_RESUME (che comunque la popolerebbe poco dopo).
+    androidx.compose.runtime.LaunchedEffect(openUpdate) {
+        if (openUpdate) updateViewModel.checkForUpdate()
+    }
 
     // Ricontrolla gli aggiornamenti ogni volta che l'app torna in primo piano.
     val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current

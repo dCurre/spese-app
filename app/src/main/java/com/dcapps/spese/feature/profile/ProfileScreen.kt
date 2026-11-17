@@ -19,6 +19,7 @@ import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.AdminPanelSettings
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Lightbulb
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.QueryStats
 import androidx.compose.material.icons.filled.Refresh
@@ -37,6 +38,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
@@ -68,6 +70,27 @@ fun ProfileScreen(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val isAdmin = user?.role == "admin" || user?.role == "superadmin"
     var showFeedback by remember { mutableStateOf(false) }
+
+    val context = LocalContext.current
+    // Stato "notifiche abilitate": ricalcolato a ogni ritorno in primo piano (ON_RESUME), così se
+    // l'utente le riattiva dalle impostazioni di sistema la riga si aggiorna al rientro nell'app.
+    var notificationsEnabled by remember {
+        mutableStateOf(
+            androidx.core.app.NotificationManagerCompat.from(context).areNotificationsEnabled(),
+        )
+    }
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    androidx.compose.runtime.DisposableEffect(lifecycleOwner) {
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
+                notificationsEnabled =
+                    androidx.core.app.NotificationManagerCompat.from(context)
+                        .areNotificationsEnabled()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
 
     if (showFeedback) {
         FeedbackDialog(onDismiss = { showFeedback = false })
@@ -164,6 +187,18 @@ fun ProfileScreen(
                 } else null,
             )
             ProfileGroupDivider()
+            // Notifiche di aggiornamento: stato attuale + tap per aprire le impostazioni notifiche
+            // dell'app (unico modo per riattivarle se l'utente le ha negate).
+            ProfileListItem(
+                icon = Icons.Default.Notifications,
+                title = stringResource(R.string.profile_update_notifications),
+                subtitle = stringResource(
+                    if (notificationsEnabled) R.string.profile_notifications_on
+                    else R.string.profile_notifications_off,
+                ),
+                onClick = { openAppNotificationSettings(context) },
+            )
+            ProfileGroupDivider()
             ProfileListItem(
                 icon = Icons.Default.Lightbulb,
                 title = stringResource(R.string.profile_feedback),
@@ -193,4 +228,23 @@ private fun ProfileGroupDivider() {
     HorizontalDivider(
         color = SpeseTheme.colors.divider,
     )
+}
+
+/**
+ * Apre le impostazioni notifiche dell'app (Android 8+). Da qui l'utente può riattivare le notifiche
+ * di aggiornamento se le aveva negate. Fallback alle impostazioni generali dell'app su versioni più
+ * vecchie o se l'intent dedicato non è gestito.
+ */
+private fun openAppNotificationSettings(context: android.content.Context) {
+    val intent = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+        android.content.Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+            .putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, context.packageName)
+    } else {
+        android.content.Intent(
+            android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+            android.net.Uri.fromParts("package", context.packageName, null),
+        )
+    }
+    intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+    runCatching { context.startActivity(intent) }
 }
