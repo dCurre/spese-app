@@ -11,5 +11,26 @@
     "ask": [
       "Bash(git push:*)"
     ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "powershell",
+            "if": "Bash(git commit:*)",
+            "command": "$c = ($input | Out-String | ConvertFrom-Json).tool_input.command; if ($c -match 'SPESE_SKILL_PUSH=1') { exit 0 }; Write-Output '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"deny\",\"permissionDecisionReason\":\"Non committare a mano: usa la skill push (/push) - safety-check segreti, formato [versione] - descrizione, niente attribuzione Claude. Se stai gia eseguendo la skill push, prefissa il comando con SPESE_SKILL_PUSH=1.\"}}'"
+          },
+          {
+            "type": "command",
+            "shell": "powershell",
+            "if": "Bash(git push:*)",
+            "command": "$c = ($input | Out-String | ConvertFrom-Json).tool_input.command; if ($c -match 'SPESE_SKILL_PUSH=1') { exit 0 }; Write-Output '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"deny\",\"permissionDecisionReason\":\"Non pushare a mano: usa la skill push (/push) - gestisce CHANGELOG, bump VERSION via hook e il failed-to-push atteso. Se stai gia eseguendo la skill push, prefissa il comando con SPESE_SKILL_PUSH=1.\"}}'"
+          }
+        ]
+      }
+    ]
   }
 }

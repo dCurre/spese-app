@@ -93,6 +93,10 @@ interface PricesDao {
     @Query("DELETE FROM local_purchase WHERE id = :id")
     suspend fun hardDeletePurchase(id: Long)
 
+    /** Hard-delete di tutti gli acquisti di un prodotto (per quando il prodotto mai sincronizzato viene rimosso). */
+    @Query("DELETE FROM local_purchase WHERE productId = :productId")
+    suspend fun hardDeletePurchasesOfProduct(productId: Long)
+
     // --- Migrazione guest → account (upgrade) ---
 
     /** Numero di righe locali reali (non tombstone): decide se c'è qualcosa da migrare. */

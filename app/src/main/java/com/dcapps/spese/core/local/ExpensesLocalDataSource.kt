@@ -121,12 +121,21 @@ class ExpensesLocalDataSource @Inject constructor(
 
     private suspend fun tombstoneList(id: Long) {
         val e = dao.getList(id) ?: return
-        dao.updateList(e.copy(deleted = true, pendingSync = true, updatedAt = now()))
+        // Mai salita al server: non c'è cancellazione da propagare → hard-delete (niente tombstone
+        // inutile in Room, utile soprattutto in guest che non sincronizza mai). Le sue spese non
+        // sono mai salite neanche loro → si rimuovono con la lista (niente righe orfane in Room).
+        if (e.remoteId == null) {
+            dao.hardDeleteExpensesOfList(id)
+            dao.hardDeleteList(id)
+        } else {
+            dao.updateList(e.copy(deleted = true, pendingSync = true, updatedAt = now()))
+        }
     }
 
     private suspend fun tombstoneExpense(id: Long) {
         val e = dao.getExpense(id) ?: return
-        dao.updateExpense(e.copy(deleted = true, pendingSync = true, updatedAt = now()))
+        if (e.remoteId == null) dao.hardDeleteExpense(id)
+        else dao.updateExpense(e.copy(deleted = true, pendingSync = true, updatedAt = now()))
     }
 }
 

@@ -1,6 +1,7 @@
 package com.dcapps.spese.core.model
 
 import com.dcapps.spese.core.network.serialization.InstantSerializer
+import kotlinx.serialization.EncodeDefault
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import java.time.Instant
@@ -245,6 +246,9 @@ data class SyncListCreate(
     @SerialName("client_id") val clientId: String,
     @SerialName("owner_id") val ownerId: Long,
     val name: String,
+    // ALWAYS: inviato anche col default "personal" (encodeDefaults=false lo ometterebbe), così il
+    // tipo è sempre esplicito e non dipende dal default del backend.
+    @EncodeDefault(EncodeDefault.Mode.ALWAYS)
     @SerialName("list_type") val listType: String = "personal",
     val completed: Boolean = false,
     val starred: Boolean = false,

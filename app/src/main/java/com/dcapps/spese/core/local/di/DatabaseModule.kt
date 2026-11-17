@@ -2,6 +2,8 @@ package com.dcapps.spese.core.local.di
 
 import android.content.Context
 import androidx.room.Room
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import com.dcapps.spese.core.local.SpeseDatabase
 import com.dcapps.spese.core.local.dao.ChecklistDao
 import com.dcapps.spese.core.local.dao.ExpensesDao
@@ -17,11 +19,25 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object DatabaseModule {
 
+    /**
+     * v4 → v5: aggiunge la colonna `listType` alle liste (spese + checklist) SENZA ricreare il DB,
+     * così i dati local-first dell'utente NON vengono persi all'aggiornamento. Default 'personal'
+     * coerente con l'entity. (Prima si usava fallbackToDestructiveMigration, che azzerava il DB.)
+     */
+    private val MIGRATION_4_5 = object : Migration(4, 5) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE local_expenses_list ADD COLUMN listType TEXT NOT NULL DEFAULT 'personal'")
+            db.execSQL("ALTER TABLE local_shopping_list ADD COLUMN listType TEXT NOT NULL DEFAULT 'personal'")
+        }
+    }
+
     @Provides
     @Singleton
     fun provideDatabase(@ApplicationContext context: Context): SpeseDatabase =
         Room.databaseBuilder(context, SpeseDatabase::class.java, "spese_guest.db")
-            // In sviluppo: ricrea il DB al cambio schema (nessun dato in produzione da migrare).
+            .addMigrations(MIGRATION_4_5)
+            // Rete di sicurezza SOLO per schemi vecchi non coperti da una migration esplicita: i cambi
+            // di schema futuri devono aggiungere una Migration qui, NON affidarsi al wipe distruttivo.
             .fallbackToDestructiveMigration()
             .build()
 

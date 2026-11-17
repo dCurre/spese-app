@@ -3,6 +3,11 @@
 Note di rilascio in linguaggio comprensibile, mostrate nella schermata di aggiornamento dell'app.
 Ogni versione ha una sezione `## X.Y.Z` con un elenco puntato delle novità per l'utente.
 
+## 0.2.12
+- Corretto un problema per cui una lista o checklist creata come **personale** poteva comparire come **condivisa**: ora il tipo scelto viene rispettato correttamente (di default le nuove liste sono personali).
+- Aggiornando l'app i tuoi dati locali **non vengono più azzerati**: prima un aggiornamento interno poteva svuotare liste, spese e prezzi salvati sul dispositivo; ora vengono conservati.
+- Pulizia interna dei dati cancellati: le liste/elementi eliminati prima di essere sincronizzati non lasciano più residui inutili sul dispositivo.
+
 ## 0.2.11
 - Ora puoi creare davvero liste spese e checklist **condivise**: scegliendo "condivisa" (da connesso) la lista viene creata come condivisa e resta tale; prima restava sempre personale. Offline la condivisione resta non disponibile, come previsto.
 - L'app si accorge subito quando **vai offline o torni online** mentre la stai usando (prima a volte non se ne accorgeva finché non la riavviavi).

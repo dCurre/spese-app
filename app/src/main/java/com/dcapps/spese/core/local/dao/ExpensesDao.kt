@@ -91,6 +91,10 @@ interface ExpensesDao {
     @Query("DELETE FROM local_expense WHERE id = :id")
     suspend fun hardDeleteExpense(id: Long)
 
+    /** Hard-delete di tutte le spese di una lista (per quando la lista mai sincronizzata viene rimossa). */
+    @Query("DELETE FROM local_expense WHERE listId = :listId")
+    suspend fun hardDeleteExpensesOfList(listId: Long)
+
     // --- Migrazione guest → account (upgrade) ---
 
     /** Numero di righe locali reali (non tombstone): decide se c'è qualcosa da migrare. */

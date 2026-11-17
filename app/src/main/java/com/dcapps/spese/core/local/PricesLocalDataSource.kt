@@ -184,12 +184,21 @@ class PricesLocalDataSource @Inject constructor(
 
     private suspend fun tombstoneProduct(id: Long) {
         val e = dao.getProduct(id) ?: return
-        dao.updateProduct(e.copy(deleted = true, pendingSync = true, updatedAt = now()))
+        // Mai salito al server: nessuna cancellazione da propagare → hard-delete (niente tombstone
+        // inutile in Room, utile soprattutto in guest che non sincronizza mai). Gli acquisti non sono
+        // mai saliti neanche loro → si rimuovono col prodotto (niente righe orfane).
+        if (e.remoteId == null) {
+            dao.hardDeletePurchasesOfProduct(id)
+            dao.hardDeleteProduct(id)
+        } else {
+            dao.updateProduct(e.copy(deleted = true, pendingSync = true, updatedAt = now()))
+        }
     }
 
     private suspend fun tombstonePurchase(id: Long) {
         val e = dao.getPurchase(id) ?: return
-        dao.updatePurchase(e.copy(deleted = true, pendingSync = true, updatedAt = now()))
+        if (e.remoteId == null) dao.hardDeletePurchase(id)
+        else dao.updatePurchase(e.copy(deleted = true, pendingSync = true, updatedAt = now()))
     }
 }
 

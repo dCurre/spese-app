@@ -132,6 +132,13 @@ interface ChecklistDao {
     @Query("DELETE FROM local_shopping_item WHERE id = :id")
     suspend fun hardDeleteItem(id: Long)
 
+    /** Hard-delete di categorie e articoli di una lista (per quando la lista mai sincronizzata viene rimossa). */
+    @Query("DELETE FROM local_shopping_category WHERE listId = :listId")
+    suspend fun hardDeleteCategoriesOfList(listId: Long)
+
+    @Query("DELETE FROM local_shopping_item WHERE listId = :listId")
+    suspend fun hardDeleteItemsOfList(listId: Long)
+
     // --- Migrazione guest → account (upgrade) ---
 
     /** Numero di righe locali reali (non tombstone): decide se c'è qualcosa da migrare. */

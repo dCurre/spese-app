@@ -2,6 +2,7 @@ package com.dcapps.spese.core.model
 
 import com.dcapps.spese.core.network.serialization.BigDecimalSerializer
 import com.dcapps.spese.core.network.serialization.InstantSerializer
+import kotlinx.serialization.EncodeDefault
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import java.math.BigDecimal
@@ -197,6 +198,9 @@ data class SyncExpensesListCreate(
     @SerialName("client_id") val clientId: String,
     @SerialName("user_id") val userId: Long,
     val name: String,
+    // ALWAYS: va inviato anche quando vale il default "personal", altrimenti (encodeDefaults=false)
+    // il campo è omesso e il backend lo tratta come "shared" → la lista personale diventa condivisa.
+    @EncodeDefault(EncodeDefault.Mode.ALWAYS)
     @SerialName("list_type") val listType: String = "personal",
     val paid: Boolean = false,
 )

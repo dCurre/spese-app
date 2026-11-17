@@ -39,8 +39,9 @@ fun CreateListDialog(
     @StringRes titleRes: Int = R.string.lists_new,
 ) {
     var name by remember { mutableStateOf("") }
-    // Se la condivisione è lucchettata, default a personale.
-    var shared by remember { mutableStateOf(!sharedLocked) }
+    // Default sempre PERSONALE: la condivisione è una scelta esplicita dell'utente, non il default
+    // (altrimenti online ogni lista nascerebbe condivisa senza volerlo).
+    var shared by remember { mutableStateOf(false) }
 
     // Pannello dal basso (bottom sheet) invece del dialog centrale: aperto dal "+" della navbar.
     SpeseFormBottomSheet(

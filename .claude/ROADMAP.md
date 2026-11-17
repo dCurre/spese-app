@@ -34,6 +34,13 @@ _(nessun bug aperto)_
   (`ChecklistEditState`), parsing import (`ChecklistImport`), changelog (`Changelog`)**; lo step
   unit test è **agganciato al CI** (blocca la release se falliscono). Resta da coprire, se si vuole:
   statistiche prodotto (prezzo min/ultimo/variazione) — andrebbe prima estratta in funzione pura.
+- [ ] **Registrazione e login con email/password (credenziali classiche).** Oggi l'auth è solo Google
+  (Credential Manager) + guest. Aggiungere registrazione e accesso con email + password come
+  alternativa. Da definire/verificare: endpoint backend `spese-ms` (registrazione, login, hash
+  password, eventuale verifica email / reset password) — probabilmente da creare/estendere lato
+  server; schermate client (form registrazione, form login, validazione, gestione errori); come
+  convive col flusso Google e col guest-first/upgrade; sicurezza (niente password in chiaro nei log,
+  storage token/sessione lato app). È una feature cross client+backend, non solo UI.
 
 ## Fuori scope / escluse
 
@@ -42,5 +49,6 @@ _(nessun bug aperto)_
   periodico che interroga GitHub Releases e notifica, senza backend.
 - Escluse dall'utente: condivisione liste spese con bottoni WhatsApp/Telegram dedicati; pagina
   "Partecipa" dedicata.
-- Placeholder anche nella webapp (non mancanti): login email/password, registrazione, archivio
-  liste, cambio password, export dati, elimina account, drag&drop riordino.
+- Placeholder anche nella webapp (non mancanti): archivio liste, cambio password, export dati,
+  elimina account, drag&drop riordino. (Login email/password + registrazione: ora pianificati come
+  feature sopra, non più solo placeholder.)

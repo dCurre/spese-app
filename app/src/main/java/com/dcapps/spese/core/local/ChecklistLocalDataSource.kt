@@ -167,18 +167,29 @@ class ChecklistLocalDataSource @Inject constructor(
 
     private suspend fun tombstoneList(id: Long) {
         val e = dao.getList(id) ?: return
-        dao.updateList(e.copy(deleted = true, pendingSync = true, updatedAt = now()))
+        // Mai salita al server: nessuna cancellazione da propagare → hard-delete (niente tombstone
+        // inutile in Room, utile soprattutto in guest che non sincronizza mai). Categorie e articoli
+        // non sono mai saliti neanche loro → si rimuovono con la lista (niente righe orfane).
+        if (e.remoteId == null) {
+            dao.hardDeleteItemsOfList(id)
+            dao.hardDeleteCategoriesOfList(id)
+            dao.hardDeleteList(id)
+        } else {
+            dao.updateList(e.copy(deleted = true, pendingSync = true, updatedAt = now()))
+        }
     }
 
     private suspend fun tombstoneItem(id: Long) {
         val e = dao.getItem(id) ?: return
-        dao.updateItem(e.copy(deleted = true, pendingSync = true, updatedAt = now()))
+        if (e.remoteId == null) dao.hardDeleteItem(id)
+        else dao.updateItem(e.copy(deleted = true, pendingSync = true, updatedAt = now()))
     }
 
     private suspend fun tombstoneCategory(id: Long) {
         val listId = dao.listIdOfCategory(id) ?: return
         val e = dao.getCategories(listId).firstOrNull { it.id == id } ?: return
-        dao.updateCategory(e.copy(deleted = true, pendingSync = true, updatedAt = now()))
+        if (e.remoteId == null) dao.hardDeleteCategory(id)
+        else dao.updateCategory(e.copy(deleted = true, pendingSync = true, updatedAt = now()))
     }
 
     // --- ricomposizione albero ---
