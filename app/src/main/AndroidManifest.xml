@@ -3,6 +3,9 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Serve a ConnectivityObserver per ricevere i callback di cambio rete (online/offline) ad app
+         aperta: senza, lo stato viene letto solo all'avvio e non si aggiorna più. -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <!-- Installazione dell'APK di aggiornamento scaricato da GitHub -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <!-- Notifica di sistema "aggiornamento disponibile" (richiesta runtime da Android 13+) -->

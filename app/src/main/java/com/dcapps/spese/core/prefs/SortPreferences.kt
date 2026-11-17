@@ -33,11 +33,32 @@ class SortPreferences @Inject constructor(
             .apply()
     }
 
+    /**
+     * Ordinamento MULTI-CAMPO salvato per [key] (lista in ordine di priorità), vuoto se mai impostato.
+     * Serializzato come stringa "NAME:asc,BRAND:desc" sotto "$key.criteria".
+     */
+    fun getList(key: String): List<Saved> {
+        val raw = prefs.getString("$key.criteria", null)?.takeIf { it.isNotBlank() } ?: return emptyList()
+        return raw.split(",").mapNotNull { token ->
+            val parts = token.split(":")
+            val criterion = parts.getOrNull(0)?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
+            val ascending = parts.getOrNull(1) != "desc" // default asc
+            Saved(criterion, ascending)
+        }
+    }
+
+    /** Salva la cascata di criteri per [key] (ordine = priorità). */
+    fun setList(key: String, criteria: List<Saved>) {
+        val raw = criteria.joinToString(",") { "${it.criterion}:${if (it.ascending) "asc" else "desc"}" }
+        prefs.edit().putString("$key.criteria", raw).apply()
+    }
+
     data class Saved(val criterion: String, val ascending: Boolean)
 
     companion object Keys {
         const val PRICES = "prices"
         const val EXPENSES = "expenses"
+        const val EXPENSE_ITEMS = "expense_items"
         const val CHECKLIST_LISTS = "checklist_lists"
         const val CHECKLIST_ITEMS = "checklist_items"
     }

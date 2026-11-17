@@ -56,8 +56,10 @@ class ChecklistLocalDataSource @Inject constructor(
 
     // --- Scritture (marcano pendingSync) ---
 
-    suspend fun createList(name: String): ApiResult<Long> = guard {
-        dao.insertList(LocalShoppingListEntity(name = name, pendingSync = true, updatedAt = now()))
+    suspend fun createList(name: String, listType: String = "personal"): ApiResult<Long> = guard {
+        dao.insertList(
+            LocalShoppingListEntity(name = name, listType = listType, pendingSync = true, updatedAt = now()),
+        )
     }
 
     suspend fun updateList(id: Long, name: String?, completed: Boolean?, starred: Boolean?): ApiResult<Unit> = guard {
@@ -216,7 +218,7 @@ private fun LocalShoppingListEntity.toModel(
     id = id,
     name = name,
     ownerId = GUEST_OWNER_ID,
-    listType = "personal",
+    listType = listType,
     completed = completed,
     starred = starred,
     itemsCount = itemsCount,

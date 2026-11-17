@@ -33,11 +33,20 @@ class ConnectivityObserver @Inject constructor(
 
     private val callback = object : ConnectivityManager.NetworkCallback() {
         override fun onAvailable(network: Network) {
+            // La rete è disponibile ma non ancora detta "validated": lo stato reale lo conferma
+            // onCapabilitiesChanged. Qui non forziamo true per non segnalare online troppo presto.
             _isOnline.value = currentlyOnline()
         }
 
         override fun onLost(network: Network) {
-            _isOnline.value = currentlyOnline()
+            // Con registerDefaultNetworkCallback c'è una sola default network: la sua perdita = offline.
+            // NON rileggere activeNetwork qui: durante onLost può ancora riportare la rete morente con
+            // capabilities stale → l'app resterebbe "online" (bug: offline non rilevato ad app aperta).
+            _isOnline.value = false
+        }
+
+        override fun onUnavailable() {
+            _isOnline.value = false
         }
 
         override fun onCapabilitiesChanged(network: Network, caps: NetworkCapabilities) {

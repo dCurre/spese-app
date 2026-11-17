@@ -3,6 +3,13 @@
 Note di rilascio in linguaggio comprensibile, mostrate nella schermata di aggiornamento dell'app.
 Ogni versione ha una sezione `## X.Y.Z` con un elenco puntato delle novità per l'utente.
 
+## 0.2.11
+- Ora puoi creare davvero liste spese e checklist **condivise**: scegliendo "condivisa" (da connesso) la lista viene creata come condivisa e resta tale; prima restava sempre personale. Offline la condivisione resta non disponibile, come previsto.
+- L'app si accorge subito quando **vai offline o torni online** mentre la stai usando (prima a volte non se ne accorgeva finché non la riavviavi).
+- Cambiando l'**unità di misura** di un prodotto, ora l'unità si aggiorna ovunque: grafico andamento, statistiche, elenco prezzi e righe dei singoli acquisti. Nello storico non resta più "€/u".
+- La sezione **andamento prezzi** mostra solo i periodi (giorno/mese/anno) che hanno abbastanza dati per un andamento; se nessun periodo ne ha, l'intera sezione resta nascosta.
+- L'**ordinamento** ora è a più campi in cascata: tocca i criteri nell'ordine che vuoi (il numero indica la priorità), ognuno con la sua direzione crescente/decrescente; toccando ancora un criterio lo inverti e poi lo togli. Vale in tutte le schermate con ordinamento, e la scelta viene ricordata.
+
 ## 0.2.10
 - Nelle liste spese condivise ora vedi i saldi "chi deve a chi": un riepilogo di quanto ha pagato ciascun partecipante e di chi deve rimborsare chi, con la spesa divisa in parti uguali. Compare automaticamente nelle liste condivise quando sei online.
 

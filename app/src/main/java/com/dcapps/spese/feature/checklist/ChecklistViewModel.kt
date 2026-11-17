@@ -9,7 +9,12 @@ import com.dcapps.spese.core.model.ShoppingList
 import com.dcapps.spese.core.model.UpdateShoppingListRequest
 import com.dcapps.spese.core.network.ApiResult
 import com.dcapps.spese.core.network.ConnectivityObserver
+import com.dcapps.spese.core.prefs.SortCriterion
 import com.dcapps.spese.core.prefs.SortPreferences
+import com.dcapps.spese.core.prefs.comparator
+import com.dcapps.spese.core.prefs.toSaved
+import com.dcapps.spese.core.prefs.toSortCriteria
+import com.dcapps.spese.core.prefs.toggled
 import com.dcapps.spese.core.prefs.UiPreferences
 import com.dcapps.spese.core.ui.SelectionController
 import com.dcapps.spese.core.ui.launchMutation
@@ -30,8 +35,8 @@ data class ChecklistUiState(
     val active: List<ShoppingList> = emptyList(),
     val completed: List<ShoppingList> = emptyList(),
     val query: String = "",
-    val sort: ChecklistSort = ChecklistSort.DATE,
-    val sortAsc: Boolean = false,
+    // Ordinamento multi-campo a cascata (ordine = priorità). Vuoto = default (data, più recenti prima).
+    val sortCriteria: List<SortCriterion<ChecklistSort>> = emptyList(),
     val message: String? = null,
     // Mostra il badge "in attesa di sync" sulle righe (preferenza utente).
     val showPendingSync: Boolean = true,
@@ -48,13 +53,11 @@ class ChecklistViewModel @Inject constructor(
     private val connectivity: ConnectivityObserver,
 ) : ViewModel() {
 
-    // Ordinamento ricordato dall'ultima volta (issue #9).
-    private val savedSort = sortPreferences.get(SortPreferences.CHECKLIST_LISTS)
+    // Ordinamento ricordato dall'ultima volta (issue #9), ora multi-campo a cascata.
     private val _uiState = MutableStateFlow(
         ChecklistUiState(
-            sort = savedSort?.criterion?.let { runCatching { ChecklistSort.valueOf(it) }.getOrNull() }
-                ?: ChecklistSort.DATE,
-            sortAsc = savedSort?.ascending ?: false,
+            sortCriteria = sortPreferences.getList(SortPreferences.CHECKLIST_LISTS)
+                .toSortCriteria { runCatching { ChecklistSort.valueOf(it) }.getOrNull() },
         ),
     )
     val uiState: StateFlow<ChecklistUiState> = _uiState.asStateFlow()
@@ -93,12 +96,10 @@ class ChecklistViewModel @Inject constructor(
         recompute()
     }
 
-    fun onSortChange(sort: ChecklistSort) {
-        _uiState.update {
-            if (it.sort == sort) it.copy(sortAsc = !it.sortAsc) else it.copy(sort = sort, sortAsc = false)
-        }
-        // Ricorda la scelta per la prossima apertura (issue #9).
-        _uiState.value.let { sortPreferences.set(SortPreferences.CHECKLIST_LISTS, it.sort.name, it.sortAsc) }
+    fun onSortToggle(sort: ChecklistSort) {
+        _uiState.update { it.copy(sortCriteria = it.sortCriteria.toggled(sort)) }
+        // Ricorda la cascata per la prossima apertura (issue #9).
+        sortPreferences.setList(SortPreferences.CHECKLIST_LISTS, _uiState.value.sortCriteria.toSaved())
         recompute()
     }
 
@@ -157,11 +158,13 @@ class ChecklistViewModel @Inject constructor(
         val q = _uiState.value.query
         val s = _uiState.value
         val filtered = allLists.filter { q.isBlank() || it.name.contains(q, ignoreCase = true) }
-        val base: Comparator<ShoppingList> = when (s.sort) {
-            ChecklistSort.DATE -> compareBy { it.createdAt }
-            ChecklistSort.NAME -> compareBy { it.name.lowercase() }
-        }
-        val sorted = filtered.sortedWith(if (s.sortAsc) base else base.reversed())
+        val cmp = s.sortCriteria.comparator<ShoppingList, ChecklistSort> { key ->
+            when (key) {
+                ChecklistSort.DATE -> { l -> l.createdAt }
+                ChecklistSort.NAME -> { l -> l.name.lowercase() }
+            }
+        } ?: compareByDescending { it.createdAt } // default: più recenti prima
+        val sorted = filtered.sortedWith(cmp)
         _uiState.update {
             it.copy(
                 starred = sorted.filter { l -> l.starred },

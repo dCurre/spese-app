@@ -64,7 +64,7 @@ class ExpensesRepository @Inject constructor(
 
     // --- Scritture DATI (sempre Room) ---
     suspend fun createList(body: CreateExpensesListRequest): ApiResult<Long?> =
-        afterWrite(local.createList(body.name).mapTo<Long, Long?>(null))
+        afterWrite(local.createList(body.name, body.listType).mapTo<Long, Long?>(null))
 
     suspend fun updateList(id: Long, body: UpdateExpensesListRequest): ApiResult<Unit> {
         // Cambio tipo lista (#11): operazione online, non è un dato locale → delega al backend.

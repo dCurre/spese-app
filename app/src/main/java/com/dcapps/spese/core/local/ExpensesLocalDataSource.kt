@@ -51,8 +51,10 @@ class ExpensesLocalDataSource @Inject constructor(
 
     // --- Scritture (marcano pendingSync) ---
 
-    suspend fun createList(name: String): ApiResult<Long> = guard {
-        dao.insertList(LocalExpensesListEntity(name = name, pendingSync = true, updatedAt = now()))
+    suspend fun createList(name: String, listType: String = "personal"): ApiResult<Long> = guard {
+        dao.insertList(
+            LocalExpensesListEntity(name = name, listType = listType, pendingSync = true, updatedAt = now()),
+        )
     }
 
     suspend fun updateList(id: Long, name: String?, paid: Boolean?): ApiResult<Unit> = guard {
@@ -141,7 +143,7 @@ private fun LocalExpensesListEntity.toModel(expensesCount: Int) = ExpensesList(
     userId = GUEST_OWNER_ID,
     paid = paid,
     createdAt = Instant.ofEpochMilli(createdAt),
-    listType = "personal",
+    listType = listType,
     participantsCount = 1,
     expensesCount = expensesCount,
     participants = emptyList(),

@@ -19,7 +19,12 @@ import com.dcapps.spese.core.model.UpdateShoppingCategoryRequest
 import com.dcapps.spese.core.model.UpdateShoppingItemRequest
 import com.dcapps.spese.core.model.UpdateShoppingListRequest
 import com.dcapps.spese.core.network.ApiResult
+import com.dcapps.spese.core.prefs.SortCriterion
 import com.dcapps.spese.core.prefs.SortPreferences
+import com.dcapps.spese.core.prefs.comparator
+import com.dcapps.spese.core.prefs.toSaved
+import com.dcapps.spese.core.prefs.toSortCriteria
+import com.dcapps.spese.core.prefs.toggled
 import com.dcapps.spese.core.prefs.UiPreferences
 import com.dcapps.spese.core.auth.SessionManager
 import com.dcapps.spese.core.ui.SelectionController
@@ -77,8 +82,8 @@ data class ChecklistDetailUiState(
     val categories: List<ShoppingCategory> = emptyList(),
     // Ricerca e ordinamento (applicati mantenendo la struttura ad albero).
     val query: String = "",
-    val sort: ChecklistItemSort = ChecklistItemSort.ORDER,
-    val sortAsc: Boolean = true,
+    // Ordinamento multi-campo a cascata degli item (ordine = priorità). Vuoto = default (sortOrder).
+    val sortCriteria: List<SortCriterion<ChecklistItemSort>> = emptyList(),
     // true se TUTTE le categorie sono collassate: guida l'icona toggle comprimi/espandi.
     val allCollapsed: Boolean = false,
     // true se esiste almeno una categoria (il toggle ha senso solo allora).
@@ -142,15 +147,13 @@ class ChecklistDetailViewModel @Inject constructor(
     private val navName: String? = savedStateHandle["name"]
     private val navStarred: Boolean = savedStateHandle["starred"] ?: false
 
-    // Ordinamento ricordato dall'ultima volta (issue #9).
-    private val savedSort = sortPreferences.get(SortPreferences.CHECKLIST_ITEMS)
+    // Ordinamento ricordato dall'ultima volta (issue #9), ora multi-campo a cascata.
     private val _uiState = MutableStateFlow(
         ChecklistDetailUiState(
             placeholderName = navName,
             placeholderStarred = navStarred,
-            sort = savedSort?.criterion?.let { runCatching { ChecklistItemSort.valueOf(it) }.getOrNull() }
-                ?: ChecklistItemSort.ORDER,
-            sortAsc = savedSort?.ascending ?: true,
+            sortCriteria = sortPreferences.getList(SortPreferences.CHECKLIST_ITEMS)
+                .toSortCriteria { runCatching { ChecklistItemSort.valueOf(it) }.getOrNull() },
         ),
     )
     val uiState: StateFlow<ChecklistDetailUiState> = _uiState.asStateFlow()
@@ -536,16 +539,16 @@ class ChecklistDetailViewModel @Inject constructor(
         return out
     }
 
-    /** Comparator per gli item dentro una categoria, secondo [sort]/[sortAsc]. */
-    private fun itemComparator(): Comparator<ShoppingItem> {
-        val base: Comparator<ShoppingItem> = when (_uiState.value.sort) {
-            ChecklistItemSort.ORDER -> compareBy { it.sortOrder }
-            ChecklistItemSort.NAME -> compareBy { it.name.lowercase() }
-            // Spuntati per ultimi (false prima di true); a parità, ordine originale.
-            ChecklistItemSort.CHECKED -> compareBy<ShoppingItem> { it.checked }.thenBy { it.sortOrder }
-        }
-        return if (_uiState.value.sortAsc) base else base.reversed()
-    }
+    /** Comparator per gli item dentro una categoria, secondo la cascata [sortCriteria]. */
+    private fun itemComparator(): Comparator<ShoppingItem> =
+        _uiState.value.sortCriteria.comparator<ShoppingItem, ChecklistItemSort> { key ->
+            when (key) {
+                ChecklistItemSort.ORDER -> { i -> i.sortOrder }
+                ChecklistItemSort.NAME -> { i -> i.name.lowercase() }
+                // Spuntati per ultimi (false prima di true).
+                ChecklistItemSort.CHECKED -> { i -> i.checked }
+            }
+        } ?: compareBy { it.sortOrder } // default: ordine manuale
 
     private fun matchesQuery(item: ShoppingItem, q: String): Boolean =
         q.isBlank() || item.name.contains(q.trim(), ignoreCase = true)
@@ -618,14 +621,10 @@ class ChecklistDetailViewModel @Inject constructor(
         _uiState.value.list?.let { list -> _uiState.update { it.copy(rows = flatten(list)) } }
     }
 
-    fun onSortChange(sort: ChecklistItemSort) {
-        _uiState.update { s ->
-            // Ritoccando il criterio già attivo si inverte la direzione.
-            val asc = if (s.sort == sort) !s.sortAsc else true
-            s.copy(sort = sort, sortAsc = asc)
-        }
-        // Ricorda la scelta per la prossima apertura (issue #9).
-        _uiState.value.let { sortPreferences.set(SortPreferences.CHECKLIST_ITEMS, it.sort.name, it.sortAsc) }
+    fun onSortToggle(sort: ChecklistItemSort) {
+        _uiState.update { it.copy(sortCriteria = it.sortCriteria.toggled(sort)) }
+        // Ricorda la cascata per la prossima apertura (issue #9).
+        sortPreferences.setList(SortPreferences.CHECKLIST_ITEMS, _uiState.value.sortCriteria.toSaved())
         _uiState.value.list?.let { list -> _uiState.update { it.copy(rows = flatten(list)) } }
     }
 

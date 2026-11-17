@@ -71,6 +71,11 @@ fun PriceDetailScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val sel by viewModel.selection.state.collectAsStateWithLifecycle()
+    // Simbolo unità mostrato OVUNQUE: l'unità di default corrente del prodotto (così cambiandola si
+    // aggiornano grafico, statistiche e tutte le righe acquisto). Fallback: simbolo storico, poi "u".
+    val productUnit = state.product?.defaultUnitSymbol
+        ?: state.purchases.firstNotNullOfOrNull { it.unitSymbol }
+        ?: "u"
     var showAddPurchase by remember { mutableStateOf(false) }
     var editingPurchase by remember { mutableStateOf<Purchase?>(null) }
     var purchaseToDelete by remember { mutableStateOf<Purchase?>(null) }
@@ -107,7 +112,8 @@ fun PriceDetailScreen(
         containerColor = MaterialTheme.colorScheme.background,
         sheetContainerColor = MaterialTheme.colorScheme.surface,
         // Altezza da collassato: giusto intestazione + chip periodo (il grafico resta nascosto).
-        sheetPeekHeight = 120.dp,
+        // Se nessuna granularità ha dati sufficienti per un andamento, il pannello sparisce del tutto.
+        sheetPeekHeight = if (state.availableGranularities.isEmpty()) 0.dp else 120.dp,
         topBar = {
             if (sel.selectionMode) {
                 SelectionTopBar(
@@ -138,6 +144,9 @@ fun PriceDetailScreen(
             }
         },
         sheetContent = {
+            // Pannello andamento mostrato solo se almeno una granularità ha dati sufficienti.
+            // Quando non ce ne sono il contenuto è vuoto e, con sheetPeekHeight=0, il pannello sparisce.
+            if (state.availableGranularities.isNotEmpty()) {
             Column(
                 Modifier
                     .fillMaxWidth()
@@ -151,7 +160,8 @@ fun PriceDetailScreen(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Granularity.entries.forEach { g ->
+                    // Solo le granularità con dati sufficienti mostrano il chip.
+                    Granularity.entries.filter { it in state.availableGranularities }.forEach { g ->
                         SpeseFilterChip(
                             selected = state.granularity == g,
                             onClick = { viewModel.setGranularity(g) },
@@ -164,11 +174,10 @@ fun PriceDetailScreen(
                 }
                 LineChart(
                     points = state.history,
-                    unitSymbol = state.product?.defaultUnitSymbol
-                        ?: state.purchases.firstNotNullOfOrNull { it.unitSymbol }
-                        ?: "u",
+                    unitSymbol = productUnit,
                     modifier = Modifier.padding(top = 12.dp),
                 )
+            }
             }
         },
     ) { innerPadding ->
@@ -187,10 +196,7 @@ fun PriceDetailScreen(
                 ) {
                     // Statistiche prodotto (calcolate dagli acquisti: prezzo unitario).
                     item {
-                        val statsUnit = state.product?.defaultUnitSymbol
-                            ?: state.purchases.firstNotNullOfOrNull { it.unitSymbol }
-                            ?: "u"
-                        ProductStatsCard(state.purchases, statsUnit)
+                        ProductStatsCard(state.purchases, productUnit)
                     }
 
                     item {
@@ -223,7 +229,7 @@ fun PriceDetailScreen(
                             ) {
                                 Column(Modifier.weight(1f)) {
                                     Text(
-                                        "%.2f € · %.3g %s".format(p.price, p.quantity, p.unitSymbol ?: ""),
+                                        "%.2f € · %.3g %s".format(p.price, p.quantity, productUnit),
                                         style = MaterialTheme.typography.titleMedium,
                                         fontWeight = FontWeight.SemiBold,
                                     )
@@ -235,9 +241,8 @@ fun PriceDetailScreen(
                                     show = state.showPendingSync && p.pendingSync,
                                     modifier = Modifier.padding(end = 8.dp),
                                 )
-                                val unitSym = p.unitSymbol ?: state.product?.defaultUnitSymbol ?: "u"
                                 Text(
-                                    "%.2f €/%s".format(p.unitPrice, unitSym),
+                                    "%.2f €/%s".format(p.unitPrice, productUnit),
                                     style = MaterialTheme.typography.bodyMedium,
                                     fontWeight = FontWeight.Bold,
                                     color = SpeseTheme.colors.credit,

@@ -11,7 +11,12 @@ import com.dcapps.spese.core.model.UpdateExpensesListRequest
 import com.dcapps.spese.core.model.UpdateUserRequest
 import com.dcapps.spese.core.network.ApiResult
 import com.dcapps.spese.core.network.ConnectivityObserver
+import com.dcapps.spese.core.prefs.SortCriterion
 import com.dcapps.spese.core.prefs.SortPreferences
+import com.dcapps.spese.core.prefs.comparator
+import com.dcapps.spese.core.prefs.toSaved
+import com.dcapps.spese.core.prefs.toSortCriteria
+import com.dcapps.spese.core.prefs.toggled
 import com.dcapps.spese.core.prefs.UiPreferences
 import com.dcapps.spese.core.ui.SelectionController
 import com.dcapps.spese.core.ui.launchMutation
@@ -31,8 +36,8 @@ data class ExpensesListUiState(
     val activeLists: List<ExpensesList> = emptyList(),
     val paidLists: List<ExpensesList> = emptyList(),
     val query: String = "",
-    val sort: ListSort = ListSort.DATE,
-    val sortAsc: Boolean = false,
+    // Ordinamento multi-campo a cascata (ordine = priorità). Vuoto = default (data, più recenti prima).
+    val sortCriteria: List<SortCriterion<ListSort>> = emptyList(),
     val paidListsShown: Boolean = true,
     val message: String? = null,
     // Mostra il badge "in attesa di sync" sulle righe (preferenza utente).
@@ -51,13 +56,11 @@ class ExpensesListViewModel @Inject constructor(
     private val connectivity: ConnectivityObserver,
 ) : ViewModel() {
 
-    // Ordinamento ricordato dall'ultima volta (issue #9).
-    private val savedSort = sortPreferences.get(SortPreferences.EXPENSES)
+    // Ordinamento ricordato dall'ultima volta (issue #9), ora multi-campo a cascata.
     private val _uiState = MutableStateFlow(
         ExpensesListUiState(
-            sort = savedSort?.criterion?.let { runCatching { ListSort.valueOf(it) }.getOrNull() }
-                ?: ListSort.DATE,
-            sortAsc = savedSort?.ascending ?: false,
+            sortCriteria = sortPreferences.getList(SortPreferences.EXPENSES)
+                .toSortCriteria { runCatching { ListSort.valueOf(it) }.getOrNull() },
             paidListsShown = session.currentUser.value?.paidListShown ?: true,
         ),
     )
@@ -97,12 +100,10 @@ class ExpensesListViewModel @Inject constructor(
         recompute()
     }
 
-    fun onSortChange(sort: ListSort) {
-        _uiState.update {
-            if (it.sort == sort) it.copy(sortAsc = !it.sortAsc) else it.copy(sort = sort, sortAsc = false)
-        }
-        // Ricorda la scelta per la prossima apertura (issue #9).
-        _uiState.value.let { sortPreferences.set(SortPreferences.EXPENSES, it.sort.name, it.sortAsc) }
+    fun onSortToggle(sort: ListSort) {
+        _uiState.update { it.copy(sortCriteria = it.sortCriteria.toggled(sort)) }
+        // Ricorda la cascata per la prossima apertura (issue #9).
+        sortPreferences.setList(SortPreferences.EXPENSES, _uiState.value.sortCriteria.toSaved())
         recompute()
     }
 
@@ -170,11 +171,13 @@ class ExpensesListViewModel @Inject constructor(
         val filtered = allLists.filter {
             state.query.isBlank() || it.name.contains(state.query, ignoreCase = true)
         }
-        val base: Comparator<ExpensesList> = when (state.sort) {
-            ListSort.DATE -> compareBy { it.createdAt }
-            ListSort.NAME -> compareBy { it.name.lowercase() }
-        }
-        val sorted = filtered.sortedWith(if (state.sortAsc) base else base.reversed())
+        val cmp = state.sortCriteria.comparator<ExpensesList, ListSort> { key ->
+            when (key) {
+                ListSort.DATE -> { l -> l.createdAt }
+                ListSort.NAME -> { l -> l.name.lowercase() }
+            }
+        } ?: compareByDescending { it.createdAt } // default: più recenti prima
+        val sorted = filtered.sortedWith(cmp)
         _uiState.update {
             it.copy(
                 activeLists = sorted.filter { l -> !l.paid },

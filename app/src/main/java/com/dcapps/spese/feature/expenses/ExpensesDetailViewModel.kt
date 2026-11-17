@@ -17,7 +17,13 @@ import com.dcapps.spese.core.model.UpdateExpenseRequest
 import com.dcapps.spese.core.model.UpdateExpensesListRequest
 import com.dcapps.spese.core.model.User
 import com.dcapps.spese.core.network.ApiResult
+import com.dcapps.spese.core.prefs.SortCriterion
+import com.dcapps.spese.core.prefs.SortPreferences
 import com.dcapps.spese.core.prefs.UiPreferences
+import com.dcapps.spese.core.prefs.comparator
+import com.dcapps.spese.core.prefs.toSaved
+import com.dcapps.spese.core.prefs.toSortCriteria
+import com.dcapps.spese.core.prefs.toggled
 import com.dcapps.spese.core.ui.SelectionController
 import com.dcapps.spese.core.ui.launchMutation
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -45,8 +51,8 @@ data class ExpensesDetailUiState(
     val balanceTotals: List<BalanceTotal> = emptyList(),
     val balanceEntries: List<BalanceEntry> = emptyList(),
     val query: String = "",
-    val sort: ExpenseSort = ExpenseSort.DATE,
-    val sortAsc: Boolean = false,
+    // Ordinamento multi-campo a cascata (ordine = priorità). Vuoto = default (data, più recenti prima).
+    val sortCriteria: List<SortCriterion<ExpenseSort>> = emptyList(),
     val availableUsers: List<User> = emptyList(),
     val shareLink: String? = null,
     val message: String? = null,
@@ -66,12 +72,14 @@ data class ExpensesDetailUiState(
             val filtered = expenses.filter {
                 query.isBlank() || it.name.contains(query, ignoreCase = true)
             }
-            val cmp: Comparator<Expense> = when (sort) {
-                ExpenseSort.DATE -> compareBy { it.expenseDate ?: it.createdAt }
-                ExpenseSort.NAME -> compareBy { it.name.lowercase() }
-                ExpenseSort.AMOUNT -> compareBy { it.amount }
-            }
-            return filtered.sortedWith(if (sortAsc) cmp else cmp.reversed())
+            val cmp = sortCriteria.comparator<Expense, ExpenseSort> { key ->
+                when (key) {
+                    ExpenseSort.DATE -> { e -> e.expenseDate ?: e.createdAt }
+                    ExpenseSort.NAME -> { e -> e.name.lowercase() }
+                    ExpenseSort.AMOUNT -> { e -> e.amount }
+                }
+            } ?: compareByDescending { it.expenseDate ?: it.createdAt } // default: più recenti prima
+            return filtered.sortedWith(cmp)
         }
 }
 
@@ -80,6 +88,7 @@ class ExpensesDetailViewModel @Inject constructor(
     private val expensesRepository: ExpensesRepository,
     private val catalogRepository: CatalogRepository,
     private val uiPreferences: UiPreferences,
+    private val sortPreferences: SortPreferences,
     private val session: SessionManager,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
@@ -90,7 +99,14 @@ class ExpensesDetailViewModel @Inject constructor(
     /** true se la sessione è ospite: la UI oscura/lucchetta le azioni di condivisione. */
     val isGuest: Boolean get() = session.isGuest
 
-    private val _uiState = MutableStateFlow(ExpensesDetailUiState(placeholderName = navName))
+    private val _uiState = MutableStateFlow(
+        ExpensesDetailUiState(
+            placeholderName = navName,
+            // Ordinamento multi-campo ricordato (ora persistito, prima non lo era).
+            sortCriteria = sortPreferences.getList(SortPreferences.EXPENSE_ITEMS)
+                .toSortCriteria { runCatching { ExpenseSort.valueOf(it) }.getOrNull() },
+        ),
+    )
     val uiState: StateFlow<ExpensesDetailUiState> = _uiState.asStateFlow()
 
     init {
@@ -143,8 +159,9 @@ class ExpensesDetailViewModel @Inject constructor(
 
     fun onQueryChange(q: String) = _uiState.update { it.copy(query = q) }
 
-    fun onSortChange(sort: ExpenseSort) = _uiState.update {
-        if (it.sort == sort) it.copy(sortAsc = !it.sortAsc) else it.copy(sort = sort, sortAsc = false)
+    fun onSortToggle(sort: ExpenseSort) {
+        _uiState.update { it.copy(sortCriteria = it.sortCriteria.toggled(sort)) }
+        sortPreferences.setList(SortPreferences.EXPENSE_ITEMS, _uiState.value.sortCriteria.toSaved())
     }
 
     fun addExpense(

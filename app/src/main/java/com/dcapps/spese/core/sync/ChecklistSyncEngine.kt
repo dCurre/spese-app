@@ -127,7 +127,7 @@ class ChecklistSyncEngine @Inject constructor(
                 l.deleted -> listsDelete += l.remoteId!!
                 l.remoteId == null -> listsCreate += SyncListCreate(
                     tempId = tempOf("L", l.id), clientId = l.clientId, ownerId = userId, name = l.name,
-                    completed = l.completed, starred = l.starred,
+                    listType = l.listType, completed = l.completed, starred = l.starred,
                 )
                 else -> listsUpdate += SyncListUpdate(l.remoteId, l.name, l.completed, l.starred)
             }
@@ -256,7 +256,7 @@ class ChecklistSyncEngine @Inject constructor(
             if (s.deleted) return // niente da creare per una riga già cancellata
             dao.insertListRaw(
                 LocalShoppingListEntity(
-                    name = s.name, completed = s.completed, starred = s.starred,
+                    name = s.name, completed = s.completed, starred = s.starred, listType = s.listType,
                     clientId = s.clientId ?: java.util.UUID.randomUUID().toString(),
                     remoteId = s.id, pendingSync = false, deleted = false, updatedAt = serverUpdated,
                 ),
@@ -266,8 +266,9 @@ class ChecklistSyncEngine @Inject constructor(
         // Conflitto: la cancellazione vince (regola #6).
         if (s.deleted) { dao.hardDeleteList(local.id); return }
         // LWW: applica il server solo se più recente e la riga locale non ha modifiche pending più nuove.
+        // listType: il server è la fonte di verità (la condivisione esiste solo lato backend).
         if (!local.pendingSync && serverUpdated >= local.updatedAt) {
-            dao.updateList(local.copy(name = s.name, completed = s.completed, starred = s.starred, remoteId = s.id, updatedAt = serverUpdated))
+            dao.updateList(local.copy(name = s.name, completed = s.completed, starred = s.starred, listType = s.listType, remoteId = s.id, updatedAt = serverUpdated))
         } else if (local.remoteId == null) {
             dao.updateList(local.copy(remoteId = s.id))
         }

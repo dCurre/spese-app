@@ -21,6 +21,9 @@ data class LocalShoppingListEntity(
     val name: String,
     val completed: Boolean = false,
     val starred: Boolean = false,
+    // "personal" | "shared". La condivisione ha senso solo online: il server è la fonte di verità,
+    // qui il valore serve a mostrarlo subito e a inviarlo nel create (il pull lo sovrascrive).
+    val listType: String = "personal",
     val createdAt: Long = System.currentTimeMillis(),
     // clientId: UUID stabile per la riga, usato dal backend per dedup/idempotenza.
     val clientId: String = java.util.UUID.randomUUID().toString(),

@@ -284,9 +284,8 @@ fun ChecklistDetailScreen(
                                 SortOption(ChecklistItemSort.NAME, stringResource(R.string.sort_name)),
                                 SortOption(ChecklistItemSort.CHECKED, stringResource(R.string.cd_sort_checked)),
                             ),
-                            selectedKey = state.sort,
-                            ascending = state.sortAsc,
-                            onSelect = viewModel::onSortChange,
+                            criteria = state.sortCriteria,
+                            onToggle = viewModel::onSortToggle,
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
                         )
                     }

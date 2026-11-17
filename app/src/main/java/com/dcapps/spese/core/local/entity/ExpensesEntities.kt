@@ -22,6 +22,9 @@ data class LocalExpensesListEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val name: String,
     val paid: Boolean = false,
+    // "personal" | "shared". La condivisione ha senso solo online: il server è la fonte di verità,
+    // qui il valore serve a mostrarlo subito e a inviarlo nel create (il pull lo sovrascrive).
+    val listType: String = "personal",
     val createdAt: Long = System.currentTimeMillis(),
     val clientId: String = java.util.UUID.randomUUID().toString(),
     val remoteId: Long? = null,

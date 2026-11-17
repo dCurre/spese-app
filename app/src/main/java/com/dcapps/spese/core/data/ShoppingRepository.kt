@@ -49,7 +49,7 @@ class ShoppingRepository @Inject constructor(
 
     // --- Scritture (sempre Room; dopo ogni scrittura si richiede un sync debounced) ---
     suspend fun create(body: CreateShoppingListRequest): ApiResult<Long?> =
-        afterWrite(local.createList(body.name).let {
+        afterWrite(local.createList(body.name, body.listType).let {
             when (it) {
                 is ApiResult.Success -> ApiResult.Success(it.data)
                 is ApiResult.Error -> it

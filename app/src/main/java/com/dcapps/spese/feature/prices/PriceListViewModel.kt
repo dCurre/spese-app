@@ -3,7 +3,12 @@ package com.dcapps.spese.feature.prices
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dcapps.spese.core.data.CatalogRepository
+import com.dcapps.spese.core.prefs.SortCriterion
 import com.dcapps.spese.core.prefs.SortPreferences
+import com.dcapps.spese.core.prefs.comparator
+import com.dcapps.spese.core.prefs.toSaved
+import com.dcapps.spese.core.prefs.toSortCriteria
+import com.dcapps.spese.core.prefs.toggled
 import com.dcapps.spese.core.prefs.UiPreferences
 import com.dcapps.spese.core.ui.SelectionController
 import com.dcapps.spese.core.ui.launchMutation
@@ -29,8 +34,8 @@ data class PriceListUiState(
     val products: List<Product> = emptyList(),
     val units: List<MeasurementUnit> = emptyList(),
     val query: String = "",
-    val sort: ProductSort = ProductSort.NAME,
-    val sortAsc: Boolean = true,
+    // Ordinamento multi-campo a cascata (ordine = priorità). Vuoto = default (per nome).
+    val sortCriteria: List<SortCriterion<ProductSort>> = emptyList(),
     // Filtro per marca: insieme di marche selezionate; vuoto = tutte le marche.
     val brandFilter: Set<String> = emptySet(),
     val message: String? = null,
@@ -55,13 +60,14 @@ data class PriceListUiState(
                 val matchesBrand = brandFilter.isEmpty() || p.brand in brandFilter
                 matchesQuery && matchesBrand
             }
-            val base: Comparator<Product> = when (sort) {
-                ProductSort.NAME -> compareBy { it.name.lowercase() }
-                // Prodotti senza marca in fondo; a parità di marca, per nome.
-                ProductSort.BRAND -> compareBy<Product> { it.brand?.lowercase() ?: "￿" }
-                    .thenBy { it.name.lowercase() }
-            }
-            return filtered.sortedWith(if (sortAsc) base else base.reversed())
+            val cmp = sortCriteria.comparator<Product, ProductSort> { key ->
+                when (key) {
+                    ProductSort.NAME -> { p -> p.name.lowercase() }
+                    // Prodotti senza marca in fondo (carattere alto come segnaposto).
+                    ProductSort.BRAND -> { p -> p.brand?.lowercase() ?: "￿" }
+                }
+            } ?: compareBy { it.name.lowercase() } // default: per nome
+            return filtered.sortedWith(cmp)
         }
 }
 
@@ -73,13 +79,11 @@ class PriceListViewModel @Inject constructor(
     private val uiPreferences: UiPreferences,
 ) : ViewModel() {
 
-    // Ordinamento ricordato dall'ultima volta (issue #9).
-    private val savedSort = sortPreferences.get(SortPreferences.PRICES)
+    // Ordinamento ricordato dall'ultima volta (issue #9), ora multi-campo a cascata.
     private val _uiState = MutableStateFlow(
         PriceListUiState(
-            sort = savedSort?.criterion?.let { runCatching { ProductSort.valueOf(it) }.getOrNull() }
-                ?: ProductSort.NAME,
-            sortAsc = savedSort?.ascending ?: true,
+            sortCriteria = sortPreferences.getList(SortPreferences.PRICES)
+                .toSortCriteria { runCatching { ProductSort.valueOf(it) }.getOrNull() },
         ),
     )
     val uiState: StateFlow<PriceListUiState> = _uiState.asStateFlow()
@@ -88,7 +92,13 @@ class PriceListViewModel @Inject constructor(
         // Prodotti: Flow reattivo da Room (local-first) → la UI si aggiorna da sola a ogni modifica.
         viewModelScope.launch {
             priceRepository.observeProducts().collect { products ->
-                _uiState.update { it.copy(isLoading = false, products = products) }
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        // Risolve il simbolo dell'unità di default dal catalogo (in Room è solo l'id).
+                        products = products.map { p -> p.withDefaultUnitSymbol(it.units) },
+                    )
+                }
             }
         }
         // Unità di misura: catalogo online (non è un dato local-first).
@@ -106,19 +116,23 @@ class PriceListViewModel @Inject constructor(
     private fun loadUnits() {
         viewModelScope.launch {
             val units = catalogRepository.getMeasurementUnits()
-            if (units is ApiResult.Success) _uiState.update { it.copy(units = units.data) }
+            if (units is ApiResult.Success) _uiState.update { s ->
+                s.copy(
+                    units = units.data,
+                    // Le unità possono arrivare dopo i prodotti: ri-risolvi i simboli.
+                    products = s.products.map { it.withDefaultUnitSymbol(units.data) },
+                )
+            }
         }
     }
 
     fun onQueryChange(q: String) = _uiState.update { it.copy(query = q) }
 
     /** Sceglie il criterio di ordinamento; ritoccare quello attivo inverte la direzione. */
-    fun onSortChange(sort: ProductSort) {
-        _uiState.update {
-            if (it.sort == sort) it.copy(sortAsc = !it.sortAsc) else it.copy(sort = sort, sortAsc = true)
-        }
-        // Ricorda la scelta per la prossima apertura (issue #9).
-        _uiState.value.let { sortPreferences.set(SortPreferences.PRICES, it.sort.name, it.sortAsc) }
+    fun onSortToggle(sort: ProductSort) {
+        _uiState.update { it.copy(sortCriteria = it.sortCriteria.toggled(sort)) }
+        // Ricorda la cascata per la prossima apertura (issue #9).
+        sortPreferences.setList(SortPreferences.PRICES, _uiState.value.sortCriteria.toSaved())
     }
 
     /** Imposta le marche selezionate (insieme vuoto = tutte). */

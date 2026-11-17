@@ -27,7 +27,7 @@ import com.dcapps.spese.core.local.entity.LocalShoppingListEntity
         LocalProductEntity::class,
         LocalPurchaseEntity::class,
     ],
-    version = 4,
+    version = 5,
     exportSchema = false,
 )
 abstract class SpeseDatabase : RoomDatabase() {

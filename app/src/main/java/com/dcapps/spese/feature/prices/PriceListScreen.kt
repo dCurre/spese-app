@@ -139,9 +139,8 @@ fun PriceListScreen(
                                     SortOption(ProductSort.NAME, stringResource(R.string.sort_name)),
                                     SortOption(ProductSort.BRAND, stringResource(R.string.sort_brand)),
                                 ),
-                                selectedKey = state.sort,
-                                ascending = state.sortAsc,
-                                onSelect = { viewModel.onSortChange(it) },
+                                criteria = state.sortCriteria,
+                                onToggle = { viewModel.onSortToggle(it) },
                                 modifier = Modifier.weight(1f),
                             )
                             if (state.availableBrands.isNotEmpty()) {

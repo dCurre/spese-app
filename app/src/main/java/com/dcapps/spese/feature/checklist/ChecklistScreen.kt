@@ -179,9 +179,8 @@ private fun ChecklistContent(
                     SortOption(ChecklistSort.DATE, stringResource(R.string.sort_date)),
                     SortOption(ChecklistSort.NAME, stringResource(R.string.sort_name)),
                 ),
-                selectedKey = state.sort,
-                ascending = state.sortAsc,
-                onSelect = viewModel::onSortChange,
+                criteria = state.sortCriteria,
+                onToggle = viewModel::onSortToggle,
                 modifier = Modifier.padding(horizontal = 16.dp),
             )
         }

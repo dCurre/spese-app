@@ -21,22 +21,25 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.dcapps.spese.R
+import com.dcapps.spese.core.prefs.SortCriterion
 
 /** Un criterio di ordinamento: una chiave stabile + l'etichetta mostrata all'utente. */
 data class SortOption<K>(val key: K, val label: String)
 
 /**
- * Barra di ordinamento riutilizzabile: una riga di chip (uno per criterio). Il chip del criterio
- * attivo mostra la freccia su/giù; ritoccandolo si inverte la direzione, sceglierne un altro lo
- * attiva (in direzione [defaultAscending]).
+ * Barra di ordinamento MULTI-CAMPO a cascata: una riga di chip (uno per criterio disponibile).
+ * L'utente tocca i criteri nell'ordine di priorità che vuole; ogni chip attivo mostra il suo numero
+ * di priorità (1-based) e la freccia della sua direzione. Il tap è un ciclo a 3 stati
+ * (aggiungi asc → desc → rimuovi), la cui logica sta in [SortCriterion.toggled] lato ViewModel.
+ *
+ * Nessun limite al numero di criteri attivi: la cascata può includere tutti i campi disponibili.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun <K> SortBar(
     options: List<SortOption<K>>,
-    selectedKey: K,
-    ascending: Boolean,
-    onSelect: (K) -> Unit,
+    criteria: List<SortCriterion<K>>,
+    onToggle: (K) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Row(
@@ -46,11 +49,16 @@ fun <K> SortBar(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         options.forEach { option ->
-            val selected = option.key == selectedKey
+            val index = criteria.indexOfFirst { it.key == option.key }
+            val selected = index >= 0
+            val ascending = if (selected) criteria[index].ascending else true
             FilterChip(
                 selected = selected,
-                onClick = { onSelect(option.key) },
-                label = { Text(option.label) },
+                onClick = { onToggle(option.key) },
+                label = {
+                    // Sul chip attivo prefissa il numero di priorità (es. "1 · Nome").
+                    Text(if (selected) "${index + 1} · ${option.label}" else option.label)
+                },
                 colors = FilterChipDefaults.filterChipColors(
                     selectedContainerColor = MaterialTheme.colorScheme.primary,
                     selectedLabelColor = MaterialTheme.colorScheme.onPrimary,

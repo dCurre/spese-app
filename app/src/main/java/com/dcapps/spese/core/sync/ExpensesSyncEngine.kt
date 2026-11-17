@@ -125,7 +125,8 @@ class ExpensesSyncEngine @Inject constructor(
                 l.deleted && l.remoteId == null -> dao.hardDeleteList(l.id) // mai sul server
                 l.deleted -> listsDelete += l.remoteId!!
                 l.remoteId == null -> listsCreate += SyncExpensesListCreate(
-                    tempId = tempOf("L", l.id), clientId = l.clientId, userId = userId, name = l.name, paid = l.paid,
+                    tempId = tempOf("L", l.id), clientId = l.clientId, userId = userId, name = l.name,
+                    listType = l.listType, paid = l.paid,
                 )
                 else -> listsUpdate += SyncExpensesListUpdate(l.remoteId, l.name, l.paid)
             }
@@ -223,7 +224,7 @@ class ExpensesSyncEngine @Inject constructor(
             if (s.deleted) return // niente da creare per una riga già cancellata
             dao.insertListRaw(
                 LocalExpensesListEntity(
-                    name = s.name, paid = s.paid,
+                    name = s.name, paid = s.paid, listType = s.listType,
                     clientId = s.clientId ?: java.util.UUID.randomUUID().toString(),
                     remoteId = s.id, pendingSync = false, deleted = false, updatedAt = serverUpdated,
                 ),
@@ -233,8 +234,9 @@ class ExpensesSyncEngine @Inject constructor(
         // Conflitto: la cancellazione vince (regola #6).
         if (s.deleted) { dao.hardDeleteList(local.id); return }
         // LWW: applica il server solo se più recente e la riga locale non ha modifiche pending più nuove.
+        // listType: il server è la fonte di verità (la condivisione esiste solo lato backend).
         if (!local.pendingSync && serverUpdated >= local.updatedAt) {
-            dao.updateList(local.copy(name = s.name, paid = s.paid, remoteId = s.id, updatedAt = serverUpdated))
+            dao.updateList(local.copy(name = s.name, paid = s.paid, listType = s.listType, remoteId = s.id, updatedAt = serverUpdated))
         } else if (local.remoteId == null) {
             dao.updateList(local.copy(remoteId = s.id))
         }

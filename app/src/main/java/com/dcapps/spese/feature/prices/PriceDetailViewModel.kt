@@ -44,6 +44,9 @@ data class PriceDetailUiState(
     val history: List<PriceHistoryPoint> = emptyList(),
     val units: List<MeasurementUnit> = emptyList(),
     val granularity: Granularity = Granularity.MONTH,
+    // Granularità con dati sufficienti per un andamento (≥ 2 periodi distinti, stessa soglia del
+    // grafico). Solo queste mostrano il chip; se è vuoto l'intero pannello andamento resta nascosto.
+    val availableGranularities: Set<Granularity> = emptySet(),
     val message: String? = null,
     val deleted: Boolean = false,
     // Mostra il badge "in attesa di sync" sulle righe (preferenza utente).
@@ -81,12 +84,23 @@ class PriceDetailViewModel @Inject constructor(
                     product to purchases
                 }
                 .collect { (product, purchases) ->
+                    val available = availableGranularities(purchases)
                     _uiState.update {
                         it.copy(
                             isLoading = false,
-                            product = product,
+                            product = product?.withDefaultUnitSymbol(it.units),
                             purchases = purchases.map { p -> p.withUnitSymbol(it.units) },
+                            availableGranularities = available,
                         )
+                    }
+                    // Se la granularità corrente non ha dati sufficienti ma un'altra sì, passa a quella
+                    // (così il grafico, quando il pannello è visibile, mostra un andamento reale).
+                    val current = _uiState.value.granularity
+                    if (available.isNotEmpty() && current !in available) {
+                        // Ordine deterministico (un Set non lo garantisce): preferisci MONTH, poi gli altri.
+                        val next = listOf(Granularity.MONTH, Granularity.YEAR, Granularity.DAY)
+                            .first { it in available }
+                        setGranularity(next)
                     }
                 }
         }
@@ -117,6 +131,8 @@ class PriceDetailViewModel @Inject constructor(
                 _uiState.update { s ->
                     s.copy(
                         units = units.data,
+                        // Risolve il simbolo dell'unità di default del prodotto dal catalogo.
+                        product = s.product?.withDefaultUnitSymbol(units.data),
                         // Rienumera i simboli unità sugli acquisti già caricati.
                         purchases = s.purchases.map { it.withUnitSymbol(units.data) },
                     )
@@ -243,6 +259,23 @@ class PriceDetailViewModel @Inject constructor(
     }
 
     fun clearMessage() = _uiState.update { it.copy(message = null) }
+
+    /**
+     * Granularità con dati sufficienti per un andamento: quelle che, raggruppando gli acquisti per
+     * periodo, producono ≥ 2 periodi distinti (stessa soglia del grafico in [LineChart]). Le altre
+     * non mostrano il chip; se nessuna la supera il pannello andamento resta nascosto.
+     */
+    private fun availableGranularities(purchases: List<Purchase>): Set<Granularity> =
+        Granularity.entries.filterTo(mutableSetOf()) { g ->
+            purchases.mapTo(mutableSetOf()) { periodKeyOf(it.purchasedAt, g) }.size >= 2
+        }
+}
+
+/** Chiave di raggruppamento del periodo, allineata a PricesLocalDataSource.periodKey. */
+private fun periodKeyOf(purchasedAt: String, g: Granularity): String = when (g) {
+    Granularity.DAY -> purchasedAt.take(10)   // yyyy-MM-dd
+    Granularity.YEAR -> purchasedAt.take(4)   // yyyy
+    Granularity.MONTH -> purchasedAt.take(7)  // yyyy-MM
 }
 
 /**
@@ -253,4 +286,15 @@ private fun Purchase.withUnitSymbol(units: List<MeasurementUnit>): Purchase {
     if (unitSymbol != null) return this
     val sym = units.firstOrNull { it.id == unitId }?.symbol ?: return this
     return copy(unitSymbol = sym)
+}
+
+/**
+ * Local-first: il prodotto salvato in Room conosce solo [Product.defaultUnitId], non il simbolo
+ * ([Product.defaultUnitSymbol] è null). Lo risolviamo dal catalogo unità, così cambiando l'unità di
+ * default del prodotto tutte le voci "unità" (grafico, statistiche, acquisti, elenco) si aggiornano.
+ * Package-internal: usato anche da [PriceListViewModel].
+ */
+internal fun Product.withDefaultUnitSymbol(units: List<MeasurementUnit>): Product {
+    val sym = units.firstOrNull { it.id == defaultUnitId }?.symbol ?: return this
+    return copy(defaultUnitSymbol = sym)
 }
