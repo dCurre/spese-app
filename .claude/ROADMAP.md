@@ -25,6 +25,11 @@ _(nessun bug aperto)_
   (es. `GET_ITEM_LIST`, `OPEN_APP_FEATURE`) + eventuale custom intent, gestione URI → navigazione.
   Base riutilizzabile anche senza store: deep link + App Shortcuts (long-press icona). Il fulfillment
   di *scrittura* vocale (es. "aggiungi latte") è molto più oneroso e spesso richiede l'app in foreground.
+- [ ] **Saldi condivisi — miglioramenti (opzionale).** Fatto: sezione "chi deve a chi" nelle liste
+  SHARED, cablando `getBalance` sull'endpoint backend `/balance` (divisione equa). Limiti noti se si
+  vuole evolvere: (a) solo divisione EQUA, niente split per quote/percentuali/sottoinsiemi (servirebbe
+  nuova entità share su DTO+Room+backend); (b) i saldi usano come chiave "Nome Cognome" (fragile con
+  omonimi, contratto attuale del backend); (c) niente "segna rimborso come pagato".
 - [ ] **Test automatici (unit) — coda.** Fatti: `SemVer`, serializer, **diff batch-save checklist
   (`ChecklistEditState`), parsing import (`ChecklistImport`), changelog (`Changelog`)**; lo step
   unit test è **agganciato al CI** (blocca la release se falliscono). Resta da coprire, se si vuole:

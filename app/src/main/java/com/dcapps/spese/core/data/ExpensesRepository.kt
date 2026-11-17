@@ -103,12 +103,21 @@ class ExpensesRepository @Inject constructor(
     suspend fun deleteExpensesBulk(ids: List<Long>): ApiResult<Unit> = afterWrite(local.deleteExpenses(ids))
 
     /**
-     * Saldo "chi deve a chi": è una funzione delle sole spese locali. In local-first le liste sono
-     * personali (un solo partecipante): nessun saldo da ripartire → risposta vuota. (Il saldo reale
-     * delle liste condivise lo calcola il backend quando il sync spese sarà disponibile.)
+     * Saldo "chi deve a chi" di una lista condivisa: lo calcola il backend dalle spese della lista
+     * (divisione equa tra i pagatori), via `GET /api/expenses-lists/{id}/balance`. ONLINE-ONLY:
+     * - in guest → risposta vuota (le liste guest sono personali, nessun saldo);
+     * - su errore/offline → risposta vuota (best-effort: la sezione saldi semplicemente non appare,
+     *   non è un errore da mostrare all'utente).
+     * La UI mostra la sezione solo per le liste SHARED con totali non vuoti, quindi per le liste
+     * personali o senza rete non compare nulla.
      */
-    suspend fun getBalance(listId: Long): ApiResult<BalanceResponse> =
-        ApiResult.Success(BalanceResponse())
+    suspend fun getBalance(listId: Long): ApiResult<BalanceResponse> {
+        if (session.isGuest) return ApiResult.Success(BalanceResponse())
+        return when (val res = apiCall(json) { api.getBalance(listId) }) {
+            is ApiResult.Success -> res
+            is ApiResult.Error -> ApiResult.Success(BalanceResponse())
+        }
+    }
 
     /**
      * Statistiche aggregate delle spese personali dell'utente (dashboard). Online-only: aggregazione
