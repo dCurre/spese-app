@@ -25,6 +25,10 @@ data class LocalExpensesListEntity(
     // "personal" | "shared". La condivisione ha senso solo online: il server è la fonte di verità,
     // qui il valore serve a mostrarlo subito e a inviarlo nel create (il pull lo sovrascrive).
     val listType: String = "personal",
+    // Id del proprietario reale della lista. Default -1 (GUEST_OWNER_ID): le righe create offline/guest
+    // non hanno un owner reale finché non sincronizzano (il pull dal server scrive l'owner vero).
+    // Serve a isOwner per mostrare il cambio tipo condivisa/personale solo al proprietario.
+    val ownerId: Long = -1L,
     val createdAt: Long = System.currentTimeMillis(),
     val clientId: String = java.util.UUID.randomUUID().toString(),
     val remoteId: Long? = null,

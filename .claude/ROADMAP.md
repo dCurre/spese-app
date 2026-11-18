@@ -30,10 +30,6 @@ _(nessun bug aperto)_
   vuole evolvere: (a) solo divisione EQUA, niente split per quote/percentuali/sottoinsiemi (servirebbe
   nuova entità share su DTO+Room+backend); (b) i saldi usano come chiave "Nome Cognome" (fragile con
   omonimi, contratto attuale del backend); (c) niente "segna rimborso come pagato".
-- [ ] **Test automatici (unit) — coda.** Fatti: `SemVer`, serializer, **diff batch-save checklist
-  (`ChecklistEditState`), parsing import (`ChecklistImport`), changelog (`Changelog`)**; lo step
-  unit test è **agganciato al CI** (blocca la release se falliscono). Resta da coprire, se si vuole:
-  statistiche prodotto (prezzo min/ultimo/variazione) — andrebbe prima estratta in funzione pura.
 - [ ] **Registrazione e login con email/password (credenziali classiche).** Oggi l'auth è solo Google
   (Credential Manager) + guest. Aggiungere registrazione e accesso con email + password come
   alternativa. Da definire/verificare: endpoint backend `spese-ms` (registrazione, login, hash

@@ -31,11 +31,22 @@ object DatabaseModule {
         }
     }
 
+    /**
+     * v5 → v6: aggiunge `ownerId` alle liste spese (default -1 = GUEST_OWNER_ID). Serve a riconoscere
+     * il proprietario reale e mostrare il cambio tipo condivisa/personale solo a lui. Il pull dal
+     * server scrive l'owner vero; le righe esistenti partono guest (-1) e si correggono al primo sync.
+     */
+    private val MIGRATION_5_6 = object : Migration(5, 6) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE local_expenses_list ADD COLUMN ownerId INTEGER NOT NULL DEFAULT -1")
+        }
+    }
+
     @Provides
     @Singleton
     fun provideDatabase(@ApplicationContext context: Context): SpeseDatabase =
         Room.databaseBuilder(context, SpeseDatabase::class.java, "spese_guest.db")
-            .addMigrations(MIGRATION_4_5)
+            .addMigrations(MIGRATION_4_5, MIGRATION_5_6)
             // Rete di sicurezza SOLO per schemi vecchi non coperti da una migration esplicita: i cambi
             // di schema futuri devono aggiungere una Migration qui, NON affidarsi al wipe distruttivo.
             .fallbackToDestructiveMigration()

@@ -224,7 +224,7 @@ class ExpensesSyncEngine @Inject constructor(
             if (s.deleted) return // niente da creare per una riga già cancellata
             dao.insertListRaw(
                 LocalExpensesListEntity(
-                    name = s.name, paid = s.paid, listType = s.listType,
+                    name = s.name, paid = s.paid, listType = s.listType, ownerId = s.userId,
                     clientId = s.clientId ?: java.util.UUID.randomUUID().toString(),
                     remoteId = s.id, pendingSync = false, deleted = false, updatedAt = serverUpdated,
                 ),
@@ -234,9 +234,9 @@ class ExpensesSyncEngine @Inject constructor(
         // Conflitto: la cancellazione vince (regola #6).
         if (s.deleted) { dao.hardDeleteList(local.id); return }
         // LWW: applica il server solo se più recente e la riga locale non ha modifiche pending più nuove.
-        // listType: il server è la fonte di verità (la condivisione esiste solo lato backend).
+        // listType e ownerId: il server è la fonte di verità (condivisione e proprietario sono lato backend).
         if (!local.pendingSync && serverUpdated >= local.updatedAt) {
-            dao.updateList(local.copy(name = s.name, paid = s.paid, listType = s.listType, remoteId = s.id, updatedAt = serverUpdated))
+            dao.updateList(local.copy(name = s.name, paid = s.paid, listType = s.listType, ownerId = s.userId, remoteId = s.id, updatedAt = serverUpdated))
         } else if (local.remoteId == null) {
             dao.updateList(local.copy(remoteId = s.id))
         }

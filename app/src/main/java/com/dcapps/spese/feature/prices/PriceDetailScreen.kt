@@ -351,14 +351,8 @@ private fun ProductStatsCard(
     purchases: List<Purchase>,
     unitSymbol: String,
 ) {
-    if (purchases.isEmpty()) return
-    // Prezzo unitario per confronti (prezzo/quantità, già calcolato dal backend come unit_price).
-    val byDate = purchases.sortedBy { it.purchasedAt }
-    val minP = purchases.minByOrNull { it.unitPrice }
-    val last = byDate.lastOrNull()
-    val lastPrice = last?.unitPrice ?: 0.0
-    val minPrice = minP?.unitPrice ?: 0.0
-    val variationPct = if (minPrice > 0) ((lastPrice - minPrice) / minPrice * 100) else 0.0
+    // Logica pura estratta in productStats() per essere testabile a unità.
+    val stats = productStats(purchases) ?: return
 
     // Niente card: titolo "Statistiche" evidente + righe su sfondo, coerente con la sezione acquisti.
     Column(Modifier.fillMaxWidth()) {
@@ -368,11 +362,11 @@ private fun ProductStatsCard(
             fontWeight = FontWeight.Bold,
             modifier = Modifier.padding(bottom = 4.dp),
         )
-        StatLine(stringResource(R.string.product_stats_min_price), "%.2f €/%s".format(minPrice, unitSymbol) + (minP?.store?.let { " · $it" } ?: ""))
-        StatLine(stringResource(R.string.product_stats_last_price), "%.2f €/%s".format(lastPrice, unitSymbol))
+        StatLine(stringResource(R.string.product_stats_min_price), "%.2f €/%s".format(stats.minUnitPrice, unitSymbol) + (stats.minStore?.let { " · $it" } ?: ""))
+        StatLine(stringResource(R.string.product_stats_last_price), "%.2f €/%s".format(stats.lastUnitPrice, unitSymbol))
         StatLine(
             stringResource(R.string.product_stats_variation),
-            if (variationPct <= 0.0) stringResource(R.string.product_stats_at_minimum) else "+%.0f%%".format(variationPct),
+            if (stats.isAtMinimum) stringResource(R.string.product_stats_at_minimum) else "+%.0f%%".format(stats.variationPct),
         )
     }
 }

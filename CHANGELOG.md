@@ -3,6 +3,9 @@
 Note di rilascio in linguaggio comprensibile, mostrate nella schermata di aggiornamento dell'app.
 Ogni versione ha una sezione `## X.Y.Z` con un elenco puntato delle novità per l'utente.
 
+## 0.2.14
+- Nelle **liste spese** di cui sei proprietario è di nuovo disponibile l'opzione per renderle condivise o personali (dal menu in alto a destra nel dettaglio della lista): prima non compariva. Per le liste già esistenti l'opzione appare dopo la prima sincronizzazione.
+
 ## 0.2.13
 - Completata la correzione del tipo delle **liste spese**: ora una lista spese creata come personale resta personale e una condivisa resta condivisa, in modo affidabile (il problema residuo riguardava solo le liste spese, le checklist erano già a posto).
 
