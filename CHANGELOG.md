@@ -3,6 +3,9 @@
 Note di rilascio in linguaggio comprensibile, mostrate nella schermata di aggiornamento dell'app.
 Ogni versione ha una sezione `## X.Y.Z` con un elenco puntato delle novità per l'utente.
 
+## 0.2.13
+- Completata la correzione del tipo delle **liste spese**: ora una lista spese creata come personale resta personale e una condivisa resta condivisa, in modo affidabile (il problema residuo riguardava solo le liste spese, le checklist erano già a posto).
+
 ## 0.2.12
 - Corretto un problema per cui una lista o checklist creata come **personale** poteva comparire come **condivisa**: ora il tipo scelto viene rispettato correttamente (di default le nuove liste sono personali).
 - Aggiornando l'app i tuoi dati locali **non vengono più azzerati**: prima un aggiornamento interno poteva svuotare liste, spese e prezzi salvati sul dispositivo; ora vengono conservati.

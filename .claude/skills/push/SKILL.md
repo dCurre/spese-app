@@ -29,8 +29,10 @@ path, not a hand-rolled commit." Every `git commit`/`git push` example below alr
 
 ## Non-negotiable rules
 
-- **Push only on the user's explicit OK.** Never push just because changes are ready. If the user
-  hasn't clearly said to push/ship/release in this turn, stop and ask.
+- **Push only on the user's explicit OK — but a plain "pusha" / "push" / "ship it" / "rilascia" IS
+  that OK.** When the user has asked to push in this turn, do NOT ask again for confirmation — just run
+  the workflow through to the push. Only stop to ask if there was no push request at all, or if a
+  safety check (secrets) actually fails.
 - **Never bump `VERSION` by hand.** The `pre-push` hook bumps the patch automatically and amends it
   into the same commit. Touching VERSION yourself causes a double bump.
 - **Never commit secrets.** `local.properties`, `google-services.json`, keystores, `.b64` and `.apk`
@@ -58,8 +60,8 @@ version. That's why step 3 is mandatory.
 Run these in order. Stop and surface the problem to the user if any check fails.
 
 ### 1. Confirm the push is authorized
-The user must have explicitly asked to push/ship/release in this turn. If not, ask first — do not
-proceed.
+The user asking to push/ship/release (even a bare "pusha") IS the authorization — proceed, don't
+re-ask. Only ask first if there was no push request at all in this turn.
 
 ### 2. Safety-check for secrets
 Before staging, make sure no sensitive file is about to be committed:

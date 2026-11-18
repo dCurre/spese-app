@@ -27,8 +27,8 @@ data class ExpensesList(
     @SerialName("user_id") val userId: Long,
     val paid: Boolean = false,
     @SerialName("created_at") @Serializable(InstantSerializer::class) val createdAt: Instant? = null,
-    @SerialName("list_type") val listType: String = "shared",
-    @SerialName("max_participants") val maxParticipants: Int? = null,
+    // Default 'personal': in caso di dubbio una lista è privata, non condivisa.
+    @SerialName("list_type") val listType: String = "personal",
     @SerialName("participants_count") val participantsCount: Int? = null,
     @SerialName("expenses_count") val expensesCount: Int? = null,
     val participants: List<ExpensesListParticipant> = emptyList(),
