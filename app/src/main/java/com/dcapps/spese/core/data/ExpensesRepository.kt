@@ -113,7 +113,8 @@ class ExpensesRepository @Inject constructor(
      */
     suspend fun getBalance(listId: Long): ApiResult<BalanceResponse> {
         if (session.isGuest) return ApiResult.Success(BalanceResponse())
-        return when (val res = apiCall(json) { api.getBalance(listId) }) {
+        val remoteId = local.remoteListId(listId) ?: return ApiResult.Success(BalanceResponse())
+        return when (val res = apiCall(json) { api.getBalance(remoteId) }) {
             is ApiResult.Success -> res
             is ApiResult.Error -> ApiResult.Success(BalanceResponse())
         }
@@ -145,36 +146,46 @@ class ExpensesRepository @Inject constructor(
 
     // --- Condivisione: online diretto se loggato, bloccata in guest ---
 
-    suspend fun addParticipant(listId: Long, userId: Long): ApiResult<Unit> =
-        if (session.isGuest) guestLocked()
-        else apiCall(json) { api.addParticipant(listId, AddParticipantRequest(userId)); Unit }
+    suspend fun addParticipant(listId: Long, userId: Long): ApiResult<Unit> {
+        if (session.isGuest) return guestLocked()
+        val remoteId = local.remoteListId(listId) ?: return notSyncedYet()
+        return apiCall(json) { api.addParticipant(remoteId, AddParticipantRequest(userId)); Unit }
+    }
 
-    suspend fun removeParticipant(listId: Long, userId: Long): ApiResult<Unit> =
-        if (session.isGuest) guestLocked()
-        else apiCall(json) { api.removeParticipant(listId, userId); Unit }
+    suspend fun removeParticipant(listId: Long, userId: Long): ApiResult<Unit> {
+        if (session.isGuest) return guestLocked()
+        val remoteId = local.remoteListId(listId) ?: return notSyncedYet()
+        return apiCall(json) { api.removeParticipant(remoteId, userId); Unit }
+    }
 
-    suspend fun removeGuest(listId: Long, userId: Long): ApiResult<Unit> =
-        if (session.isGuest) guestLocked()
-        else apiCall(json) { api.removeGuestParticipant(listId, userId); Unit }
+    suspend fun removeGuest(listId: Long, userId: Long): ApiResult<Unit> {
+        if (session.isGuest) return guestLocked()
+        val remoteId = local.remoteListId(listId) ?: return notSyncedYet()
+        return apiCall(json) { api.removeGuestParticipant(remoteId, userId); Unit }
+    }
 
     /** Crea un ospite (utente senza account) e lo aggiunge come partecipante alla lista. */
-    suspend fun addGuest(listId: Long, name: String): ApiResult<Unit> =
-        if (session.isGuest) guestLocked()
-        else apiCall(json) {
+    suspend fun addGuest(listId: Long, name: String): ApiResult<Unit> {
+        if (session.isGuest) return guestLocked()
+        val remoteId = local.remoteListId(listId) ?: return notSyncedYet()
+        return apiCall(json) {
             val created = api.createUser(CreateUserRequest(name = name.trim(), isGuest = true))
             val guestId = created.id ?: error("ID ospite mancante")
-            api.addParticipant(listId, AddParticipantRequest(guestId))
+            api.addParticipant(remoteId, AddParticipantRequest(guestId))
             Unit
         }
+    }
 
-    suspend fun transferOwner(listId: Long, newOwnerId: Long, currentOwnerId: Long): ApiResult<Unit> =
-        if (session.isGuest) guestLocked()
-        else apiCall(json) {
+    suspend fun transferOwner(listId: Long, newOwnerId: Long, currentOwnerId: Long): ApiResult<Unit> {
+        if (session.isGuest) return guestLocked()
+        val remoteId = local.remoteListId(listId) ?: return notSyncedYet()
+        return apiCall(json) {
             api.transferExpensesListOwner(
-                listId,
+                remoteId,
                 TransferOwnerRequest(newOwnerId = newOwnerId, currentOwnerId = currentOwnerId),
             ); Unit
         }
+    }
 
     /** Tutti gli utenti registrati (per aggiungere un partecipante esistente). Online. */
     suspend fun getAllUsers(): ApiResult<List<User>> =
@@ -182,13 +193,21 @@ class ExpensesRepository @Inject constructor(
         else apiCall(json) { api.getUsers().users.filter { !it.isGuest } }
 
     /** Cambio tipo lista (#11): online, richiede requester_id (owner). Bloccato in guest. */
-    private suspend fun setListTypeOnline(id: Long, body: UpdateExpensesListRequest): ApiResult<Unit> =
-        if (session.isGuest) guestLocked()
-        else apiCall(json) { api.updateExpensesList(id, body); Unit }
+    private suspend fun setListTypeOnline(id: Long, body: UpdateExpensesListRequest): ApiResult<Unit> {
+        if (session.isGuest) return guestLocked()
+        val remoteId = local.remoteListId(id) ?: return notSyncedYet()
+        return apiCall(json) { api.updateExpensesList(remoteId, body); Unit }
+    }
 
     // Fallback di sicurezza: in UI il tap sulle azioni di condivisione è già intercettato per il guest
     // (lucchetto → messaggio localizzato R.string.guest_share_locked), quindi questo ramo non dovrebbe
     // essere raggiunto. Resta come rete di protezione lato dati; il messaggio utente usa la risorsa.
     private fun <T> guestLocked(): ApiResult<T> =
         ApiResult.Error(message = "Accedi con un account per condividere le liste.")
+
+    // La lista esiste solo in locale (non ancora sincronizzata col server → nessun remoteId). Le
+    // operazioni online (cambio tipo, partecipanti, transfer-owner) hanno bisogno dell'id del server:
+    // finché il primo sync non assegna il remoteId, non possono partire. Messaggio gentile all'utente.
+    private fun <T> notSyncedYet(): ApiResult<T> =
+        ApiResult.Error(message = "Lista non ancora sincronizzata: riprova tra poco.")
 }

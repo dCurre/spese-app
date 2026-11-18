@@ -6,7 +6,9 @@
       "Write",
       "Read",
       "Grep",
-      "Glob"
+      "Glob",
+      "Bash(SPESE_SKILL_PUSH=1 git push:*)",
+      "Bash(SPESE_SKILL_PUSH=1 git commit:*)"
     ],
     "ask": [
       "Bash(git push:*)"

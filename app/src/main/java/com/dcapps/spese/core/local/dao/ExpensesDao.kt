@@ -78,6 +78,9 @@ interface ExpensesDao {
     @Query("SELECT id FROM local_expenses_list WHERE remoteId = :remoteId LIMIT 1")
     suspend fun listIdByRemote(remoteId: Long): Long?
 
+    @Query("SELECT remoteId FROM local_expenses_list WHERE id = :localId LIMIT 1")
+    suspend fun listRemoteId(localId: Long): Long?
+
     @Insert
     suspend fun insertListRaw(list: LocalExpensesListEntity): Long
 

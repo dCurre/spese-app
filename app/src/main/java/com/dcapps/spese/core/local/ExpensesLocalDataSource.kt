@@ -119,6 +119,14 @@ class ExpensesLocalDataSource @Inject constructor(
         )
     }
 
+    /**
+     * remoteId (id assegnato dal backend) di una lista spese dato il suo id LOCALE di Room.
+     * Serve alle operazioni ONLINE dirette (cambio tipo, transfer owner, partecipanti, balance): il
+     * backend conosce solo il remoteId, non l'id locale, che coincidono solo per caso. null se la
+     * lista non è ancora stata sincronizzata (remoteId non ancora assegnato) o non esiste.
+     */
+    suspend fun remoteListId(localId: Long): Long? = dao.listRemoteId(localId)
+
     suspend fun deleteExpense(id: Long): ApiResult<Unit> = guard { tombstoneExpense(id) }
 
     suspend fun deleteExpenses(ids: List<Long>): ApiResult<Unit> = guard { ids.forEach { tombstoneExpense(it) } }
