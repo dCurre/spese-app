@@ -22,10 +22,6 @@ class FeedbackRepository @Inject constructor(
     private val api: BugReportApi,
     private val json: Json,
 ) {
-    private val owner = "dCurre"
-    private val repo = "spese-app"
-
-    val isConfigured: Boolean get() = BuildConfig.GITHUB_BUGREPORT_TOKEN.isNotBlank()
 
     /** Crea una issue di tipo feature-request. Ritorna l'URL della issue creata. */
     suspend fun report(userDescription: String): ApiResult<String> = apiCall(json) {
@@ -44,9 +40,6 @@ class FeedbackRepository @Inject constructor(
             appendLine("- Dispositivo: ${Build.MANUFACTURER} ${Build.MODEL}")
         }
         val resp = api.createIssue(
-            auth = "Bearer ${BuildConfig.GITHUB_BUGREPORT_TOKEN}",
-            owner = owner,
-            repo = repo,
             body = CreateIssueRequest(title = title, body = body, labels = listOf("enhancement")),
         )
         resp.htmlUrl

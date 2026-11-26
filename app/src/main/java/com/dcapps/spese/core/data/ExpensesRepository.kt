@@ -13,7 +13,6 @@ import com.dcapps.spese.core.model.CreateUserRequest
 import com.dcapps.spese.core.model.TransferOwnerRequest
 import com.dcapps.spese.core.model.UpdateExpenseRequest
 import com.dcapps.spese.core.model.UpdateExpensesListRequest
-import com.dcapps.spese.core.model.User
 import com.dcapps.spese.core.network.ApiResult
 import com.dcapps.spese.core.network.SpeseApi
 import com.dcapps.spese.core.network.apiCall
@@ -146,10 +145,11 @@ class ExpensesRepository @Inject constructor(
 
     // --- Condivisione: online diretto se loggato, bloccata in guest ---
 
-    suspend fun addParticipant(listId: Long, userId: Long): ApiResult<Unit> {
+    /** Token del link di invito: unico modo per far entrare una persona in una lista. */
+    suspend fun createInviteToken(listId: Long): ApiResult<String> {
         if (session.isGuest) return guestLocked()
         val remoteId = local.remoteListId(listId) ?: return notSyncedYet()
-        return apiCall(json) { api.addParticipant(remoteId, AddParticipantRequest(userId)); Unit }
+        return apiCall(json) { api.createExpensesListInviteToken(remoteId).inviteToken }
     }
 
     suspend fun removeParticipant(listId: Long, userId: Long): ApiResult<Unit> {
@@ -186,11 +186,6 @@ class ExpensesRepository @Inject constructor(
             ); Unit
         }
     }
-
-    /** Tutti gli utenti registrati (per aggiungere un partecipante esistente). Online. */
-    suspend fun getAllUsers(): ApiResult<List<User>> =
-        if (session.isGuest) guestLocked()
-        else apiCall(json) { api.getUsers().users.filter { !it.isGuest } }
 
     /** Cambio tipo lista (#11): online, richiede requester_id (owner). Bloccato in guest. */
     private suspend fun setListTypeOnline(id: Long, body: UpdateExpensesListRequest): ApiResult<Unit> {

@@ -33,6 +33,5 @@ object UpdateModule {
 
     @Provides
     @Singleton
-    fun provideBugReportApi(client: OkHttpClient, json: Json): BugReportApi =
-        githubRetrofit(client, json).create(BugReportApi::class.java)
+    fun provideBugReportApi(backend: Retrofit): BugReportApi = backend.create(BugReportApi::class.java)
 }

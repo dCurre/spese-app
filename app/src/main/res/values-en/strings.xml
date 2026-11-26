@@ -191,7 +191,7 @@
     <string name="participants_guest_suffix">(guest)</string>
     <string name="participants_owner_suffix">owner</string>
     <string name="participants_remove">Remove</string>
-    <string name="participants_add_user">Add user</string>
+    <string name="participants_invite">Invite with a link</string>
     <string name="participants_add_guest">Add guest</string>
     <string name="participants_guest_name">Guest name</string>
 
@@ -242,7 +242,6 @@
     <string name="bug_intro">The app ran into an error. You can send us a report to help us fix it.</string>
     <string name="bug_description_label">What were you doing? (optional)</string>
     <string name="bug_tech_included">Technical details included</string>
-    <string name="bug_not_configured">Reporting is not configured in this build.</string>
 
     <!-- Feedback / feature request -->
     <string name="feedback_title">Send feedback</string>

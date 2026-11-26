@@ -1,5 +1,4 @@
 import java.io.File
-import java.util.Properties
 
 plugins {
     alias(libs.plugins.android.application)
@@ -22,17 +21,6 @@ val appVersionCode: Int = run {
     major * 10000 + minor * 100 + patch
 }
 
-// Token GitHub per le segnalazioni bug (SEGRETO): da local.properties
-// (`github.bugreport.token`) o dalla env var GITHUB_BUGREPORT_TOKEN; vuoto se assente.
-val githubBugReportToken: String = run {
-    val props = Properties()
-    val lp = rootProject.file("local.properties")
-    if (lp.exists()) lp.inputStream().use { props.load(it) }
-    props.getProperty("github.bugreport.token")
-        ?: System.getenv("GITHUB_BUGREPORT_TOKEN")
-        ?: ""
-}
-
 android {
     namespace = "com.dcapps.spese"
     compileSdk = 35
@@ -46,24 +34,14 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        // Config backend / Supabase esposta come BuildConfig
+        // Config backend esposta come BuildConfig
         buildConfigField("String", "API_BASE_URL", "\"https://spese-ms.onrender.com/\"")
-        buildConfigField("String", "SUPABASE_URL", "\"https://ysucbvilxwaduksccakz.supabase.co\"")
-        // Chiave anon pubblica Supabase (non sensibile per definizione).
-        buildConfigField(
-            "String",
-            "SUPABASE_ANON_KEY",
-            "\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlzdWNidmlseHdhZHVrc2NjYWt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1NDg1MTksImV4cCI6MjA5NTEyNDUxOX0.PbkCHHRUJkEMHT6-qnfbCOHg7eCzBl7BZlyuNdNPeU8\""
-        )
         // Web client ID OAuth per Google Sign-In (progetto Firebase spese-dc).
         buildConfigField(
             "String",
             "GOOGLE_WEB_CLIENT_ID",
             "\"587215754394-qkpq6j17tog605f0tthbfmol52ad9fjv.apps.googleusercontent.com\"",
         )
-
-        // Token GitHub per creare issue di segnalazione bug (calcolato a livello di script).
-        buildConfigField("String", "GITHUB_BUGREPORT_TOKEN", "\"$githubBugReportToken\"")
     }
 
     // Firma release: usata solo se i secret sono presenti nell'ambiente (CI).
@@ -165,10 +143,6 @@ dependencies {
     implementation(libs.androidx.credentials.play.services)
     implementation(libs.googleid)
 
-    // Supabase Realtime
-    implementation(platform(libs.supabase.bom))
-    implementation(libs.supabase.realtime)
-    implementation(libs.ktor.client.okhttp)
 
     // Test
     testImplementation(libs.junit)

@@ -40,7 +40,6 @@ class SyncErrorAutoReporter @Inject constructor(
      * [label] è il passo di sync (es. "checklist push") — entra nella descrizione.
      */
     fun maybeReport(label: String, error: ReportableError) {
-        if (!repository.isConfigured) return
         scope.launch {
             mutex.withLock {
                 val signature = signatureOf(error)

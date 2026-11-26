@@ -72,9 +72,12 @@ class ShoppingRepository @Inject constructor(
     }
 
     // --- Condivisione: online diretto se loggato, bloccata in guest ---
-    suspend fun createInviteToken(id: Long): ApiResult<String> =
-        if (session.isGuest) guestLocked()
-        else apiCall(json) { api.createInviteToken(id).inviteToken }
+    suspend fun createInviteToken(id: Long): ApiResult<String> {
+        if (session.isGuest) return guestLocked()
+        val remoteId = local.remoteListId(id)
+            ?: return ApiResult.Error(message = "Lista non ancora sincronizzata: riprova tra poco.")
+        return apiCall(json) { api.createInviteToken(remoteId).inviteToken }
+    }
 
     suspend fun joinByToken(token: String, userId: Long): ApiResult<Long?> =
         if (session.isGuest) guestLocked()

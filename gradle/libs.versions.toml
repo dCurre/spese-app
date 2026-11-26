@@ -25,8 +25,6 @@ firebaseBom = "33.7.0"
 credentials = "1.3.0"
 googleid = "1.1.1"
 googleServices = "4.4.2"
-supabase = "3.0.3"
-ktor = "3.0.1"
 junit = "4.13.2"
 androidxJunit = "1.2.1"
 espresso = "3.6.1"
@@ -76,9 +74,6 @@ androidx-credentials = { group = "androidx.credentials", name = "credentials", v
 androidx-credentials-play-services = { group = "androidx.credentials", name = "credentials-play-services-auth", version.ref = "credentials" }
 googleid = { group = "com.google.android.libraries.identity.googleid", name = "googleid", version.ref = "googleid" }
 
-supabase-bom = { group = "io.github.jan-tennert.supabase", name = "bom", version.ref = "supabase" }
-supabase-realtime = { group = "io.github.jan-tennert.supabase", name = "realtime-kt" }
-ktor-client-okhttp = { group = "io.ktor", name = "ktor-client-okhttp", version.ref = "ktor" }
 
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "androidxJunit" }

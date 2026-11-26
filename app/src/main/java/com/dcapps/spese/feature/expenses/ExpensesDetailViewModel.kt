@@ -15,7 +15,6 @@ import com.dcapps.spese.core.model.ExpensesList
 import com.dcapps.spese.core.model.ExpensesListParticipant
 import com.dcapps.spese.core.model.UpdateExpenseRequest
 import com.dcapps.spese.core.model.UpdateExpensesListRequest
-import com.dcapps.spese.core.model.User
 import com.dcapps.spese.core.network.ApiResult
 import com.dcapps.spese.core.prefs.SortCriterion
 import com.dcapps.spese.core.prefs.SortPreferences
@@ -53,7 +52,6 @@ data class ExpensesDetailUiState(
     val query: String = "",
     // Ordinamento multi-campo a cascata (ordine = priorità). Vuoto = default (data, più recenti prima).
     val sortCriteria: List<SortCriterion<ExpenseSort>> = emptyList(),
-    val availableUsers: List<User> = emptyList(),
     val shareLink: String? = null,
     val message: String? = null,
     // Nome passato via nav-arg per mostrare subito il titolo corretto, prima che i dati arrivino.
@@ -243,28 +241,18 @@ class ExpensesDetailViewModel @Inject constructor(
 
     // --- Gestione lista (condivisione, partecipanti, ospiti, proprietà) — ONLINE ---
 
+    /** Recupera (o genera) il token e prepara il link di invito della lista. */
     fun share() {
-        _uiState.update { it.copy(shareLink = "https://spese-dc.web.app/join?list=$listId") }
+        launchMutation(
+            onError = { e -> _uiState.update { it.copy(message = e.message) } },
+            onSuccess = { token ->
+                _uiState.update { it.copy(shareLink = "https://spese-dc.web.app/join?token=$token") }
+            },
+            call = { expensesRepository.createInviteToken(listId) },
+        )
     }
 
     fun clearShareLink() = _uiState.update { it.copy(shareLink = null) }
-
-    fun loadAvailableUsers() {
-        viewModelScope.launch {
-            val already = _uiState.value.participants.map { it.userId }.toSet()
-            (expensesRepository.getAllUsers() as? ApiResult.Success)?.let { res ->
-                _uiState.update { s -> s.copy(availableUsers = res.data.filter { it.id !in already }) }
-            }
-        }
-    }
-
-    fun addParticipant(userId: Long) {
-        launchMutation(
-            onError = { e -> _uiState.update { it.copy(message = e.message) } },
-            onSuccess = { },
-            call = { expensesRepository.addParticipant(listId, userId) },
-        )
-    }
 
     fun addGuest(name: String) {
         if (name.isBlank()) return
@@ -294,6 +282,8 @@ class ExpensesDetailViewModel @Inject constructor(
             if (r is ApiResult.Error) _uiState.update { it.copy(message = r.message) }
         }
     }
+
+    val currentUserId: Long? get() = session.currentUser.value?.id
 
     /** true se l'utente loggato è il proprietario (può cambiare il tipo della lista). (#11) */
     val isOwner: Boolean

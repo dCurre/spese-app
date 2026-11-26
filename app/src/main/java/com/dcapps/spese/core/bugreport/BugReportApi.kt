@@ -3,9 +3,7 @@ package com.dcapps.spese.core.bugreport
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import retrofit2.http.Body
-import retrofit2.http.Header
 import retrofit2.http.POST
-import retrofit2.http.Path
 
 /** Body per creare una issue su GitHub. */
 @Serializable
@@ -23,11 +21,7 @@ data class CreateIssueResponse(
 
 /** API GitHub per creare issue di segnalazione bug (richiede token con permesso Issues). */
 interface BugReportApi {
-    @POST("repos/{owner}/{repo}/issues")
-    suspend fun createIssue(
-        @Header("Authorization") auth: String,
-        @Path("owner") owner: String,
-        @Path("repo") repo: String,
-        @Body body: CreateIssueRequest,
-    ): CreateIssueResponse
+    /** La issue GitHub la crea il backend: nell'app non c'è alcun token. */
+    @POST("api/bug-reports")
+    suspend fun createIssue(@Body body: CreateIssueRequest): CreateIssueResponse
 }

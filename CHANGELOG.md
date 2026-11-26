@@ -3,6 +3,14 @@
 Note di rilascio in linguaggio comprensibile, mostrate nella schermata di aggiornamento dell'app.
 Ogni versione ha una sezione `## X.Y.Z` con un elenco puntato delle novità per l'utente.
 
+## 0.2.18
+- **Aggiornamento di sicurezza importante**: ognuno vede e modifica solo le proprie liste e quelle condivise con lui. Installa questa versione.
+- Per aggiungere una persona a una lista spese ora si condivide un **link di invito** (da "Condividi" o dai partecipanti): non c'è più l'elenco di tutti gli utenti.
+- Solo il proprietario può rimuovere altri partecipanti. Se non sei il proprietario, eliminare una lista significa abbandonarla: resta agli altri.
+- Corretti i link di condivisione di liste spese e checklist, che potevano puntare alla lista sbagliata o non funzionare.
+- Corretta l'aggiunta di un ospite a una lista spese.
+- Le segnalazioni di bug e le richieste di funzionalità passano ora dal server: dalle versioni precedenti non è più possibile inviarle.
+
 ## 0.2.17
 - Aggiornamento di manutenzione, senza novità visibili nell'app.
 

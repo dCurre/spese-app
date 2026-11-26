@@ -15,7 +15,6 @@ data class FeedbackUiState(
     val sending: Boolean = false,
     val resultUrl: String? = null,
     val error: String? = null,
-    val notConfigured: Boolean = false,
 )
 
 @HiltViewModel
@@ -30,10 +29,6 @@ class FeedbackViewModel @Inject constructor(
 
     fun send() {
         val state = _uiState.value
-        if (!repository.isConfigured) {
-            _uiState.update { it.copy(notConfigured = true) }
-            return
-        }
         if (state.description.isBlank() || state.sending) return
         _uiState.update { it.copy(sending = true, error = null) }
         launchMutation(
@@ -44,5 +39,5 @@ class FeedbackViewModel @Inject constructor(
     }
 
     /** Reset dello stato quando si riapre la modale. */
-    fun reset() = _uiState.update { FeedbackUiState(notConfigured = !repository.isConfigured) }
+    fun reset() = _uiState.update { FeedbackUiState() }
 }

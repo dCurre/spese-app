@@ -83,8 +83,9 @@ private fun ApiResult.Error.report() {
  *  - 400 bad request / 422 validazione
  *  - 403 permessi insufficienti (es. cambio ruolo non autorizzato)
  *  - 409 conflitto
+ *  - 429 limite di richieste del backend
  */
-internal fun isExpectedAppError(code: Int): Boolean = code in setOf(400, 403, 409, 422)
+internal fun isExpectedAppError(code: Int): Boolean = code in setOf(400, 403, 409, 422, 429)
 
 /** Estrae il messaggio dal corpo `{"error": ...}` già letto; [rawBody] può essere null. */
 private fun parseErrorMessage(json: Json, rawBody: String?): String? {

@@ -139,14 +139,8 @@ fun ExpensesDetailScreen(
                             isGuest = viewModel.isGuest,
                             onGuestLocked = onGuestLocked,
                             onShare = viewModel::share,
-                            onParticipants = {
-                                viewModel.loadAvailableUsers()
-                                showParticipants = true
-                            },
-                            onTransfer = {
-                                viewModel.loadAvailableUsers()
-                                showTransfer = true
-                            },
+                            onParticipants = { showParticipants = true },
+                            onTransfer = { showTransfer = true },
                             onMakeShared = { viewModel.setListType(true) },
                             onMakePersonal = { showMakePersonal = true },
                         )
@@ -232,9 +226,9 @@ fun ExpensesDetailScreen(
     if (showParticipants) {
         ParticipantsDialog(
             participants = state.participants,
-            availableUsers = state.availableUsers,
+            currentUserId = viewModel.currentUserId,
             ownerId = state.list?.userId,
-            onAddUser = { viewModel.addParticipant(it) },
+            onInvite = viewModel::share,
             onAddGuest = { viewModel.addGuest(it) },
             onRemove = { viewModel.removeParticipant(it) },
             onDismiss = { showParticipants = false },

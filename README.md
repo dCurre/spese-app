@@ -13,18 +13,17 @@ della spesa e storico prezzi.
 - **Storico prezzi**: prodotti, registro acquisti, grafico andamento prezzo e statistiche.
 - **Profilo**: avatar, tema chiaro/scuro/auto/legacy, statistiche, modifica dati.
 - **Amministrazione** (ruoli admin): tipi spesa, unità di misura, ruoli, utenti.
-- **Realtime** (Supabase), **aggiornamento in-app** via GitHub Releases, **segnalazione bug**.
+- **Aggiornamento in-app** via GitHub Releases, **segnalazione bug**.
 
 ## Stack
 
 | Layer | Tecnologia |
 |-------|-----------|
 | Linguaggio / UI | Kotlin + Jetpack Compose (Material 3) |
-| Architettura | MVVM (ui → viewmodel → repository → api/realtime) |
+| Architettura | MVVM (ui → viewmodel → repository → api) |
 | DI | Hilt |
 | Networking | Retrofit + OkHttp + kotlinx.serialization |
 | Auth | Firebase Auth + Google Sign-In (Credential Manager) |
-| Realtime | Supabase Realtime (client Kotlin) |
 | Immagini | Coil |
 
 Package applicazione: `com.dcapps.spese`.
@@ -50,15 +49,15 @@ Questi file/valori sono in `.gitignore` e vanno creati in locale:
    `com.dcapps.spese`. Registra anche l'impronta **SHA-1** della keystore con cui firmi
    (debug e/o release) e abilita **Google** come metodo di accesso. Senza questo file
    l'app va in crash all'avvio.
-2. **`local.properties`** — oltre a `sdk.dir`, può contenere il token per le
-   segnalazioni bug:
+2. **`local.properties`** — oltre a `sdk.dir`, può contenere il token usato da
+   `scripts/close-issue.ps1` per chiudere le segnalazioni (non finisce nell'app):
    ```
    github.bugreport.token=<token GitHub fine-grained con permesso Issues: write>
    ```
 
-I valori di rete (`API_BASE_URL`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`,
-`GOOGLE_WEB_CLIENT_ID`) sono già impostati come `BuildConfig` in
-[`app/build.gradle.kts`](app/build.gradle.kts). La anon key Supabase è pubblica per natura.
+I valori di rete (`API_BASE_URL`, `GOOGLE_WEB_CLIENT_ID`) sono già impostati come `BuildConfig` in
+[`app/build.gradle.kts`](app/build.gradle.kts). Le segnalazioni passano dal backend: il token GitHub
+che crea le issue sta solo lì, mai nell'APK.
 
 ## Build
 
@@ -77,4 +76,4 @@ determina la versione dal file `VERSION` (incrementa la patch se la versione cor
 taggata, altrimenti pubblica quella indicata), compila l'APK release firmato e crea una
 GitHub Release `vX.Y.Z` con l'APK allegato. Secret richiesti sul repo:
 `RELEASE_KEYSTORE_BASE64`, `RELEASE_STORE_PASSWORD`, `RELEASE_KEY_PASSWORD`,
-`RELEASE_KEY_ALIAS`, `GOOGLE_SERVICES_JSON_BASE64`, `BUGREPORT_TOKEN`.
+`RELEASE_KEY_ALIAS`, `GOOGLE_SERVICES_JSON_BASE64`.

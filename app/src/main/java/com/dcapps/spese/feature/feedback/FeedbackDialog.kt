@@ -62,14 +62,6 @@ fun FeedbackDialog(
                 modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
                 minLines = 3,
             )
-            if (state.notConfigured) {
-                Text(
-                    stringResource(R.string.bug_not_configured),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.padding(top = 8.dp),
-                )
-            }
             state.error?.let {
                 Text(
                     it,
@@ -82,6 +74,6 @@ fun FeedbackDialog(
         confirmText = if (state.sending) stringResource(R.string.action_sending)
             else stringResource(R.string.action_send),
         onConfirm = viewModel::send,
-        confirmEnabled = !state.sending && !state.notConfigured && state.description.isNotBlank(),
+        confirmEnabled = !state.sending && state.description.isNotBlank(),
     )
 }

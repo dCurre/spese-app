@@ -66,8 +66,8 @@ eseguibili senza chiedere conferma.
   (progetto `spese-dc`, app `com.dcapps.spese`), altrimenti il **login Google fallisce**
   silenziosamente (Credential Manager non apre nemmeno il selettore). Vale sia per debug che
   per release.
-- I **secret GitHub** non possono iniziare con `GITHUB_` (prefisso riservato): il token bug
-  report è `BUGREPORT_TOKEN`, mappato nel workflow su env `GITHUB_BUGREPORT_TOKEN`.
+- **Nessun token GitHub nell'APK**: le segnalazioni passano da `POST /api/bug-reports` di `spese-ms`,
+  che ha il token (`GITHUB_BUGREPORT_TOKEN` su Render).
 - In `build.gradle.kts`: il codice che legge `local.properties` (es. `Properties()`) va a
   **livello top-level dello script**, NON dentro `android{}`/`defaultConfig`; serve
   `import java.util.Properties`.

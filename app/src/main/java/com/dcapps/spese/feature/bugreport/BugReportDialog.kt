@@ -78,14 +78,6 @@ fun BugReportDialog(
                         modifier = Modifier.heightIn(max = 160.dp).verticalScroll(rememberScrollState()),
                     )
                 }
-                if (state.notConfigured) {
-                    Text(
-                        stringResource(R.string.bug_not_configured),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.padding(top = 8.dp),
-                    )
-                }
                 state.error?.let {
                     Text(
                         it,
@@ -99,7 +91,7 @@ fun BugReportDialog(
         confirmText = if (state.sending) stringResource(R.string.action_sending)
             else stringResource(R.string.action_send),
         onConfirm = viewModel::send,
-        confirmEnabled = !state.sending && !state.notConfigured,
+        confirmEnabled = !state.sending,
         // "No grazie" scarta anche il crash salvato: dismiss custom ma neutro come l'annulla.
         dismissButton = {
             TextButton(onClick = { viewModel.dismissCrash(); onDismiss() }) {

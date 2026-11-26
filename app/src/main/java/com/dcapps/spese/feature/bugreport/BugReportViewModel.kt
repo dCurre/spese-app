@@ -22,7 +22,6 @@ data class BugReportUiState(
     val sending: Boolean = false,
     val resultUrl: String? = null,
     val error: String? = null,
-    val notConfigured: Boolean = false,
 )
 
 @HiltViewModel
@@ -39,22 +38,13 @@ class BugReportViewModel @Inject constructor(
     fun prefillFromLastError() {
         val crash = CrashStore.read(context)
         val trace = crash ?: errorReporter.lastError?.stackTrace
-        _uiState.update {
-            it.copy(
-                stackTrace = trace,
-                notConfigured = !repository.isConfigured,
-            )
-        }
+        _uiState.update { it.copy(stackTrace = trace) }
     }
 
     fun onDescriptionChange(v: String) = _uiState.update { it.copy(description = v) }
 
     fun send() {
         val state = _uiState.value
-        if (!repository.isConfigured) {
-            _uiState.update { it.copy(notConfigured = true) }
-            return
-        }
         viewModelScope.launch {
             _uiState.update { it.copy(sending = true, error = null) }
             // Il crash salvato su disco non ha contesto di rete; l'ultimo errore runtime sì.

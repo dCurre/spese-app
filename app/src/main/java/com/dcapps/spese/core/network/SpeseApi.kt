@@ -148,6 +148,9 @@ interface SpeseApi {
     @POST("api/expenses-lists/bulk-delete")
     suspend fun deleteExpensesListsBulk(@Body body: BulkDeleteRequest): BulkDeleteResponse
 
+    @POST("api/expenses-lists/{id}/invite-token")
+    suspend fun createExpensesListInviteToken(@Path("id") id: Long): InviteTokenResponse
+
     @POST("api/expenses-lists/{id}/transfer-owner")
     suspend fun transferExpensesListOwner(
         @Path("id") id: Long,

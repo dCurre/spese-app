@@ -191,7 +191,7 @@
     <string name="participants_guest_suffix">(ospite)</string>
     <string name="participants_owner_suffix">proprietario</string>
     <string name="participants_remove">Rimuovi</string>
-    <string name="participants_add_user">Aggiungi utente</string>
+    <string name="participants_invite">Invita con un link</string>
     <string name="participants_add_guest">Aggiungi ospite</string>
     <string name="participants_guest_name">Nome ospite</string>
 
@@ -242,7 +242,6 @@
     <string name="bug_intro">L\'app ha riscontrato un errore. Puoi inviarci una segnalazione per aiutarci a risolverlo.</string>
     <string name="bug_description_label">Cosa stavi facendo? (opzionale)</string>
     <string name="bug_tech_included">Dettagli tecnici inclusi</string>
-    <string name="bug_not_configured">Segnalazione non configurata su questo build.</string>
 
     <!-- Feedback / richiesta funzionalità -->
     <string name="feedback_title">Invia feedback</string>

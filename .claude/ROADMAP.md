@@ -7,18 +7,11 @@ da fare: aggiornare qui (spuntare / rimuovere quando completato).
 
 _(nessun bug aperto)_
 
-## Sicurezza (audit 2026-11-26) — in quest'ordine
+## Sicurezza (residui dell'audit 2026-11-26)
 
-- [ ] **Autorizzazione nel backend:** utente ricavato dal token (non da id/email inviati dal client),
-  accesso solo a liste proprie/condivise e propri acquisti, categorie vincolate alla lista in
-  batch-save; utenti, ruoli e cataloghi di base solo admin. Validazione input e upload immagini.
-- [ ] **Inviti a token per le liste spese** (oggi `/join?list=<id>`) e rimozione dell'elenco di tutti
-  gli utenti per aggiungere partecipanti.
-- [ ] **Chiudere l'accesso `anon` di Supabase realtime** (app + webapp): sostituire con aggiornamento
-  all'apertura e periodico nelle liste condivise, poi revocare i permessi nel database.
-- [ ] CORS ristretto alla webapp, rate limit, limite dimensione richieste; tipi MIME sul bucket
-  `profile-images`.
-- [ ] **Audit di app e webapp** (incluso il token GitHub dei bug report estraibile dall'APK).
+- [ ] **Aggiornare Angular (14) e Firebase della webapp**: dipendenze con vulnerabilità note che si
+  risolvono solo con un salto di versione maggiore.
+- [ ] Utente del database con privilegi ridotti per `spese-ms` (oggi usa l'amministratore).
 
 ## Feature
 

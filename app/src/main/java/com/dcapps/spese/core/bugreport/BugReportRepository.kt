@@ -13,10 +13,6 @@ class BugReportRepository @Inject constructor(
     private val api: BugReportApi,
     private val json: Json,
 ) {
-    private val owner = "dCurre"
-    private val repo = "spese-app"
-
-    val isConfigured: Boolean get() = BuildConfig.GITHUB_BUGREPORT_TOKEN.isNotBlank()
 
     /**
      * Crea una issue su GitHub con la descrizione dell'utente, lo stacktrace e le info
@@ -75,9 +71,6 @@ class BugReportRepository @Inject constructor(
             }
         }
         val resp = api.createIssue(
-            auth = "Bearer ${BuildConfig.GITHUB_BUGREPORT_TOKEN}",
-            owner = owner,
-            repo = repo,
             body = CreateIssueRequest(title = title, body = body),
         )
         resp.htmlUrl

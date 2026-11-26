@@ -25,6 +25,9 @@ import javax.inject.Singleton
 class ChecklistLocalDataSource @Inject constructor(
     private val dao: ChecklistDao,
 ) {
+
+    /** Id sul server di una checklist locale; null se non ancora sincronizzata. */
+    suspend fun remoteListId(localId: Long): Long? = dao.getList(localId)?.remoteId
     private fun now() = System.currentTimeMillis()
 
     // --- Letture reattive (Flow) ---

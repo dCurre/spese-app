@@ -12,7 +12,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.outlined.Group
-import androidx.compose.material3.AssistChip
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -32,20 +31,19 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.dcapps.spese.R
 import com.dcapps.spese.core.model.ExpensesListParticipant
-import com.dcapps.spese.core.model.User
 import com.dcapps.spese.ui.components.SpeseBottomSheet
 
 /**
- * Gestione partecipanti come bottom sheet: elenco attuale (con rimozione), aggiunta di un utente
- * registrato e creazione di un ospite senza account. Si chiude con swipe-giù / tap-fuori / back.
+ * Gestione partecipanti come bottom sheet: elenco attuale (con rimozione), invito di una persona
+ * tramite link e creazione di un ospite senza account. Si chiude con swipe-giù / tap-fuori / back.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ParticipantsDialog(
     participants: List<ExpensesListParticipant>,
-    availableUsers: List<User>,
     ownerId: Long?,
-    onAddUser: (Long) -> Unit,
+    currentUserId: Long?,
+    onInvite: () -> Unit,
     onAddGuest: (String) -> Unit,
     onRemove: (ExpensesListParticipant) -> Unit,
     onDismiss: () -> Unit,
@@ -72,8 +70,11 @@ fun ParticipantsDialog(
                             if (p.userId == ownerId) append(" · $ownerSuffix")
                         }
                         Text(label, style = MaterialTheme.typography.bodyMedium)
-                        // Il proprietario non si può rimuovere.
-                        if (p.userId != ownerId) {
+                        // Il proprietario non si può rimuovere; gli altri account li rimuove solo lui
+                        // (o la persona stessa). Gli ospiti li gestisce chiunque sia nella lista.
+                        val canRemove = p.userId != ownerId &&
+                            (p.isGuest || currentUserId == ownerId || currentUserId == p.userId)
+                        if (canRemove) {
                             IconButton(onClick = { onRemove(p) }) {
                                 Icon(Icons.Default.Close, contentDescription = stringResource(R.string.participants_remove))
                             }
@@ -83,27 +84,15 @@ fun ParticipantsDialog(
 
                 HorizontalDivider(Modifier.padding(vertical = 8.dp))
 
-                // Aggiungi utente registrato.
-                if (availableUsers.isNotEmpty()) {
-                    Text(stringResource(R.string.participants_add_user), style = MaterialTheme.typography.labelLarge)
-                    availableUsers.forEach { u ->
-                        Row(
-                            Modifier.fillMaxWidth().padding(vertical = 2.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                        ) {
-                            Text(u.displayName, style = MaterialTheme.typography.bodyMedium)
-                            AssistChip(
-                                onClick = { onAddUser(u.id) },
-                                label = { Text(stringResource(R.string.action_add)) },
-                                leadingIcon = {
-                                    Icon(Icons.Default.PersonAdd, contentDescription = null)
-                                },
-                            )
-                        }
-                    }
-                    HorizontalDivider(Modifier.padding(vertical = 8.dp))
+                // Invita una persona con un account: entra aprendo il link.
+                TextButton(onClick = onInvite) {
+                    Icon(Icons.Default.PersonAdd, contentDescription = null)
+                    Text(
+                        stringResource(R.string.participants_invite),
+                        modifier = Modifier.padding(start = 8.dp),
+                    )
                 }
+                HorizontalDivider(Modifier.padding(vertical = 8.dp))
 
                 // Aggiungi ospite.
                 Text(stringResource(R.string.participants_add_guest), style = MaterialTheme.typography.labelLarge)
