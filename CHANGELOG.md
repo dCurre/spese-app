@@ -3,6 +3,9 @@
 Note di rilascio in linguaggio comprensibile, mostrate nella schermata di aggiornamento dell'app.
 Ogni versione ha una sezione `## X.Y.Z` con un elenco puntato delle novità per l'utente.
 
+## 0.2.16
+- **Aggiornamento di sicurezza**: l'app ora si identifica con il server in modo verificato. Installa questa versione: quelle precedenti presto non potranno più sincronizzare i dati.
+
 ## 0.2.15
 - Corretto un errore per cui cambiare una lista spese da condivisa a personale (o viceversa) poteva fallire con un errore di rete: ora l'operazione va a buon fine. Lo stesso errore poteva colpire anche l'aggiunta/rimozione di partecipanti e il passaggio di proprietà: ora funzionano in modo affidabile.
 - Se provi un'operazione di condivisione su una lista appena creata e non ancora sincronizzata, l'app ora lo spiega con un messaggio chiaro invece di dare un errore generico.

@@ -7,6 +7,21 @@ da fare: aggiornare qui (spuntare / rimuovere quando completato).
 
 _(nessun bug aperto)_
 
+## Sicurezza (audit 2026-11-26) — in quest'ordine
+
+- [ ] **Rilascio token Firebase.** App (0.2.16) e webapp lo inviano già. Resta: provare login e
+  sincronizzazione, poi pushare `spese-ms` (blocca di default le chiamate senza token).
+- [ ] **Autorizzazione nel backend:** utente ricavato dal token (non da id/email inviati dal client),
+  accesso solo a liste proprie/condivise e propri acquisti, categorie vincolate alla lista in
+  batch-save; utenti, ruoli e cataloghi di base solo admin. Validazione input e upload immagini.
+- [ ] **Inviti a token per le liste spese** (oggi `/join?list=<id>`) e rimozione dell'elenco di tutti
+  gli utenti per aggiungere partecipanti.
+- [ ] **Chiudere l'accesso `anon` di Supabase realtime** (app + webapp): sostituire con aggiornamento
+  all'apertura e periodico nelle liste condivise, poi revocare i permessi nel database.
+- [ ] CORS ristretto alla webapp, rate limit, limite dimensione richieste; tipi MIME sul bucket
+  `profile-images`.
+- [ ] **Audit di app e webapp** (incluso il token GitHub dei bug report estraibile dall'APK).
+
 ## Feature
 
 - [ ] **Pubblicazione su Google Play (prerequisito per la voce via Assistant).** Passi lato utente
