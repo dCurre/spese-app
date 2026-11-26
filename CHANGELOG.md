@@ -3,6 +3,9 @@
 Note di rilascio in linguaggio comprensibile, mostrate nella schermata di aggiornamento dell'app.
 Ogni versione ha una sezione `## X.Y.Z` con un elenco puntato delle novità per l'utente.
 
+## 0.2.17
+- Aggiornamento di manutenzione, senza novità visibili nell'app.
+
 ## 0.2.16
 - **Aggiornamento di sicurezza**: l'app ora si identifica con il server in modo verificato. Installa questa versione: quelle precedenti presto non potranno più sincronizzare i dati.
 

@@ -9,8 +9,6 @@ _(nessun bug aperto)_
 
 ## Sicurezza (audit 2026-11-26) — in quest'ordine
 
-- [ ] **Rilascio token Firebase.** App (0.2.16) e webapp lo inviano già. Resta: provare login e
-  sincronizzazione, poi pushare `spese-ms` (blocca di default le chiamate senza token).
 - [ ] **Autorizzazione nel backend:** utente ricavato dal token (non da id/email inviati dal client),
   accesso solo a liste proprie/condivise e propri acquisti, categorie vincolate alla lista in
   batch-save; utenti, ruoli e cataloghi di base solo admin. Validazione input e upload immagini.
